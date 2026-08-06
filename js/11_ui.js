@@ -53,13 +53,14 @@ function buildPOIList() {
     const action = btn.dataset.action;
 
     function ensureGalacticCockpit(then) {
+      const inShip = state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK';
       if (state.scaleLevel !== 'GALACTIC') {
-        if (state.cameraMode !== 'COCKPIT') toggleCockpitMode();
+        if (!inShip) toggleCockpitMode();
         setTimeout(() => {
           initiateWarpToGalaxy();
           setTimeout(then, 4500);
         }, 700);
-      } else if (state.cameraMode !== 'COCKPIT') {
+      } else if (!inShip) {
         toggleCockpitMode();
         setTimeout(then, 700);
       } else {
@@ -314,14 +315,12 @@ function startCinematic() {
   state.cinematicTimer = 0;
   cinematicSequence = ['sun', ...BODIES.map(b => b.id)];
   document.getElementById('cinematic-label').classList.add('active');
-  document.getElementById('hud-mode').textContent = 'CINEMATIC';
   cam.focusOn(cinematicSequence[0]);
 }
 
 function stopCinematic() {
   state.cameraMode = 'ORBIT';
   document.getElementById('cinematic-label').classList.remove('active');
-  document.getElementById('hud-mode').textContent = 'ORBIT';
 }
 
 function updateCinematic(dt) {

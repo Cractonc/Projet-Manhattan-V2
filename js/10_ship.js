@@ -517,8 +517,8 @@ function createShipInterior() {
     cctx.globalCompositeOperation = 'source-over';
     for (const poi of GALACTIC_POI) {
       const isSol = (poi.id === 'sol');
-      const px = 512 + (poi.pos[0] / 55000) * 512;
-      const py = 512 - (poi.pos[2] / 55000) * 512;
+      const px = 512 + (poi.pos[0] / 550000) * 512;
+      const py = 512 - (poi.pos[2] / 550000) * 512;
       const color = isSol ? '#ffaa00' : (poi.dotColor || '#4080ff');
       cctx.shadowColor = color; cctx.shadowBlur = 10;
       cctx.fillStyle = '#ffffff';
@@ -772,10 +772,10 @@ function createHolographicMap() {
   const sunMarkerMat = new THREE.MeshStandardMaterial({
     color: 0x000000, emissive: new THREE.Color(0xffcc44), emissiveIntensity: 2.0
   });
-  // Sun position scaled: real sun is at ~26000 ly from center in a 50000 ly radius galaxy
-  // Scaled to our 0.35 radius: 26000/50000 * 0.35 = 0.182
+  // Sun position scaled: real sun is at ~26000 ly from center in a 500000 ly radius galaxy
+  // Scaled to our 0.35 radius: 26000/500000 * 0.35 = 0.0182
   const sunMarker = new THREE.Mesh(sunMarkerGeo, sunMarkerMat);
-  sunMarker.position.set(0.182, 0, 0);
+  sunMarker.position.set(0.0182, 0, 0);
   holoGalaxyGroup.add(sunMarker);
 
   // Sun label glow ring
@@ -796,9 +796,9 @@ function createHolographicMap() {
 
   for (const poi of GALACTIC_POI) {
     if (poi.id === 'sol') continue; // Already have sun marker
-    const px = (poi.pos[0] / 50000) * 0.35;
-    const py = (poi.pos[1] / 50000) * 0.35;
-    const pz = (poi.pos[2] / 50000) * 0.35;
+    const px = (poi.pos[0] / 500000) * 0.35;
+    const py = (poi.pos[1] / 500000) * 0.35;
+    const pz = (poi.pos[2] / 500000) * 0.35;
 
     const dot = new THREE.Mesh(
       new THREE.SphereGeometry(0.005, 6, 6),
@@ -846,8 +846,15 @@ function createCockpit() {
   shipRig.add(cockpitGroup);
 
   createShipInterior();
-  cockpitGroup.visible = false;
-  cockpitLight.visible = false;
+  // cockpitGroup.visible = false; // Intentionally left visible for exterior view
+  // cockpitLight.visible = false;
+
+  // Assign all cockpit/interior objects to layer 1 so they render in the cockpit pass
+  // (which uses near=0.05 instead of near=1, preventing near-plane clipping)
+  cockpitGroup.traverse(obj => { obj.layers.set(1); });
+  cockpitLight.layers.set(1);
+  cockpitCamera.layers.enableAll();
+
   ship.position.copy(camera.position);
   shipRig.position.copy(ship.position);
 }
@@ -881,7 +888,7 @@ function enterCockpitMode() {
       galacticScene.add(shipRig);
       cockpitCamera.far = 600000;
       cockpitCamera.updateProjectionMatrix();
-      ship.maxSpeed = 3000; // ly/s cruise in galactic
+      // ship.maxSpeed = 3000; // ly/s cruise in galactic
     } else {
       if (shipRig.parent !== scene) {
         if (shipRig.parent) shipRig.parent.remove(shipRig);
@@ -889,7 +896,7 @@ function enterCockpitMode() {
       }
       cockpitCamera.far = 100000;
       cockpitCamera.updateProjectionMatrix();
-      ship.maxSpeed = 8; // units/s cruise in solar
+      // ship.maxSpeed = 8; // units/s cruise in solar
     }
 
     shipRig.position.copy(ship.position);
@@ -917,13 +924,6 @@ function enterCockpitMode() {
 
     // Enter walk mode first (player can sit at pilot seat with E)
     enterWalkMode();
-    document.getElementById('hint').style.display = 'none';
-    document.getElementById('hud-mode').textContent = 'COCKPIT';
-
-    const hintText = state.scaleLevel === 'GALACTIC'
-      ? 'F STAND · L LOOK · V EXIT · ZS THR · QD STR · J WARP · TAB TGT'
-      : 'F STAND · L LOOK · V EXIT · ZS THR · QD STR · ←→ YAW · ↑↓ PITCH · AE ROLL · X STOP';
-    document.getElementById('ckp-hint-text').textContent = hintText;
 
     setTimeout(() => ov.classList.remove('active'), 300);
   }, 300);
@@ -964,12 +964,12 @@ function exitCockpitMode() {
     // Move ship back to solar scene always
     if (shipRig.parent) shipRig.parent.remove(shipRig);
     scene.add(shipRig);
-    ship.maxSpeed = 8;
+    // ship.maxSpeed = 8;
     cockpitCamera.far = 100000;
     cockpitCamera.updateProjectionMatrix();
 
-    cockpitGroup.visible = false;
-    cockpitLight.visible = false;
+    // cockpitGroup.visible = false; // Intentionally left visible for exterior view
+    // cockpitLight.visible = false;
     state.cameraMode = state.prevCameraMode || 'FREE';
     state.cockpitEnabled = false;
     state.cockpitAutoNav = false;
@@ -986,8 +986,6 @@ function exitCockpitMode() {
     state.walkMode = false;
     document.getElementById('cockpit-hud').classList.remove('active');
     document.getElementById('hud').style.display = '';
-    document.getElementById('hint').style.display = '';
-    document.getElementById('hud-mode').textContent = state.cameraMode;
 
     setTimeout(() => ov.classList.remove('active'), 300);
   }, 300);
@@ -1009,7 +1007,6 @@ function enterWalkMode() {
   document.getElementById('walk-hud').classList.add('active');
   document.getElementById('cockpit-hud').classList.remove('active');
   document.getElementById('hud').style.display = 'none';
-  document.getElementById('hint').style.display = 'none';
 
   // Update room name
   state.currentRoom = detectCurrentRoom(walker.position.x, walker.position.z);
@@ -1021,7 +1018,6 @@ function exitWalkMode() {
 
   document.getElementById('walk-hud').classList.remove('active');
   document.getElementById('hud').style.display = '';
-  document.getElementById('hint').style.display = '';
 }
 
 function enterPilotFromWalk() {
@@ -1140,6 +1136,8 @@ function updateTelescopeRef(dt) {
   }
 }
 
+let roomDisplayTimeout = null;
+
 function updateRoomNameDisplay() {
   const names = {
     'cockpit': 'PONT DE COMMANDEMENT',
@@ -1148,7 +1146,14 @@ function updateRoomNameDisplay() {
     'galaxymap': 'CARTE GALACTIQUE',
   };
   const el = document.getElementById('walk-room-name');
-  if (el) el.textContent = names[state.currentRoom] || 'VAISSEAU';
+  if (el) {
+    el.textContent = names[state.currentRoom] || 'VAISSEAU';
+    el.classList.add('visible');
+    if (roomDisplayTimeout) clearTimeout(roomDisplayTimeout);
+    roomDisplayTimeout = setTimeout(() => {
+      el.classList.remove('visible');
+    }, 2000);
+  }
 }
 
 function updateWalkMode(dt) {
@@ -1259,7 +1264,8 @@ function updateWalkMode(dt) {
 }
 
 function updateShip(dt) {
-  if (state.cameraMode !== 'COCKPIT') return;
+  ship.maxSpeed = SPEED_TIERS[state.currentSpeedTier];
+  if (state.cameraMode !== 'COCKPIT' && state.cameraMode !== 'WALK') return;
   if (state.warp.active && state.warp.type === 'TO_POI') {
     updateCockpitCamera(dt);
     return;
@@ -1540,28 +1546,17 @@ function updateCockpitHUD(dt) {
   let modeClass = 'ckp-vel-mode-label';
   if (state.warp.active) { mode = 'FTL WARP'; modeClass += ' ftl-mode'; }
   else if (ship.boostActive) { mode = 'BOOST'; modeClass += ' boost-active'; }
-  else if (state.cockpitAutoNav) { mode = 'AUTOPILOT'; }
+  else if (state.cockpitAutoNav) { mode = 'AUTOPILOT'; modeClass += ' auto'; }
   else if (ship.throttlePercent > 0) { mode = isFTL ? 'FTL CRUISE' : 'CRUISE'; if (isFTL) modeClass += ' ftl-mode'; }
-  if (state.paused) { mode = 'STANDBY'; }
+  else if (state.paused) { mode = 'STANDBY'; }
+  
+  if (!state.cockpitAutoNav && !state.warp.active) {
+    const gearNum = speedTierList.indexOf(state.currentSpeedTier) + 1;
+    mode += ' [GEAR ' + gearNum + ']';
+  }
+  
   velMode.textContent = mode;
   velMode.className = modeClass;
-
-  // ── Heading compass ──
-  const eu = new THREE.Euler().setFromQuaternion(ship.quaternion, 'YXZ');
-  let hdg = ((eu.y * 180 / Math.PI) % 360 + 360) % 360;
-  document.getElementById('ckp-hdg').textContent = String(Math.round(hdg)).padStart(3, '0') + '°';
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  document.getElementById('ckp-hdg-dir').textContent = dirs[Math.round(hdg / 45) % 8];
-
-  // ── Attitude ──
-  document.getElementById('ckp-yaw').textContent = (eu.y * 180 / Math.PI | 0) + '°';
-  document.getElementById('ckp-pitch').textContent = (eu.x * 180 / Math.PI | 0) + '°';
-  document.getElementById('ckp-roll').textContent = (eu.z * 180 / Math.PI | 0) + '°';
-  document.getElementById('ckp-cam').textContent = state.cockpitCameraFree ? 'FREE' : 'LOCKED';
-
-  // ── Target status ──
-  const tgtStatus = state.cockpitTarget ? (state.cockpitAutoNav ? 'AUTO' : 'LOCK') : '—';
-  document.getElementById('ckp-tgt-status').textContent = tgtStatus;
 }
 
 // ── Radar Scanner ──
@@ -1572,7 +1567,7 @@ function drawRadar(dt) {
   const cx = w / 2, cy = h / 2;
   const maxR = w / 2 - 16;
   const isFTL = state.scaleLevel === 'GALACTIC';
-  const range = isFTL ? 30000 : 500;
+  const range = isFTL ? 300000 : 500;
 
   radarCtx.clearRect(0, 0, w, h);
 
@@ -1743,3 +1738,24 @@ function cockpitCycleTarget() {
   }
 }
 
+// ============================================================
+// GEAR UP / GEAR DOWN LISTENER
+// ============================================================
+window.addEventListener('keydown', function(e) {
+  if (state.cameraMode !== 'COCKPIT') return;
+  // Block if typing
+  const tag = document.activeElement?.tagName;
+  if ((tag === 'INPUT' || tag === 'TEXTAREA') && e.code !== 'Escape') return;
+
+  if (e.key === '+' || e.key === '=' || e.code === 'Equal' || e.code === 'NumpadAdd') {
+    let idx = speedTierList.indexOf(state.currentSpeedTier);
+    if (idx < speedTierList.length - 1) {
+      state.currentSpeedTier = speedTierList[idx + 1];
+    }
+  } else if (e.key === '-' || e.code === 'Minus' || e.code === 'Digit6' || e.code === 'NumpadSubtract') {
+    let idx = speedTierList.indexOf(state.currentSpeedTier);
+    if (idx > 0) {
+      state.currentSpeedTier = speedTierList[idx - 1];
+    }
+  }
+});

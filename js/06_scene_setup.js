@@ -11,7 +11,7 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.9;
 renderer.shadowMap.enabled = false;
-renderer.autoClear = true;
+renderer.autoClear = false;
 
 // Solar scene (existing)
 var scene = new THREE.Scene();
@@ -20,8 +20,8 @@ camera.position.set(0, 80, 180);
 
 // Galactic scene (new)
 var galacticScene = new THREE.Scene();
-var galacticCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 10, 2000000);
-galacticCamera.position.set(SUN_GAL.x, 60000, SUN_GAL.z + 40000);
+var galacticCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 50, 20000000);
+galacticCamera.position.set(SUN_GAL.x, 600000, SUN_GAL.z + 400000);
 galacticCamera.lookAt(0, 0, 0);
 
 // Raycaster for click selection
@@ -54,7 +54,6 @@ var cam = {
       state.cockpitTarget = bodyId;
     } else {
       state.cameraMode = 'ORBIT';
-      document.getElementById('hud-mode').textContent = 'ORBIT';
     }
   },
 
@@ -66,7 +65,6 @@ var cam = {
     this.tTheta = 0.4;
     state.selectedBody = null;
     state.cameraMode = 'FREE';
-    document.getElementById('hud-mode').textContent = 'FREE';
     document.getElementById('hud-target').textContent = '—';
     hideInfoCard();
   },
@@ -101,8 +99,8 @@ var cam = {
 // CAMERA CONTROLLER — GALACTIC
 // ============================================================
 var galCam = {
-  theta: -0.3, phi: 0.75, radius: 80000,
-  tTheta: -0.3, tPhi: 0.75, tRadius: 80000,
+  theta: -0.3, phi: 0.75, radius: 1000000,
+  tTheta: -0.3, tPhi: 0.75, tRadius: 1000000,
   lookAt: new THREE.Vector3(0, 0, 0),
   tLookAt: new THREE.Vector3(0, 0, 0),
 
@@ -116,16 +114,14 @@ var galCam = {
     state.selectedPOI = poiId;
     updateGalacticInfoCard(obj.data);
     document.getElementById('hud-target').textContent = obj.data.name.toUpperCase();
-    document.getElementById('hud-mode').textContent = 'ORBIT';
   },
 
   focusOverview() {
     this.tLookAt.set(0, 0, 0);
-    this.tRadius = 80000;
+    this.tRadius = 1000000;
     this.tPhi = 0.75;
     this.tTheta = -0.3;
     state.selectedPOI = null;
-    document.getElementById('hud-mode').textContent = 'FREE';
     document.getElementById('hud-target').textContent = '—';
     hideInfoCard();
   },

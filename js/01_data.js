@@ -9,8 +9,8 @@ var SUN_RADIUS = 3.2;
 var MIN_RADIUS = 0.32;
 
 // Galactic scale: 1 unit = 1 light year
-var GAL_RADIUS = 50000;    // galaxy radius in ly
-var SUN_GAL = { x: 26000, y: 25, z: 0 }; // Sun position in galactic coords
+var GAL_RADIUS = 500000;    // galaxy radius in ly
+var SUN_GAL = { x: 260000, y: 250, z: 0 }; // Sun position in galactic coords
 var GAL_PARTICLE_COUNT = 100000;
 
 // ============================================================
@@ -144,372 +144,372 @@ var SYSTEMS_DATA = {
 // ============================================================
 // ── GALAXIES HAUTE FIDÉLITÉ (Sélection Finale) ──
 var EXTRA_GALAXIES = [
-  { id: 'm83-hd', name: 'M83 - Southern Pinwheel', type: 'hd_m83', pos: [-600000, -100000, 100000], color: '#ffffff', scale: 75000, opacity: 0.9, tilt: 0 },
-  { id: 'm82-hd', name: 'M82 - Cigar Galaxy', type: 'hd_m82', pos: [150000, 550000, -150000], color: '#ffffff', scale: 60000, opacity: 0.95, tilt: 0.8 },
-  { id: 'cena-hd', name: 'Centaurus A', type: 'hd_cena', pos: [-450000, 350000, 400000], color: '#ffffff', scale: 80000, opacity: 0.9, tilt: 0 },
-  { id: '7331-hd', name: 'NGC 7331', type: 'hd_7331', pos: [550000, -300000, 300000], color: '#ffffff', scale: 95000, opacity: 0.9, tilt: 1.2 },
-  { id: '6946-hd', name: 'NGC 6946 - Fireworks', type: 'hd_6946', pos: [-200000, -500000, -400000], color: '#ffffff', scale: 70000, opacity: 0.9, tilt: 0 },
+  { id: 'm83-hd', name: 'M83 - Southern Pinwheel', type: 'hd_m83', pos: [-6000000, -1000000, 1000000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0 },
+  { id: 'm82-hd', name: 'M82 - Cigar Galaxy', type: 'hd_m82', pos: [1500000, 5500000, -1500000], color: '#ffffff', scale: 600000, opacity: 0.95, tilt: 0.8 },
+  { id: 'cena-hd', name: 'Centaurus A', type: 'hd_cena', pos: [-4500000, 3500000, 4000000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 0 },
+  { id: '7331-hd', name: 'NGC 7331', type: 'hd_7331', pos: [5500000, -3000000, 3000000], color: '#ffffff', scale: 950000, opacity: 0.9, tilt: 1.2 },
+  { id: '6946-hd', name: 'NGC 6946 - Fireworks', type: 'hd_6946', pos: [-2000000, -5000000, -4000000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0 },
   // Lot 4 : Expansion Interaction & JWST Deep Field
-  { id: 'm51-hd', name: 'M51 - Whirlpool', type: 'hd_m51', pos: [400000, 400000, -500000], color: '#ffffff', scale: 85000, opacity: 0.9, tilt: 0.1 },
-  { id: 'antennae-hd', name: 'Antennae Galaxies', type: 'hd_antennae', pos: [-650000, 200000, -250000], color: '#ffffff', scale: 90000, opacity: 0.85, tilt: 0.5 },
-  { id: 'owls-eyes-hd', name: 'Owl\'s Eyes', type: 'hd_owls', pos: [-450000, -250000, 550000], color: '#ffffff', scale: 70000, opacity: 0.9, tilt: 0 },
-  { id: 'fireball-hd', name: 'Fireball Galaxy', type: 'hd_fireball', pos: [150000, 450000, 600000], color: '#ffffff', scale: 75000, opacity: 0.9, tilt: 0.7 },
+  { id: 'm51-hd', name: 'M51 - Whirlpool', type: 'hd_m51', pos: [4000000, 4000000, -5000000], color: '#ffffff', scale: 850000, opacity: 0.9, tilt: 0.1 },
+  { id: 'antennae-hd', name: 'Antennae Galaxies', type: 'hd_antennae', pos: [-6500000, 2000000, -2500000], color: '#ffffff', scale: 900000, opacity: 0.85, tilt: 0.5 },
+  { id: 'quintet-hd', name: 'Stephan\'s Quintet', type: 'hd_quintet', pos: [-4500000, -2500000, 5500000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0 },
+  { id: 'ngc1365-hd', name: 'NGC 1365', type: 'hd_ngc1365', pos: [1500000, 4500000, 6000000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0.7 },
   // Lot 5 : Exotic Batch & Final Selection
-  { id: 'blackeye-hd', name: 'NGC 4826 - Black Eye', type: 'hd_blackeye', pos: [-250000, 600000, -350000], color: '#ffffff', scale: 72000, opacity: 0.9, tilt: 0.3 },
-  { id: 'sculptor-hd', name: 'NGC 253 - Sculptor', type: 'hd_sculptor', pos: [-550000, -450000, 250000], color: '#ffffff', scale: 88000, opacity: 0.9, tilt: 1.1 },
-  { id: 'slug-hd', name: 'Slug Galaxy', type: 'hd_slug', pos: [250000, -150000, -650000], color: '#ffffff', scale: 70000, opacity: 0.9, tilt: 0.2 },
-  { id: 'snowwhite-hd', name: 'Snowwhite Galaxy', type: 'hd_snowwhite', pos: [450000, -350000, -400000], color: '#ffffff', scale: 85000, opacity: 0.95, tilt: 0 },
+  { id: 'blackeye-hd', name: 'NGC 4826 - Black Eye', type: 'hd_blackeye', pos: [-2500000, 6000000, -3500000], color: '#ffffff', scale: 720000, opacity: 0.9, tilt: 0.3 },
+  { id: 'sculptor-hd', name: 'NGC 253 - Sculptor', type: 'hd_sculptor', pos: [-5500000, -4500000, 2500000], color: '#ffffff', scale: 880000, opacity: 0.9, tilt: 1.1 },
+  { id: 'ngc1300-hd', name: 'NGC 1300', type: 'hd_ngc1300', pos: [2500000, -1500000, -6500000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0.2 },
+  { id: 'ngc1316-hd', name: 'NGC 1316 - Fornax A', type: 'hd_ngc1316', pos: [4500000, -3500000, -4000000], color: '#ffffff', scale: 850000, opacity: 0.95, tilt: 0 },
   // Lot 6 : Diversification Finale
-  { id: '3627-hd', name: 'NGC 3627', type: 'hd_3627', pos: [650000, 250000, 350000], color: '#ffffff', scale: 82000, opacity: 0.9, tilt: 0.6 },
-  { id: 'mist-hd', name: 'Morning Mist', type: 'hd_mist', pos: [-350000, 550000, 550000], color: '#ffffff', scale: 95000, opacity: 0.85, tilt: 0 },
-  { id: 'finger-hd', name: 'God\'s Finger', type: 'hd_finger', pos: [150000, -550000, 450000], color: '#ffffff', scale: 78000, opacity: 0.9, tilt: 0.8 },
-  { id: 'netflix-hd', name: 'Netflix Galaxy', type: 'hd_netflix', pos: [-600000, 500000, -500000], color: '#ffffff', scale: 72000, opacity: 0.85, tilt: 0.1 },
+  { id: '3627-hd', name: 'NGC 3627', type: 'hd_3627', pos: [6500000, 2500000, 3500000], color: '#ffffff', scale: 820000, opacity: 0.9, tilt: 0.6 },
+  { id: 'mist-hd', name: 'Morning Mist', type: 'hd_mist', pos: [-3500000, 5500000, 5500000], color: '#ffffff', scale: 950000, opacity: 0.85, tilt: 0 },
+  { id: 'm87-hd', name: 'M87 - Virgo A', type: 'hd_m87', pos: [1500000, -5500000, 4500000], color: '#ffffff', scale: 780000, opacity: 0.9, tilt: 0.8 },
+  { id: 'ngc4565-hd', name: 'NGC 4565 - Needle', type: 'hd_ngc4565', pos: [-6000000, 5000000, -5000000], color: '#ffffff', scale: 720000, opacity: 0.85, tilt: 0.1 },
   // Lot 7 : La Collection Finale (21 HD restants)
-  { id: 'sombrero-hd', name: 'M104 - Sombrero', type: 'hd_sombrero', pos: [250000, 650000, 150000], color: '#ffffff', scale: 72000, opacity: 0.95, tilt: 1.5 },
-  { id: '1097-hd', name: 'NGC 1097', type: 'hd_1097', pos: [-150000, -550000, -650000], color: '#ffffff', scale: 80000, opacity: 0.9, tilt: 0.4 },
-  { id: 'collider-hd', name: 'Giant Collider', type: 'hd_collider', pos: [550000, 500000, 250000], color: '#ffffff', scale: 75000, opacity: 0.9, tilt: 0 },
-  { id: 'torpedo-hd', name: 'Torpedo Galaxy', type: 'hd_torpedo', pos: [-650000, -150000, 450000], color: '#ffffff', scale: 65000, opacity: 0.9, tilt: 1.25 },
+  { id: 'sombrero-hd', name: 'M104 - Sombrero', type: 'hd_sombrero', pos: [2500000, 6500000, 1500000], color: '#ffffff', scale: 720000, opacity: 0.95, tilt: 1.5 },
+  { id: '1097-hd', name: 'NGC 1097', type: 'hd_1097', pos: [-1500000, -5500000, -6500000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 0.4 },
+  { id: 'arp273-hd', name: 'Arp 273 - Rose', type: 'hd_arp273', pos: [5500000, 5000000, 2500000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0 },
+  { id: 'ngc4631-hd', name: 'NGC 4631 - Whale', type: 'hd_ngc4631', pos: [-6500000, -1500000, 4500000], color: '#ffffff', scale: 650000, opacity: 0.9, tilt: 1.25 },
   // Lot 8 : Spirales Classiques (Balance Panorama)
-  { id: 'm31-hd', name: 'M31 - Andromeda', type: 'hd_m31', pos: [-550000, 450000, -450000], color: '#ffffff', scale: 120000, opacity: 0.9, tilt: 1.3 },
-  { id: 'm101-hd', name: 'M101 - Pinwheel', type: 'hd_m101', pos: [550000, -550000, 450000], color: '#ffffff', scale: 85000, opacity: 0.9, tilt: 0.2 },
-  { id: 'm81-hd', name: 'M81 - Bode\'s Galaxy', type: 'hd_m81', pos: [450000, 550000, 550000], color: '#ffffff', scale: 80000, opacity: 0.9, tilt: 1.1 },
-  { id: 'm63-hd', name: 'M63 - Sunflower', type: 'hd_m63', pos: [-450000, -550000, -650000], color: '#ffffff', scale: 75000, opacity: 0.9, tilt: 0.6 },
-  { id: 'm74-hd', name: 'M74 - Phantom', type: 'hd_m74', pos: [650000, -350000, -250000], color: '#ffffff', scale: 78000, opacity: 0.9, tilt: 0.1 }
+  { id: 'm31-hd', name: 'M31 - Andromeda', type: 'hd_m31', pos: [-5500000, 4500000, -4500000], color: '#ffffff', scale: 1200000, opacity: 0.9, tilt: 1.3 },
+  { id: 'm101-hd', name: 'M101 - Pinwheel', type: 'hd_m101', pos: [5500000, -5500000, 4500000], color: '#ffffff', scale: 850000, opacity: 0.9, tilt: 0.2 },
+  { id: 'm81-hd', name: 'M81 - Bode\'s Galaxy', type: 'hd_m81', pos: [4500000, 5500000, 5500000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 1.1 },
+  { id: 'm63-hd', name: 'M63 - Sunflower', type: 'hd_m63', pos: [-4500000, -5500000, -6500000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0.6 },
+  { id: 'm74-hd', name: 'M74 - Phantom', type: 'hd_m74', pos: [6500000, -3500000, -2500000], color: '#ffffff', scale: 780000, opacity: 0.9, tilt: 0.1 }
 ];
 
 var GALACTIC_POI = [
   {
     id: 'sgr-a', name: 'Sagittarius A*', type: 'Supermassive Black Hole', tier: 1,
-    pos: [0, 0, 0], vType: 'blackhole', scale: 1400, dotColor: '#ff8800',
+    pos: [0, 0, 0], vType: 'blackhole', scale: 14000, dotColor: '#ff8800',
     info: { 'Type': 'Supermassive Black Hole', 'Mass': '~4 million M☉', 'Distance': '~26 000 ly from Sol', 'Feature': 'Galactic center' }
   },
   {
     id: 'orion-neb', name: 'Orion Nebula', type: 'Emission Nebula', tier: 2,
-    pos: [23750, 200, -3250], vType: 'nebula', scale: 500, dotColor: '#e06090',
+    pos: [237500, 2000, -32500], vType: 'nebula', scale: 5000, dotColor: '#e06090',
     colors: [230, 90, 140, 180, 60, 200],
     info: { 'Type': 'Emission Nebula', 'Catalog': 'M42 / NGC 1976', 'Distance': '~1 344 ly', 'Diameter': '~24 ly', 'Feature': 'Closest massive star nursery' }
   },
   {
     id: 'eagle-neb', name: 'Eagle Nebula', type: 'Pillars of Creation', tier: 2,
-    pos: [13200, 200, 9000], vType: 'nebula', scale: 650, dotColor: '#c08040',
+    pos: [132000, 2000, 90000], vType: 'nebula', scale: 6500, dotColor: '#c08040',
     colors: [200, 130, 60, 140, 80, 160],
     info: { 'Type': 'H II Region', 'Catalog': 'M16 / NGC 6611', 'Distance': '~7 000 ly', 'Feature': 'Pillars of Creation', 'Diameter': '~70 × 55 ly' }
   },
   {
     id: 'crab-neb', name: 'Crab Nebula', type: 'Supernova Remnant', tier: 3,
-    pos: [21000, -150, 6500], vType: 'supernova', scale: 400, dotColor: '#40a0ff',
+    pos: [210000, -1500, 65000], vType: 'supernova', scale: 4000, dotColor: '#40a0ff',
     info: { 'Type': 'Supernova Remnant', 'Catalog': 'M1 / NGC 1952', 'Distance': '~6 500 ly', 'Diameter': '~11 ly', 'Supernova': 'SN 1054, observed in 1054 AD' }
   },
   {
     id: 'cygnus-x1', name: 'Cygnus X-1', type: 'Stellar Black Hole', tier: 2,
-    pos: [28500, 200, 5500], vType: 'blackhole', scale: 350, dotColor: '#ff6600',
+    pos: [285000, 2000, 55000], vType: 'blackhole', scale: 3500, dotColor: '#ff6600',
     info: { 'Type': 'Stellar Black Hole', 'Mass': '~21.2 M☉', 'Distance': '~6 070 ly', 'Companion': 'HDE 226868 (blue supergiant)', 'Feature': 'First widely accepted BH candidate' }
   },
   {
     id: 'eta-car', name: 'Eta Carinae', type: 'Hypergiant System', tier: 2,
-    pos: [10400, 150, 14000], vType: 'star', scale: 400, dotColor: '#ffe040',
+    pos: [104000, 1500, 140000], vType: 'star', scale: 4000, dotColor: '#ffe040',
     starColor: [255, 230, 100],
     info: { 'Type': 'Luminous Blue Variable', 'Mass': '~100-120 M☉', 'Distance': '~7 500 ly', 'Luminosity': '~5 million L☉', 'Feature': 'Potential supernova progenitor' }
   },
   {
     id: 'ring-neb', name: 'Ring Nebula', type: 'Planetary Nebula', tier: 3,
-    pos: [22400, 200, -3000], vType: 'ring', scale: 300, dotColor: '#60c0a0',
+    pos: [224000, 2000, -30000], vType: 'ring', scale: 3000, dotColor: '#60c0a0',
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'M57 / NGC 6720', 'Distance': '~2 283 ly', 'Diameter': '~1.3 ly', 'Central star': 'White dwarf, 120 000 K' }
   },
   {
     id: 'pleiades', name: 'Pleiades', type: 'Open Cluster', tier: 2,
-    pos: [24200, 300, -2400], vType: 'cluster', scale: 300, dotColor: '#80b0ff',
+    pos: [242000, 3000, -24000], vType: 'cluster', scale: 3000, dotColor: '#80b0ff',
     info: { 'Type': 'Open Star Cluster', 'Catalog': 'M45', 'Distance': '~444 ly', 'Stars': '~1 000 (main ~9 visible)', 'Age': '~100 million years' }
   },
   {
     id: 'rosette-neb', name: 'Rosette Nebula', type: 'H II Region', tier: 3,
-    pos: [13500, -150, 21000], vType: 'nebula', scale: 600, dotColor: '#e04060',
+    pos: [135000, -1500, 210000], vType: 'nebula', scale: 6000, dotColor: '#e04060',
     colors: [230, 60, 90, 200, 40, 130],
     info: { 'Type': 'H II Region', 'Catalog': 'NGC 2237-46', 'Distance': '~5 200 ly', 'Diameter': '~130 ly', 'Feature': 'Active star-forming region' }
   },
   {
     id: 'vela-pulsar', name: 'Vela Pulsar', type: 'Supernova Remnant', tier: 3,
-    pos: [23840, -250, -3200], vType: 'supernova', scale: 350, dotColor: '#40e0ff',
+    pos: [238400, -2500, -32000], vType: 'supernova', scale: 3500, dotColor: '#40e0ff',
     info: { 'Type': 'Pulsar / SNR', 'Distance': '~936 ly', 'Spin': '~11.2 rev/s', 'Age': '~11 000 years', 'Feature': 'One of the nearest pulsars' }
   },
   {
     id: 'betelgeuse', name: 'Betelgeuse', type: 'Red Supergiant', tier: 3,
-    pos: [24000, -200, -2200], vType: 'star', scale: 250, dotColor: '#ff4020',
+    pos: [240000, -2000, -22000], vType: 'star', scale: 2500, dotColor: '#ff4020',
     starColor: [255, 80, 30],
     info: { 'Type': 'Red Supergiant', 'Distance': '~700 ly', 'Diameter': '~1 400 × Sun', 'Luminosity': '~126 000 L☉', 'Feature': 'Will explode as supernova' }
   },
   {
     id: 'carina-neb', name: 'Carina Nebula', type: 'Giant Emission Nebula', tier: 1,
-    pos: [11800, 0, 12200], vType: 'nebula', scale: 800, dotColor: '#ff9060',
+    pos: [118000, 0, 122000], vType: 'nebula', scale: 8000, dotColor: '#ff9060',
     colors: [255, 140, 80, 200, 80, 180],
     info: { 'Type': 'Emission Nebula', 'Catalog': 'NGC 3372', 'Distance': '~7 600 ly', 'Diameter': '~300 ly', 'Feature': 'Contains Eta Carinae & Keyhole' }
   },
   {
     id: 'lagoon-neb', name: 'Lagoon Nebula', type: 'Emission Nebula', tier: 3,
-    pos: [4500, -100, 18400], vType: 'nebula', scale: 500, dotColor: '#e07080',
+    pos: [45000, -1000, 184000], vType: 'nebula', scale: 5000, dotColor: '#e07080',
     colors: [230, 100, 120, 160, 80, 180],
     info: { 'Type': 'H II Region', 'Catalog': 'M8 / NGC 6523', 'Distance': '~5 000 ly', 'Diameter': '~110 × 50 ly', 'Feature': 'Visible to the naked eye' }
   },
   {
     id: 'sol', name: 'Solar System', type: 'Our Star System', tier: 2,
-    pos: [SUN_GAL.x, SUN_GAL.y, SUN_GAL.z], vType: 'system', scale: 400, dotColor: '#ffcc44',
+    pos: [SUN_GAL.x, SUN_GAL.y, SUN_GAL.z], vType: 'system', scale: 4000, dotColor: '#ffcc44',
     info: { 'Type': 'G2V Main Sequence Star', 'Position': 'Orion-Cygnus Arm', 'Distance from center': '~26 000 ly', 'Orbital period': '~225 million years', 'Neighborhood': 'Proxima (4.2 ly), Sirius (8.6 ly)' }
   },
   {
     id: 'alpha-centauri', name: 'Alpha Centauri', type: 'Star System', tier: 2,
-    pos: [SUN_GAL.x + 1150, SUN_GAL.y + 120, SUN_GAL.z - 750], vType: 'system', scale: 350, dotColor: '#ffddaa',
+    pos: [SUN_GAL.x + 11500, SUN_GAL.y + 1200, SUN_GAL.z - 7500], vType: 'system', scale: 3500, dotColor: '#ffddaa',
     info: { 'Type': 'Triple Star System', 'Distance': '~4.37 ly from Sol', 'Stars': 'Rigil Kentaurus, Toliman, Proxima', 'Feature': 'Closest star system to Earth' }
   },
   {
     id: 'sirius', name: 'Sirius', type: 'Binary Star System', tier: 2,
-    pos: [SUN_GAL.x - 600, SUN_GAL.y + 200, SUN_GAL.z + 500], vType: 'system', scale: 450, dotColor: '#bbddff',
+    pos: [SUN_GAL.x - 6000, SUN_GAL.y + 2000, SUN_GAL.z + 5000], vType: 'system', scale: 4500, dotColor: '#bbddff',
     info: { 'Type': 'A-type Main-Sequence', 'Distance': '~8.6 ly from Sol', 'Companion': 'Sirius B (White Dwarf)', 'Feature': 'Brightest star in the sky' }
   },
   // ── Lot 2 : Expansion galactique (~13 nouveaux POI) ──
   {
     id: 'omega-centauri', name: 'Omega Centauri', type: 'Globular Cluster', tier: 2,
-    pos: [500, 300, -20000], vType: 'cluster', scale: 500, dotColor: '#aaccff',
+    pos: [5000, 3000, -200000], vType: 'cluster', scale: 5000, dotColor: '#aaccff',
     info: { 'Type': 'Globular Cluster', 'Catalog': 'NGC 5139', 'Distance': '~15 800 ly', 'Stars': '~10 million', 'Feature': 'Largest known globular cluster in MW' }
   },
   {
     id: 'tarantula-neb', name: 'Tarantula Nebula', type: 'Giant H II Region', tier: 2,
-    pos: [2500, -200, 13800], vType: 'nebula', scale: 700, dotColor: '#ff70a0',
+    pos: [25000, -2000, 138000], vType: 'nebula', scale: 7000, dotColor: '#ff70a0',
     colors: [255, 110, 160, 200, 60, 140],
     info: { 'Type': 'H II Region (LMC)', 'Catalog': 'NGC 2070', 'Distance': '~160 000 ly', 'Diameter': '~600 ly', 'Feature': 'Most active star-forming region in Local Group' }
   },
   {
     id: 'pillars-neb', name: 'Trifid Nebula', type: 'Emission/Reflection', tier: 3,
-    pos: [14700, 100, 2900], vType: 'nebula', scale: 400, dotColor: '#cc6688',
+    pos: [147000, 1000, 29000], vType: 'nebula', scale: 4000, dotColor: '#cc6688',
     colors: [200, 100, 130, 100, 80, 200],
     info: { 'Type': 'Emission + Reflection Nebula', 'Catalog': 'M20 / NGC 6514', 'Distance': '~5 200 ly', 'Feature': 'Combination of three nebula types' }
   },
   {
     id: 'helix-neb', name: 'Helix Nebula', type: 'Planetary Nebula', tier: 3,
-    pos: [25200, 80, -1200], vType: 'ring', scale: 280, dotColor: '#40ccaa',
+    pos: [252000, 800, -12000], vType: 'ring', scale: 2800, dotColor: '#40ccaa',
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 7293', 'Distance': '~650 ly', 'Diameter': '~5.7 ly', 'Feature': 'Eye of God — closest large PN' }
   },
   {
     id: 'horsehead-neb', name: 'Horsehead Nebula', type: 'Dark Nebula', tier: 3,
-    pos: [23400, 300, -3500], vType: 'darkneb', scale: 400, dotColor: '#884455',
+    pos: [234000, 3000, -35000], vType: 'darkneb', scale: 4000, dotColor: '#884455',
     colors: [140, 70, 85, 80, 40, 60],
     info: { 'Type': 'Dark Nebula', 'Catalog': 'Barnard 33', 'Distance': '~1 375 ly', 'Feature': 'Iconic silhouette against IC 434' }
   },
   {
     id: 'ant-neb', name: 'Ant Nebula', type: 'Bipolar PN', tier: 4,
-    pos: [-8600, -150, -15800], vType: 'bipolar', scale: 380, dotColor: '#ee8855',
+    pos: [-86000, -1500, -158000], vType: 'bipolar', scale: 3800, dotColor: '#ee8855',
     colors: [240, 140, 85, 180, 60, 100],
     info: { 'Type': 'Bipolar Planetary Nebula', 'Catalog': 'Mz 3', 'Distance': '~8 000 ly', 'Feature': 'Symmetrical jets from dying star' }
   },
   {
     id: 'cat-eye-neb', name: 'Cat\'s Eye Nebula', type: 'Planetary Nebula', tier: 4,
-    pos: [21700, 150, -12500], vType: 'ring', scale: 400, dotColor: '#55ccaa',
+    pos: [217000, 1500, -125000], vType: 'ring', scale: 4000, dotColor: '#55ccaa',
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 6543', 'Distance': '~3 300 ly', 'Feature': 'Complex concentric gas shells' }
   },
   {
     id: 'westerlund-2', name: 'Westerlund 2', type: 'Young Cluster', tier: 3,
-    pos: [2000, -100, -14800], vType: 'cluster', scale: 350, dotColor: '#88aaff',
+    pos: [20000, -1000, -148000], vType: 'cluster', scale: 3500, dotColor: '#88aaff',
     info: { 'Type': 'Young Super Star Cluster', 'Distance': '~20 000 ly', 'Age': '~1–2 million years', 'Feature': 'Contains some of the hottest, brightest stars known' }
   },
   {
     id: 'cassiopeia-a', name: 'Cassiopeia A', type: 'Supernova Remnant', tier: 3,
-    pos: [-8500, 200, 28800], vType: 'supernova', scale: 420, dotColor: '#55bbff',
+    pos: [-85000, 2000, 288000], vType: 'supernova', scale: 4200, dotColor: '#55bbff',
     info: { 'Type': 'Supernova Remnant', 'Distance': '~11 000 ly', 'Diameter': '~16 ly', 'Supernova': '~1680 AD', 'Feature': 'Strongest extrasolar radio source' }
   },
   {
     id: 'ngc-3603', name: 'NGC 3603', type: 'Starburst Cluster', tier: 4,
-    pos: [9700, 100, -2100], vType: 'cluster', scale: 400, dotColor: '#ddcc88',
+    pos: [97000, 1000, -21000], vType: 'cluster', scale: 4000, dotColor: '#ddcc88',
     info: { 'Type': 'Giant H II Region / Starburst', 'Distance': '~20 000 ly', 'Feature': 'Densest concentration of massive stars in MW' }
   },
   {
     id: 'witch-head', name: 'Witch Head Nebula', type: 'Reflection Nebula', tier: 4,
-    pos: [24500, -250, -4200], vType: 'reflection', scale: 420, dotColor: '#6688cc',
+    pos: [245000, -2500, -42000], vType: 'reflection', scale: 4200, dotColor: '#6688cc',
     colors: [100, 140, 220, 50, 70, 160],
     info: { 'Type': 'Reflection Nebula', 'Catalog': 'IC 2118', 'Distance': '~900 ly', 'Feature': 'Illuminated by Rigel' }
   },
   {
     id: 'sgr-b2', name: 'Sagittarius B2', type: 'Molecular Cloud', tier: 4,
-    pos: [1800, -200, 400], vType: 'darkneb', scale: 500, dotColor: '#997744',
+    pos: [18000, -2000, 4000], vType: 'darkneb', scale: 5000, dotColor: '#997744',
     colors: [150, 120, 70, 100, 80, 50],
     info: { 'Type': 'Giant Molecular Cloud', 'Distance': '~390 ly from Sgr A*', 'Mass': '~3 million M☉', 'Feature': 'Contains complex organic molecules' }
   },
   {
     id: 'rigel', name: 'Rigel', type: 'Blue Supergiant', tier: 4,
-    pos: [24300, -200, -3800], vType: 'star', scale: 380, dotColor: '#aaccff',
+    pos: [243000, -2000, -38000], vType: 'star', scale: 3800, dotColor: '#aaccff',
     starColor: [170, 210, 255],
     info: { 'Type': 'Blue Supergiant (B8Ia)', 'Distance': '~860 ly', 'Luminosity': '~120 000 L☉', 'Feature': 'Brightest star in Orion' }
   },
   // ── Lot 3 : 15 nouveaux POI galactiques ──
   {
     id: 'pistol-star', name: 'Pistol Star', type: 'Blue Hypergiant', tier: 3,
-    pos: [3500, -100, 2500], vType: 'star', scale: 450, dotColor: '#88ccff',
+    pos: [35000, -1000, 25000], vType: 'star', scale: 4500, dotColor: '#88ccff',
     starColor: [140, 200, 255],
     info: { 'Type': 'Luminous Blue Variable', 'Distance': '~25 000 ly (near Sgr A*)', 'Luminosity': '~1.6 million L☉', 'Feature': 'One of the most luminous stars known' }
   },
   {
     id: 'hercules-cluster', name: 'M13 Hercules Cluster', type: 'Globular Cluster', tier: 3,
-    pos: [13800, 250, -18400], vType: 'cluster', scale: 420, dotColor: '#ccddff',
+    pos: [138000, 2500, -184000], vType: 'cluster', scale: 4200, dotColor: '#ccddff',
     info: { 'Type': 'Globular Cluster', 'Catalog': 'NGC 6205', 'Distance': '~22 200 ly', 'Stars': '~300 000', 'Feature': 'Most famous globular cluster' }
   },
   {
     id: 'butterfly-neb', name: 'Butterfly Nebula', type: 'Bipolar PN', tier: 4,
-    pos: [-9400, -100, 19900], vType: 'bipolar', scale: 400, dotColor: '#dd66aa',
+    pos: [-94000, -1000, 199000], vType: 'bipolar', scale: 4000, dotColor: '#dd66aa',
     colors: [220, 100, 170, 160, 50, 130],
     info: { 'Type': 'Bipolar Planetary Nebula', 'Catalog': 'NGC 6302', 'Distance': '~3 400 ly', 'Feature': 'One of the hottest dying stars (~250 000 K)' }
   },
   {
     id: 'bubble-neb', name: 'Bubble Nebula', type: 'Emission Nebula', tier: 4,
-    pos: [15200, 100, -9600], vType: 'nebula', scale: 350, dotColor: '#ee8866',
+    pos: [152000, 1000, -96000], vType: 'nebula', scale: 3500, dotColor: '#ee8866',
     colors: [240, 140, 100, 180, 80, 140],
     info: { 'Type': 'H II Emission Nebula', 'Catalog': 'NGC 7635', 'Distance': '~7 100 ly', 'Diameter': '~6 ly', 'Feature': 'Blown by stellar wind from SAO 20575' }
   },
   {
     id: 'tycho-snr', name: 'Tycho\'s SNR', type: 'Supernova Remnant', tier: 4,
-    pos: [-20400, -150, -8200], vType: 'supernova', scale: 380, dotColor: '#44bbee',
+    pos: [-204000, -1500, -82000], vType: 'supernova', scale: 3800, dotColor: '#44bbee',
     info: { 'Type': 'Type Ia Supernova Remnant', 'Catalog': 'SN 1572 / 3C 10', 'Distance': '~8 000 ly', 'Supernova': '1572 AD (Tycho Brahe)', 'Feature': 'Key to understanding Type Ia supernovae' }
   },
   {
     id: 'gum-neb', name: 'Gum Nebula', type: 'Supernova Remnant', tier: 2,
-    pos: [-15200, 100, 9700], vType: 'nebula', scale: 700, dotColor: '#ee9988',
+    pos: [-152000, 1000, 97000], vType: 'nebula', scale: 7000, dotColor: '#ee9988',
     colors: [240, 150, 130, 180, 100, 120],
     info: { 'Type': 'Ancient SNR / Emission Nebula', 'Distance': '~1 500 ly', 'Diameter': '~1 100 ly', 'Age': '~1 million years', 'Feature': 'One of the largest known emission nebulae' }
   },
   {
     id: 'ngc-6397', name: 'NGC 6397', type: 'Globular Cluster', tier: 3,
-    pos: [-9600, 200, 7200], vType: 'cluster', scale: 350, dotColor: '#aabbdd',
+    pos: [-96000, 2000, 72000], vType: 'cluster', scale: 3500, dotColor: '#aabbdd',
     info: { 'Type': 'Globular Cluster', 'Distance': '~7 800 ly', 'Stars': '~400 000', 'Age': '~13.4 billion years', 'Feature': 'One of the closest globular clusters to Earth' }
   },
   {
     id: 'red-spider', name: 'Red Spider Nebula', type: 'Planetary Nebula', tier: 4,
-    pos: [-9800, -80, 2200], vType: 'ring', scale: 320, dotColor: '#ee5533',
+    pos: [-98000, -800, 22000], vType: 'ring', scale: 3200, dotColor: '#ee5533',
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 6537', 'Distance': '~4 000 ly', 'Feature': 'Fastest stellar winds measured (~300 km/s)' }
   },
   {
     id: 'boomerang-neb', name: 'Boomerang Nebula', type: 'Reflection Nebula', tier: 3,
-    pos: [-21600, -150, 12600], vType: 'reflection', scale: 400, dotColor: '#6699dd',
+    pos: [-216000, -1500, 126000], vType: 'reflection', scale: 4000, dotColor: '#6699dd',
     colors: [100, 150, 220, 60, 100, 200],
     info: { 'Type': 'Pre-planetary / Reflection Nebula', 'Distance': '~5 000 ly', 'Temp': '~1 K (-272°C)', 'Feature': 'Coldest known natural place in the universe' }
   },
   {
     id: 'north-america', name: 'North America Nebula', type: 'Emission Nebula', tier: 3,
-    pos: [-14700, 100, -3100], vType: 'nebula', scale: 550, dotColor: '#ee7755',
+    pos: [-147000, 1000, -31000], vType: 'nebula', scale: 5500, dotColor: '#ee7755',
     colors: [240, 120, 85, 180, 70, 100],
     info: { 'Type': 'H II Emission Nebula', 'Catalog': 'NGC 7000', 'Distance': '~2 590 ly', 'Diameter': '~140 ly', 'Feature': 'Shape resembles North America continent' }
   },
   {
     id: 'terzan-5', name: 'Terzan 5', type: 'Globular Cluster', tier: 4,
-    pos: [-5100, -200, -3100], vType: 'cluster', scale: 300, dotColor: '#ccaa66',
+    pos: [-51000, -2000, -31000], vType: 'cluster', scale: 3000, dotColor: '#ccaa66',
     info: { 'Type': 'Globular Cluster (Bulge)', 'Distance': '~19 000 ly', 'Feature': 'Fossil remnant of MW formation — two distinct stellar populations' }
   },
   {
     id: 'v838-mon', name: 'V838 Monocerotis', type: 'Peculiar Variable', tier: 4,
-    pos: [8900, -100, -28600], vType: 'star', scale: 380, dotColor: '#ff4422',
+    pos: [89000, -1000, -286000], vType: 'star', scale: 3800, dotColor: '#ff4422',
     starColor: [255, 70, 35],
     info: { 'Type': 'Red Transient / Variable Star', 'Distance': '~19 000 ly', 'Feature': 'Famous light echo expanding at the speed of light' }
   },
   {
     id: 'cannonball-psr', name: 'Cannonball Pulsar', type: 'Pulsar / PWN', tier: 4,
-    pos: [-7800, 100, -9100], vType: 'supernova', scale: 320, dotColor: '#33ddcc',
+    pos: [-78000, 1000, -91000], vType: 'supernova', scale: 3200, dotColor: '#33ddcc',
     info: { 'Type': 'Pulsar Wind Nebula', 'Catalog': 'IGR J11014-6103', 'Distance': '~15 000 ly', 'Speed': '~1 000 km/s', 'Feature': 'Fastest known pulsar with jet trail' }
   },
   {
     id: 'omega-neb', name: 'Omega Nebula', type: 'Emission Nebula', tier: 3,
-    pos: [-1000, 100, -10000], vType: 'nebula', scale: 480, dotColor: '#ee5577',
+    pos: [-10000, 1000, -100000], vType: 'nebula', scale: 4800, dotColor: '#ee5577',
     colors: [240, 85, 120, 200, 50, 100],
     info: { 'Type': 'H II / Emission Nebula', 'Catalog': 'M17 / NGC 6618', 'Distance': '~5 500 ly', 'Diameter': '~15 ly', 'Feature': 'Swan shape, one of the brightest in the MW' }
   },
   {
     id: 'sn-1006', name: 'SN 1006 Remnant', type: 'Supernova Remnant', tier: 3,
-    pos: [-28000, -150, -1000], vType: 'supernova', scale: 450, dotColor: '#44aaee',
+    pos: [-280000, -1500, -10000], vType: 'supernova', scale: 4500, dotColor: '#44aaee',
     info: { 'Type': 'Type Ia Supernova Remnant', 'Distance': '~7 200 ly', 'Diameter': '~65 ly', 'Supernova': '1006 AD', 'Feature': 'Brightest stellar event in recorded history' }
   },
   // ── Lot 4 : 15 POI uniques visuellement ──
   {
     id: 'wr104', name: 'WR 104', type: 'Wolf-Rayet Pinwheel', tier: 3,
-    pos: [7500, 80, 2700], vType: 'wolfrayet', scale: 420, dotColor: '#88eeff',
+    pos: [75000, 800, 27000], vType: 'wolfrayet', scale: 4200, dotColor: '#88eeff',
     wrColors: [130, 220, 255, 60, 140, 200],
     info: { 'Type': 'Wolf-Rayet Star + Pinwheel', 'Distance': '~8 400 ly', 'Feature': 'Spiral dust pinwheel — potential gamma-ray burst progenitor' }
   },
   {
     id: 'sgr-magnetar', name: 'SGR 1806-20', type: 'Magnetar', tier: 4,
-    pos: [5200, -120, -4800], vType: 'magnetar', scale: 380, dotColor: '#ff55ff',
+    pos: [52000, -1200, -48000], vType: 'magnetar', scale: 3800, dotColor: '#ff55ff',
     magColors: [255, 80, 255, 100, 40, 200],
     info: { 'Type': 'Magnetar', 'Distance': '~50 000 ly', 'Mag. Field': '~10^15 Gauss', 'Feature': 'Dec 2004 hyperflare — most energetic event ever recorded from within MW' }
   },
   {
     id: 'iras16293', name: 'IRAS 16293-2422', type: 'Protostellar System', tier: 4,
-    pos: [22800, -80, -5500], vType: 'protostar', scale: 350, dotColor: '#ffaa44',
+    pos: [228000, -800, -55000], vType: 'protostar', scale: 3500, dotColor: '#ffaa44',
     protoColors: [255, 170, 70, 200, 100, 40],
     info: { 'Type': 'Class 0 Protostar (Binary)', 'Distance': '~460 ly', 'Feature': 'Sugar molecules detected — key to origins of life' }
   },
   {
     id: 'ic443', name: 'Jellyfish Nebula', type: 'SNR Shell', tier: 3,
-    pos: [-15000, -100, -14000], vType: 'shellsnr', scale: 450, dotColor: '#44ddaa',
+    pos: [-150000, -1000, -140000], vType: 'shellsnr', scale: 4500, dotColor: '#44ddaa',
     shellColors: [70, 220, 170, 40, 150, 200],
     info: { 'Type': 'Shell-type Supernova Remnant', 'Catalog': 'IC 443', 'Distance': '~5 000 ly', 'Feature': 'Jellyfish shape — interacts with molecular cloud' }
   },
   {
     id: 'wr142', name: 'WR 142', type: 'Wolf-Rayet Star', tier: 4,
-    pos: [-18000, 80, -18500], vType: 'wolfrayet', scale: 360, dotColor: '#66ddee',
+    pos: [-180000, 800, -185000], vType: 'wolfrayet', scale: 3600, dotColor: '#66ddee',
     wrColors: [100, 200, 230, 40, 120, 180],
     info: { 'Type': 'WO-type Wolf-Rayet Star', 'Distance': '~4 700 ly', 'Temp': '~200 000 K', 'Feature': 'Hottest known star in the Milky Way' }
   },
   {
     id: 'sgr-1935', name: 'SGR 1935+2154', type: 'Magnetar / FRB', tier: 4,
-    pos: [18500, 120, 15000], vType: 'magnetar', scale: 350, dotColor: '#dd44ff',
+    pos: [185000, 1200, 150000], vType: 'magnetar', scale: 3500, dotColor: '#dd44ff',
     magColors: [220, 70, 255, 140, 30, 180],
     info: { 'Type': 'Magnetar + Fast Radio Burst', 'Distance': '~14 000 ly', 'Feature': 'First galactic FRB — linked magnetars to FRBs' }
   },
   {
     id: 'barnard68', name: 'Barnard 68', type: 'Bok Globule', tier: 4,
-    pos: [25800, 60, 3200], vType: 'darkneb', scale: 300, dotColor: '#443322',
+    pos: [258000, 600, 32000], vType: 'darkneb', scale: 3000, dotColor: '#443322',
     colors: [70, 50, 35, 30, 20, 15],
     info: { 'Type': 'Bok Globule (Dark Cloud)', 'Distance': '~500 ly', 'Diameter': '~0.5 ly', 'Feature': 'Near-perfect spherical dark cloud — future star nursery' }
   },
   {
     id: 'w49a', name: 'W49A', type: 'Ultra-compact H II', tier: 3,
-    pos: [6800, 150, -10500], vType: 'protostar', scale: 500, dotColor: '#ffcc33',
+    pos: [68000, 1500, -105000], vType: 'protostar', scale: 5000, dotColor: '#ffcc33',
     protoColors: [255, 200, 50, 220, 130, 30],
     info: { 'Type': 'Ultra-compact H II Region', 'Distance': '~36 000 ly', 'Luminosity': '~10^7 L☉', 'Feature': 'Most luminous star-forming region in the MW' }
   },
   {
     id: 'puppis-a', name: 'Puppis A', type: 'SNR Shell', tier: 3,
-    pos: [20500, -180, 17500], vType: 'shellsnr', scale: 480, dotColor: '#33ccbb',
+    pos: [205000, -1800, 175000], vType: 'shellsnr', scale: 4800, dotColor: '#33ccbb',
     shellColors: [50, 200, 190, 30, 140, 180],
     info: { 'Type': 'Shell Supernova Remnant', 'Distance': '~7 000 ly', 'Age': '~3 700 years', 'Feature': 'One of the brightest X-ray sources in the sky' }
   },
   {
     id: 'wr124', name: 'WR 124 + M1-67', type: 'Wolf-Rayet Nebula', tier: 4,
-    pos: [30000, -80, -15000], vType: 'wolfrayet', scale: 390, dotColor: '#77ddcc',
+    pos: [300000, -800, -150000], vType: 'wolfrayet', scale: 3900, dotColor: '#77ddcc',
     wrColors: [120, 220, 200, 50, 160, 150],
     info: { 'Type': 'Wolf-Rayet Star + Ejected Nebula', 'Distance': '~15 000 ly', 'Feature': 'JWST showcase — clumpy ejected nebula moving at 150 km/s' }
   },
   {
     id: 'w50-manatee', name: 'W50 / Manatee Nebula', type: 'SS 433 Relic', tier: 3,
-    pos: [-5000, -200, 22000], vType: 'shellsnr', scale: 520, dotColor: '#55ddaa',
+    pos: [-50000, -2000, 220000], vType: 'shellsnr', scale: 5200, dotColor: '#55ddaa',
     shellColors: [85, 220, 170, 50, 180, 140],
     info: { 'Type': 'SNR + Microquasar Jet', 'Distance': '~18 000 ly', 'Diameter': '~700 × 350 ly', 'Feature': 'Distorted by relativistic jets from SS 433' }
   },
   {
     id: 'protostar-l1527', name: 'L1527 Protostar', type: 'Protostar', tier: 4,
-    pos: [23000, 50, -6200], vType: 'protostar', scale: 340, dotColor: '#ff8833',
+    pos: [230000, 500, -62000], vType: 'protostar', scale: 3400, dotColor: '#ff8833',
     protoColors: [255, 140, 50, 200, 80, 20],
     info: { 'Type': 'Class 0/I Protostar', 'Distance': '~460 ly (Taurus)', 'Feature': 'JWST hourglass image — edge-on accretion disk' }
   },
   {
     id: 'magnetar-1e', name: '1E 2259+586', type: 'Magnetar in SNR', tier: 4,
-    pos: [-24000, 100, -20000], vType: 'magnetar', scale: 370, dotColor: '#cc44ee',
+    pos: [-240000, 1000, -200000], vType: 'magnetar', scale: 3700, dotColor: '#cc44ee',
     magColors: [200, 70, 240, 120, 40, 200],
     info: { 'Type': 'Magnetar inside SNR CTB 109', 'Distance': '~10 000 ly', 'Feature': 'First magnetar found inside a supernova remnant shell' }
   },
   {
     id: 'snr-w28', name: 'W28', type: 'Mixed-Morphology SNR', tier: 4,
-    pos: [3000, 80, -6000], vType: 'shellsnr', scale: 400, dotColor: '#44ccaa',
+    pos: [30000, 800, -60000], vType: 'shellsnr', scale: 4000, dotColor: '#44ccaa',
     shellColors: [70, 200, 170, 40, 160, 140],
     info: { 'Type': 'Mixed-Morphology SNR', 'Distance': '~6 000 ly', 'Age': '~35 000 years', 'Feature': 'Accelerates cosmic rays — interacts with giant molecular clouds' }
   },
   {
     id: 'wr-nebula-rcw58', name: 'RCW 58', type: 'Wolf-Rayet Ring Nebula', tier: 4,
-    pos: [16500, -130, -17000], vType: 'wolfrayet', scale: 380, dotColor: '#55ccdd',
+    pos: [165000, -1300, -170000], vType: 'wolfrayet', scale: 3800, dotColor: '#55ccdd',
     wrColors: [85, 200, 220, 40, 140, 180],
     info: { 'Type': 'WR Ring Nebula', 'Catalog': 'RCW 58 / Gum 38b', 'Distance': '~9 500 ly', 'Feature': 'Blown bubble from WR 40 stellar wind' }
   }

@@ -70,27 +70,19 @@
       <div style="height:12px"></div>
       <button class="action-btn" id="btn-overview">◎ OVERVIEW</button>
       <button class="action-btn" id="btn-cockpit">🚀 COCKPIT VIEW</button>
+      <button class="action-btn" id="btn-settings">⚙ PARAMÈTRES</button>
     </div>
-  </div>
-
-  <!-- Scale indicator -->
-  <div id="scale-indicator">
-    <span class="scale-badge" id="scale-badge">SOLAR SYSTEM</span>
   </div>
 
   <!-- HUD -->
   <div id="hud">
     <div class="hud-line">TARGET <span class="hud-val" id="hud-target">—</span></div>
-    <div class="hud-line">MODE <span class="hud-val" id="hud-mode">FREE</span></div>
     <div class="hud-line">TIME SCALE <span class="hud-val" id="hud-timescale">1×</span></div>
     <div class="hud-sector" id="hud-sector"></div>
   </div>
 
   <!-- Labels -->
   <div id="labels"></div>
-
-  <!-- Hint -->
-  <div id="hint">DRAG · SCROLL · CLICK · P = PANEL · V = COCKPIT · G = GALAXY</div>
 
   <!-- Cinematic -->
   <div id="cinematic-bar"></div>
@@ -106,12 +98,6 @@
     <div class="ckp-target">
       <div class="ckp-target-name" id="ckp-tgt-name">—</div>
       <div class="ckp-target-dist" id="ckp-tgt-dist"></div>
-    </div>
-    <!-- Heading compass -->
-    <div class="ckp-compass-display">
-      <span class="ckp-hdg-label">HDG</span>
-      <span class="ckp-hdg-value" id="ckp-hdg">000°</span>
-      <span class="ckp-hdg-dir" id="ckp-hdg-dir">N</span>
     </div>
     <!-- Reticle -->
     <div class="ckp-reticle"></div>
@@ -131,31 +117,17 @@
       </div>
       <div class="ckp-boost-status" id="ckp-boost-status">RDY</div>
     </div>
-    <!-- Attitude left -->
-    <div class="ckp-data-l">
-      <div class="ckp-row">YAW <span class="v" id="ckp-yaw">0°</span></div>
-      <div class="ckp-row">PIT <span class="v" id="ckp-pitch">0°</span></div>
-      <div class="ckp-row">RLL <span class="v" id="ckp-roll">0°</span></div>
-    </div>
     <!-- Velocity block right -->
     <div class="ckp-velocity-block">
       <div class="ckp-vel-big" id="ckp-vel-big">0</div>
       <div class="ckp-vel-unit" id="ckp-vel-unit">U/S</div>
       <div class="ckp-vel-mode-label" id="ckp-vel-mode">IDLE</div>
     </div>
-    <!-- Status right -->
-    <div class="ckp-data-r">
-      <div class="ckp-row">CAM <span class="v" id="ckp-cam">LOCKED</span></div>
-      <div class="ckp-row">TGT <span class="v" id="ckp-tgt-status">—</span></div>
-    </div>
     <!-- Radar scanner -->
     <div class="ckp-radar-container">
       <div class="ckp-radar-label">SCANNER</div>
       <canvas id="ckp-radar" width="340" height="340"></canvas>
     </div>
-    <!-- Hint -->
-    <div class="ckp-hint" id="ckp-hint-text">V EXIT · ZS THROTTLE · QD STRAFE · ←→ YAW · ↑↓ PITCH · AE ROLL · SHIFT
-      BOOST · X STOP</div>
   </div>
   <div id="cockpit-transition"></div>
 
@@ -164,7 +136,6 @@
     <div class="walk-room-name" id="walk-room-name">COCKPIT</div>
     <div class="walk-crosshair"></div>
     <div class="walk-interact-prompt" id="walk-interact-prompt">APPUYEZ [F] POUR PILOTER</div>
-    <div class="walk-hint">WASD DÉPLACER · SOURIS REGARDER · F INTERAGIR · V QUITTER</div>
   </div>
 
   <!-- Telescope HUD -->
@@ -189,6 +160,64 @@
       <div class="warp-progress-fill" id="warp-progress-fill"></div>
     </div>
     <div class="warp-eta" id="warp-eta-text"></div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-overlay" class="modal-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title">⚙ PARAMÈTRES DU SIMULATEUR</h2>
+        <button class="modal-close" id="btn-close-settings" title="Fermer (Échap)">✕</button>
+      </div>
+      
+      <div class="modal-content" id="settings-main-view">
+        <div class="settings-section">
+          <h3>Raccourcis & Commandes</h3>
+          <p class="settings-desc">Consultez tous les contrôles clavier et souris pour chaque mode du simulateur.</p>
+          <button class="settings-btn-primary" id="btn-open-shortcuts">⌨ VOIR LES RACCOURCIS</button>
+        </div>
+        <div class="settings-section">
+          <h3>Graphismes & Simulation</h3>
+          <p class="settings-desc">Options de rendu avancées et configuration spatiale (à venir).</p>
+        </div>
+      </div>
+
+      <div class="modal-content" id="settings-shortcuts-view" style="display: none;">
+        <div class="shortcuts-header">
+          <button class="settings-btn-back" id="btn-back-settings">← Retour aux paramètres</button>
+          <h3>Guide des commandes</h3>
+        </div>
+        <div class="shortcuts-grid">
+          <div class="shortcut-group">
+            <h4>◎ Exploration Libre (Spectateur)</h4>
+            <div class="shortcut-row"><span class="key-badge">Clic G + Drag</span><span>Tourner la caméra</span></div>
+            <div class="shortcut-row"><span class="key-badge">Molette</span><span>Zoom / Dézoom</span></div>
+            <div class="shortcut-row"><span class="key-badge">Clic sur Astre</span><span>Cibler & Infos orbitales</span></div>
+            <div class="shortcut-row"><span class="key-badge">P</span><span>Afficher / Masquer le Panneau</span></div>
+            <div class="shortcut-row"><span class="key-badge">G</span><span>Basculer Système Solaire / Galaxie</span></div>
+            <div class="shortcut-row"><span class="key-badge">V</span><span>Entrer en Vue Cockpit</span></div>
+          </div>
+          <div class="shortcut-group">
+            <h4>🚀 Pilotage Vaisseau (Cockpit)</h4>
+            <div class="shortcut-row"><span class="key-badge">Z / S</span><span>Puissance Moteur (Throttle +/-)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Q / D</span><span>Déplacement latéral (Strafe)</span></div>
+            <div class="shortcut-row"><span class="key-badge">← / →</span><span>Lacet (Yaw)</span></div>
+            <div class="shortcut-row"><span class="key-badge">↑ / ↓</span><span>Tangage (Pitch)</span></div>
+            <div class="shortcut-row"><span class="key-badge">A / E</span><span>Roulis (Roll)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Shift</span><span>Hyperpropulsion Boost</span></div>
+            <div class="shortcut-row"><span class="key-badge">X</span><span>Arrêt immédiat (Stop)</span></div>
+            <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le siège (Mode Marche)</span></div>
+          </div>
+          <div class="shortcut-group">
+            <h4>🚶 Mode Vaisseau (Marche à pied)</h4>
+            <div class="shortcut-row"><span class="key-badge">W/A/S/D / Z/Q/S/D</span><span>Se déplacer</span></div>
+            <div class="shortcut-row"><span class="key-badge">Souris</span><span>Regarder autour (Free look)</span></div>
+            <div class="shortcut-row"><span class="key-badge">F</span><span>Interagir (Siège / Télescope)</span></div>
+            <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le vaisseau (Mode Libre)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 

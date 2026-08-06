@@ -31,9 +31,13 @@ function animate() {
     galCam.update(dt);
   }
 
+  // Ship physics update (runs if we are inside the ship)
+  if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
+    updateShip(dt);
+  }
+
   // Cockpit
   if (state.cameraMode === 'COCKPIT') {
-    updateShip(dt);
     updateCockpitHUD(dt);
     if (radarCtx) drawRadar(dt);
     updateAudio();
@@ -70,7 +74,7 @@ function animate() {
       const pd = GALACTIC_POI.find(p => p.id === state.currentSysId);
       if (pd) { gx = pd.pos[0]; gz = pd.pos[2]; }
     }
-    shipInterior.userData.mapMarker.position.set(1.335 + (gx / 55000) * 0.54, 0.35 - (gz / 55000) * 0.54, 1.035);
+    shipInterior.userData.mapMarker.position.set(1.335 + (gx / 550000) * 0.54, 0.35 - (gz / 550000) * 0.54, 1.035);
     shipInterior.userData.mapMarker.material.emissiveIntensity = 2.0 + Math.sin(now * 0.01) * 3.0;
   }
 
@@ -117,14 +121,58 @@ function animate() {
   }
 
   // Render
+  renderer.clear();
+
   let activeCam;
   if (state.scaleLevel === 'SOLAR') {
-    activeCam = ((state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') && cockpitCamera) ? cockpitCamera : camera;
-    renderer.render(scene, activeCam);
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
+      activeCam = cockpitCamera;
+      
+      // Pass 1: World
+      activeCam.layers.set(0);
+      activeCam.near = 1;
+      activeCam.far = 100000;
+      activeCam.updateProjectionMatrix();
+      renderer.render(scene, activeCam);
+      
+      // Pass 2: Cockpit
+      renderer.clearDepth();
+      activeCam.layers.set(1);
+      activeCam.near = 0.05;
+      activeCam.far = 500;
+      activeCam.updateProjectionMatrix();
+      renderer.render(scene, activeCam);
+    } else {
+      activeCam = camera;
+      activeCam.layers.set(0);
+      renderer.render(scene, activeCam);
+    }
   } else {
-    activeCam = ((state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') && cockpitCamera) ? cockpitCamera : galacticCamera;
-    updateGalacticPOIs(dt, activeCam);
-    renderer.render(galacticScene, activeCam);
+    // GALACTIC
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
+      activeCam = cockpitCamera;
+      updateGalacticPOIs(dt, activeCam);
+      
+      // Pass 1: World (Galaxy)
+      activeCam.layers.set(0);
+      activeCam.near = 50; // Reduced near plane to prevent POI clipping on zoom
+      activeCam.far = 20000000;
+      activeCam.updateProjectionMatrix();
+      renderer.render(galacticScene, activeCam);
+      
+      // Pass 2: Cockpit
+      renderer.clearDepth();
+      activeCam.layers.set(1);
+      activeCam.near = 0.05;
+      activeCam.far = 500;
+      activeCam.updateProjectionMatrix();
+      renderer.render(galacticScene, activeCam);
+    } else {
+      activeCam = galacticCamera;
+      activeCam.layers.set(0);
+      updateGalacticPOIs(dt, activeCam);
+      renderer.render(galacticScene, activeCam);
+    }
   }
 }
 
@@ -225,7 +273,7 @@ function setupEvents() {
     }
     const factor = e.deltaY > 0 ? 1.12 : 0.89;
     if (state.scaleLevel === 'GALACTIC') {
-      galCam.tRadius = clamp(galCam.tRadius * factor, 200, 250000);
+      galCam.tRadius = clamp(galCam.tRadius * factor, 200, 3500000);
     } else {
       cam.tRadius = clamp(cam.tRadius * factor, 1, 2000);
       if (state.cameraMode === 'CINEMATIC') stopCinematic();
@@ -295,7 +343,7 @@ function setupEvents() {
       const dist = Math.sqrt(dx * dx + dy * dy);
       const factor = lastTouchDist / dist;
       if (state.scaleLevel === 'GALACTIC') {
-        galCam.tRadius = clamp(galCam.tRadius * factor, 200, 250000);
+        galCam.tRadius = clamp(galCam.tRadius * factor, 200, 3500000);
       } else {
         cam.tRadius = clamp(cam.tRadius * factor, 1, 2000);
       }
@@ -308,6 +356,17 @@ function setupEvents() {
   window.addEventListener('keydown', e => {
     const code = e.code;
     const key = e.key.toLowerCase();
+
+    // ── Handle Settings Modal ──
+    const settingsOverlay = document.getElementById('settings-overlay');
+    if (settingsOverlay && settingsOverlay.classList.contains('active')) {
+      if (code === 'Escape') {
+        settingsOverlay.classList.remove('active');
+        e.preventDefault();
+        return;
+      }
+      return; // Ignore general shortcuts while settings modal is active
+    }
 
     // ── Block shortcuts when typing in search/input ──
     const tag = document.activeElement?.tagName;
@@ -432,10 +491,7 @@ function setupEvents() {
         else if (state.scaleLevel === 'GALACTIC') galCam.focusOverview();
         else cam.focusOverview();
         break;
-      case 'h':
-        document.getElementById('hint').style.display =
-          document.getElementById('hint').style.display === 'none' ? '' : 'none';
-        break;
+
       case 'v':
         if (state.warp.active) break;
         toggleCockpitMode();
@@ -489,6 +545,44 @@ function setupEvents() {
 
   // Cockpit
   document.getElementById('btn-cockpit').addEventListener('click', toggleCockpitMode);
+
+  // Settings & Shortcuts Modal
+  const btnSettings = document.getElementById('btn-settings');
+  if (btnSettings) {
+    btnSettings.addEventListener('click', () => {
+      document.getElementById('settings-overlay').classList.add('active');
+      document.getElementById('settings-main-view').style.display = 'block';
+      document.getElementById('settings-shortcuts-view').style.display = 'none';
+    });
+  }
+  const btnCloseSettings = document.getElementById('btn-close-settings');
+  if (btnCloseSettings) {
+    btnCloseSettings.addEventListener('click', () => {
+      document.getElementById('settings-overlay').classList.remove('active');
+    });
+  }
+  const btnOpenShortcuts = document.getElementById('btn-open-shortcuts');
+  if (btnOpenShortcuts) {
+    btnOpenShortcuts.addEventListener('click', () => {
+      document.getElementById('settings-main-view').style.display = 'none';
+      document.getElementById('settings-shortcuts-view').style.display = 'block';
+    });
+  }
+  const btnBackSettings = document.getElementById('btn-back-settings');
+  if (btnBackSettings) {
+    btnBackSettings.addEventListener('click', () => {
+      document.getElementById('settings-shortcuts-view').style.display = 'none';
+      document.getElementById('settings-main-view').style.display = 'block';
+    });
+  }
+  const settingsOverlayEl = document.getElementById('settings-overlay');
+  if (settingsOverlayEl) {
+    settingsOverlayEl.addEventListener('click', (e) => {
+      if (e.target === settingsOverlayEl) {
+        settingsOverlayEl.classList.remove('active');
+      }
+    });
+  }
 
   // Toggle orbits
   document.getElementById('btn-orbits').addEventListener('click', function () {

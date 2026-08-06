@@ -270,55 +270,89 @@ function texHD_Antennae() {
   }, 512, 512);
 }
 
-function texHD_EldenRing() {
-  // Golden circle with bright core (JWST)
+function texHD_AM0644() {
+  // AM 0644-741: collisional ring galaxy, blue star-forming ring + off-center warm nucleus
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
+    // Off-center nucleus
+    const nx = u - 0.43, ny = v - 0.47;
+    const nd = Math.sqrt(nx * nx + ny * ny) * 2;
+    const nucleus = Math.exp(-nd * 8) * 1.8;
+    // Star-forming ring with slight irregularity
+    const angle = Math.atan2(cy, cx);
+    const ringR = 0.65 + Math.sin(angle * 3 + 1.5) * 0.04 + fbm(angle + u * 3, v * 3, 3) * 0.03;
+    const ring = Math.exp(-Math.pow((d - ringR) * 11, 2)) * 1.4;
+    const knots = Math.pow(fbm(u * 18, v * 18, 4), 2) * ring * 0.6;
+    const glow = Math.exp(-d * 1.6) * 0.12;
+    const total = (nucleus + ring + knots + glow) * clamp(1.1 - d, 0, 1);
+    return [
+      clamp(nucleus * 255 + (ring + knots) * 140, 0, 255),
+      clamp(nucleus * 200 + (ring + knots) * 190, 0, 255),
+      clamp(nucleus * 110 + (ring + knots) * 255, 0, 255),
+      total * 255
+    ];
+  }, 512, 512);
+}
+
+function texHD_StephansQuintet() {
+  // Stephan's Quintet: compact group of 5 galaxies with tidal features
+  return makeTexture((u, v) => {
+    const cx = u - 0.5, cy = v - 0.5;
+    const galPos = [
+      [0.40, 0.42, 1.6, 7], [0.54, 0.40, 1.8, 8],
+      [0.46, 0.55, 1.3, 6], [0.58, 0.56, 1.1, 9],
+      [0.36, 0.58, 0.9, 7]
+    ];
+    const colors = [
+      [255, 235, 190], [210, 225, 255], [245, 220, 180],
+      [190, 210, 250], [230, 200, 170]
+    ];
+    let total = 0, r = 0, g = 0, b = 0;
+    for (let i = 0; i < 5; i++) {
+      const gp = galPos[i];
+      const dx = u - gp[0], dy = v - gp[1];
+      const dd = Math.sqrt(dx * dx + dy * dy);
+      const core = Math.exp(-dd * gp[3] * 6) * gp[2];
+      const halo = Math.exp(-dd * gp[3] * 1.5) * gp[2] * 0.25;
+      const val = core + halo;
+      total += val;
+      r += val * colors[i][0]; g += val * colors[i][1]; b += val * colors[i][2];
+    }
+    const tidal = fbm(u * 5, v * 5, 4) * 0.12 * Math.exp(-Math.sqrt(cx * cx + cy * cy) * 3.5);
+    total += tidal;
+    const fade = clamp(1.1 - Math.sqrt(cx * cx + cy * cy) * 2.2, 0, 1);
+    return [
+      clamp((r + tidal * 200) * fade, 0, 255),
+      clamp((g + tidal * 185) * fade, 0, 255),
+      clamp((b + tidal * 170) * fade, 0, 255),
+      clamp(total * fade * 255, 0, 255)
+    ];
+  }, 512, 512);
+}
+
+function texHD_NGC1365() {
+  // NGC 1365: grand design barred spiral with strong bar and wide sweeping arms
+  return makeTexture((u, v) => {
+    const cx = u - 0.5, cy = v - 0.5;
+    const d = Math.sqrt(cx * cx + cy * cy) * 2;
+    const angle = Math.atan2(cy, cx);
     const core = Math.exp(-d * 12) * 2.5;
-    const ring = Math.exp(-Math.pow((d - 0.7) * 15, 2)) * 1.5;
-    const glow = Math.exp(-d * 2) * 0.3;
-    const detail = fbm(u * 20, v * 20, 4) * ring * 0.4;
-    const total = (core + ring + glow + detail) * clamp(1.1 - d, 0, 1);
+    // Strong bar at ~30 deg
+    const barAngle = 0.52;
+    const bx = cx * Math.cos(barAngle) + cy * Math.sin(barAngle);
+    const by = -cx * Math.sin(barAngle) + cy * Math.cos(barAngle);
+    const bar = Math.exp(-(Math.pow(bx * 0.7, 2) + Math.pow(by * 9, 2)) * 12) * 1.6;
+    // Two wide sweeping arms from bar ends
+    const spiral = Math.sin(angle * 2 - d * 5 + barAngle) * 0.5 + 0.5;
+    const arms = Math.pow(spiral, 2.5) * Math.exp(-d * 0.9) * 1.1;
+    const knots = Math.pow(fbm(u * 18, v * 18, 5), 2.5) * arms * 1.5;
+    const dust = 1.0 - Math.pow(fbm(u * 22, v * 22, 3), 2) * 0.25 * arms;
+    const total = (core + bar + arms + knots * 0.4) * dust * clamp(1.1 - d, 0, 1);
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 200 + core * 50, 0, 255),
-      clamp(total * 50, 0, 255),
-      total * 255
-    ];
-  }, 512, 512);
-}
-
-function texHD_OwlsEyes() {
-  // Two hot amber cores (JWST)
-  return makeTexture((u, v) => {
-    const d1 = Math.sqrt(Math.pow(u - 0.46, 2) + Math.pow(v - 0.5, 2)) * 10;
-    const d2 = Math.sqrt(Math.pow(u - 0.54, 2) + Math.pow(v - 0.5, 2)) * 10;
-    const core1 = Math.exp(-d1 * 4) * 2.5;
-    const core2 = Math.exp(-d2 * 4) * 2.5;
-    const cloud = Math.exp(-Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 6) * 0.6;
-    const total = (core1 + core2 + cloud) * clamp(1.1 - Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 4, 0, 1);
-    return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 180 + core1 * 40, 0, 255),
-      clamp(total * 100, 0, 255),
-      total * 255
-    ];
-  }, 512, 512);
-}
-
-function texHD_Fireball() {
-  // Messy hot starburst (JWST)
-  return makeTexture((u, v) => {
-    const d = Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 2;
-    const core = Math.exp(-d * 6) * 2.5;
-    const noise = fbm(u * 15, v * 15, 5);
-    const filaments = Math.pow(noise, 2) * 1.8 * Math.exp(-d * 1.5);
-    const total = (core + filaments) * clamp(1.2 - d, 0, 1);
-    return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 120 + filaments * 100, 0, 255),
-      clamp(total * 60, 0, 255),
+      clamp(total * 220 + core * 60 + knots * 130, 0, 255),
+      clamp(total * 210 + core * 50 + knots * 80, 0, 255),
+      clamp(total * 180 + arms * 80 + knots * 160, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -382,36 +416,47 @@ function texHD_Sculptor() {
   }, 512, 512);
 }
 
-function texHD_Slug() {
-  // Long curved orange slug (JWST)
+function texHD_NGC1300() {
+  // NGC 1300: classic barred spiral with symmetric bar and tightly wound arms
   return makeTexture((u, v) => {
-    const offset = Math.sin(v * Math.PI * 2) * 0.12;
-    const cx = (u + offset) - 0.5, cy = v - 0.5;
-    const d = Math.sqrt(Math.pow(cx * 15, 2) + Math.pow(cy * 1, 2)) * 2;
-    const body = Math.exp(-d * 1.5) * 1.8;
-    const clumpy = fbm(u * 12, v * 4, 5) * body;
-    const total = (body + clumpy) * clamp(1.1 - d, 0, 1);
+    const cx = u - 0.5, cy = v - 0.5;
+    const d = Math.sqrt(cx * cx + cy * cy) * 2;
+    const angle = Math.atan2(cy, cx);
+    const core = Math.exp(-d * 14) * 2.2;
+    const bar = Math.exp(-(Math.pow(cx * 0.65, 2) + Math.pow(cy * 10, 2)) * 12) * 1.4;
+    const spiral = Math.sin(angle * 2 - d * 6.5) * 0.5 + 0.5;
+    const arms = Math.pow(spiral, 3) * Math.exp(-d * 1.1) * 1.0;
+    const n = fbm(u * 15, v * 15, 4) * 0.2 * arms;
+    const total = (core + bar + arms + n) * clamp(1.1 - d, 0, 1);
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 140, 0, 255),
-      clamp(total * 40, 0, 255),
+      clamp(total * 240 + core * 50, 0, 255),
+      clamp(total * 225 + core * 40, 0, 255),
+      clamp(total * 190 + arms * 90, 0, 255),
       total * 255
     ];
   }, 512, 512);
 }
 
-function texHD_Snowwhite() {
-  // Pure ethereal white glow
+function texHD_NGC1316() {
+  // NGC 1316 / Fornax A: post-merger elliptical with dust lanes and shell structure
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
-    const glow = Math.exp(-d * 2.5) * 1.4;
-    const n = fbm(u * 5, v * 5, 4) * 0.1;
-    const total = (glow + n) * clamp(1.1 - d, 0, 1);
+    const core = Math.exp(-d * 5) * 2.0;
+    const halo = Math.exp(-d * 1.5) * 0.7;
+    // Dust lanes from past merger
+    const dustAngle = 0.6;
+    const rotY = cx * Math.sin(dustAngle) + cy * Math.cos(dustAngle);
+    const lane1 = Math.exp(-Math.pow((rotY - 0.05) * 20, 2)) * 0.5;
+    const lane2 = Math.exp(-Math.pow((rotY + 0.08) * 18, 2)) * 0.35;
+    const dustDetail = fbm(u * 20, v * 20, 5);
+    const dust = clamp(1.0 - (lane1 + lane2) * (0.7 + dustDetail * 0.3), 0.3, 1);
+    const shells = Math.sin(d * 25) * 0.04 * Math.exp(-d * 2);
+    const total = (core + halo + shells) * dust * clamp(1.1 - d, 0, 1);
     return [
       clamp(total * 255, 0, 255),
-      clamp(total * 250, 0, 255),
-      clamp(total * 245, 0, 255),
+      clamp(total * 235, 0, 255),
+      clamp(total * 190, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -472,43 +517,45 @@ function texHD_MorningMist() {
   }, 512, 512);
 }
 
-function texHD_GodsFinger() {
-  // Long tilted orange streak with bright offset core (JWST)
+function texHD_M87() {
+  // M87 / Virgo A: giant elliptical galaxy with faint relativistic jet
   return makeTexture((u, v) => {
-    const rawU = u, rawV = v;
-    const rotU = (u - 0.5) * 0.8 - (v - 0.5) * 0.6;
-    const rotV = (u - 0.5) * 0.6 + (v - 0.5) * 0.8;
-    const dDisk = Math.sqrt(Math.pow(rotU * 12, 2) + Math.pow(rotV * 1.5, 2)) * 2;
-    const disk = Math.exp(-dDisk * 0.8) * 1.5;
-    const dCore = Math.sqrt(Math.pow(rotU + 0.2, 2) + Math.pow(rotV, 2)) * 30;
-    const core = Math.exp(-dCore) * 2.5;
-    const total = (disk + core) * clamp(1.2 - Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 2, 0, 1);
+    const cx = u - 0.5, cy = v - 0.5;
+    const d = Math.sqrt(cx * cx + cy * cy) * 2;
+    const core = Math.exp(-d * 6) * 2.5;
+    const halo = Math.exp(-d * 1.2) * 0.8;
+    // Faint relativistic jet
+    const jetAngle = -0.8;
+    const jx = cx * Math.cos(jetAngle) + cy * Math.sin(jetAngle);
+    const jy = -cx * Math.sin(jetAngle) + cy * Math.cos(jetAngle);
+    const jet = (jx > 0) ? Math.exp(-Math.pow(jy * 30, 2)) * Math.exp(-jx * 3) * 0.5 : 0;
+    const jetKnots = jet * (0.7 + Math.pow(fbm(jx * 15, jy * 15, 3), 2) * 0.6);
+    const total = (core + halo + jetKnots) * clamp(1.1 - d, 0, 1);
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 140 + core * 60, 0, 255),
-      clamp(total * 40, 0, 255),
+      clamp(total * 255 + jetKnots * 100, 0, 255),
+      clamp(total * 230 + jetKnots * 150, 0, 255),
+      clamp(total * 180 + jetKnots * 255, 0, 255),
       total * 255
     ];
   }, 512, 512);
 }
 
-function texHD_Netflix() {
-  // N-shaped tidal bridge between two cores
+function texHD_NGC4565() {
+  // NGC 4565 - Needle Galaxy: edge-on spiral with prominent dust lane and bulge
   return makeTexture((u, v) => {
-    const u1 = 0.4, v1 = 0.4, u2 = 0.6, v2 = 0.6;
-    const d1 = Math.sqrt(Math.pow(u - u1, 2) + Math.pow(v - v1, 2)) * 12;
-    const d2 = Math.sqrt(Math.pow(u - u2, 2) + Math.pow(v - v2, 2)) * 12;
-    const core1 = Math.exp(-d1) * 2;
-    const core2 = Math.exp(-d2) * 2;
-    // Tidal bridge
-    const t = clamp((u - u1) / (u2 - u1), 0, 1);
-    const bridgeV = v1 + t * (v2 - v1);
-    const bridge = Math.exp(-Math.pow(v - bridgeV, 2) * 60) * Math.exp(-Math.pow(u - 0.5, 2) * 4) * 0.8;
-    const total = (core1 + core2 + bridge) * clamp(1.1 - Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 2, 0, 1);
+    const cx = u - 0.5, cy = v - 0.5;
+    const dDisk = Math.sqrt(Math.pow(cx * 1, 2) + Math.pow(cy * 14, 2)) * 2;
+    const disk = Math.exp(-dDisk * 1.2) * 1.2;
+    const dBulge = Math.sqrt(Math.pow(cx * 4, 2) + Math.pow(cy * 3, 2)) * 2;
+    const bulge = Math.exp(-dBulge * 2) * 2.0;
+    const dustLane = (Math.abs(cy) < 0.015 && Math.abs(cx) < 0.42) ? 0.25 : 1.0;
+    const n = fbm(u * 20, v * 30, 4) * 0.15 * disk;
+    const fade = clamp(1.0 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
+    const total = (bulge + disk + n) * dustLane * fade;
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 160 + core1 * 40, 0, 255),
-      clamp(total * 80, 0, 255),
+      clamp(total * 255 + bulge * 30, 0, 255),
+      clamp(total * 240 + bulge * 20, 0, 255),
+      clamp(total * 210, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -552,36 +599,48 @@ function texHD_NGC1097() {
   }, 512, 512);
 }
 
-function texHD_GiantCollider() {
-  // Two overlapping JWST orange cores
+function texHD_Arp273() {
+  // Arp 273 - Rose Galaxy: interacting pair with swept tidal arm
   return makeTexture((u, v) => {
-    const d1 = Math.sqrt(Math.pow(u - 0.48, 2) + Math.pow(v - 0.45, 2)) * 8;
-    const d2 = Math.sqrt(Math.pow(u - 0.52, 2) + Math.pow(v - 0.55, 2)) * 8;
-    const core1 = Math.exp(-d1 * 3) * 2.0;
-    const core2 = Math.exp(-d2 * 3) * 2.0;
-    const glow = Math.exp(-Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 4) * 0.8;
-    const total = (core1 + core2 + glow) * clamp(1.1 - Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)) * 2.5, 0, 1);
+    const cx = u - 0.5, cy = v - 0.5;
+    const d1 = Math.sqrt(Math.pow(u - 0.45, 2) + Math.pow(v - 0.48, 2));
+    const core1 = Math.exp(-d1 * 18) * 2.0;
+    const angle1 = Math.atan2(v - 0.48, u - 0.45);
+    const spiral1 = Math.sin(angle1 * 1.5 - d1 * 25) * 0.5 + 0.5;
+    const arm1 = Math.pow(spiral1, 2) * Math.exp(-d1 * 5) * 0.9;
+    const d2 = Math.sqrt(Math.pow(u - 0.58, 2) + Math.pow(v - 0.62, 2));
+    const core2 = Math.exp(-d2 * 25) * 1.5;
+    const halo2 = Math.exp(-d2 * 8) * 0.4;
+    const bridgeT = clamp((v - 0.48) / 0.14, 0, 1);
+    const bridgeX = lerp(0.45, 0.58, bridgeT);
+    const bridge = Math.exp(-Math.pow(u - bridgeX, 2) * 80) * Math.exp(-Math.pow(v - lerp(0.48, 0.62, bridgeT), 2) * 80) * 0.4;
+    const total = (core1 + arm1 + core2 + halo2 + bridge) * clamp(1.1 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 150, 0, 255),
-      clamp(total * 50, 0, 255),
+      clamp(total * 210 + core1 * 50, 0, 255),
+      clamp(total * 220 + core2 * 40, 0, 255),
+      clamp(total * 255 + arm1 * 60, 0, 255),
       total * 255
     ];
   }, 512, 512);
 }
 
-function texHD_Torpedo() {
-  // Sharp high-aspect needle (JWST)
+function texHD_NGC4631() {
+  // NGC 4631 - Whale Galaxy: edge-on distorted spiral with wedge shape
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
-    const d = Math.sqrt(Math.pow(cx * 18, 2) + Math.pow(cy * 1.5, 2)) * 2;
-    const body = Math.exp(-d * 1.2) * 2.0;
-    const core = Math.exp(-d * 10) * 1.0;
-    const total = (body + core) * clamp(1.2 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
+    const warp = cy + cx * 0.08;
+    const dDisk = Math.sqrt(Math.pow(cx * 1, 2) + Math.pow(warp * 10, 2)) * 2;
+    const disk = Math.exp(-dDisk * 1.3) * 1.3;
+    const dCore = Math.sqrt(Math.pow((u - 0.48) * 5, 2) + Math.pow(warp * 8, 2)) * 2;
+    const core = Math.exp(-dCore * 2.5) * 1.8;
+    const clumps = Math.pow(fbm(u * 15, v * 12, 5), 2) * disk * 1.2;
+    const corona = Math.exp(-Math.abs(warp) * 3) * Math.exp(-Math.abs(cx) * 3) * 0.15;
+    const fade = clamp(1.0 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
+    const total = (core + disk + clumps + corona) * fade;
     return [
-      clamp(total * 255, 0, 255),
-      clamp(total * 180 + core * 70, 0, 255),
-      clamp(total * 100, 0, 255),
+      clamp(total * 230 + clumps * 120, 0, 255),
+      clamp(total * 235 + core * 30, 0, 255),
+      clamp(total * 255 + clumps * 80, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -891,16 +950,16 @@ function texBlackHole() {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
-    const ring = Math.exp(-Math.pow((dist - 0.55) * 7, 2));
+    const ring = Math.exp(-Math.pow((dist - 0.45) * 6, 2)) * 1.5;
     const swirl = Math.sin(angle * 3 + dist * 12) * 0.15 + 0.85;
     const inner = smoothstep(clamp((dist - 0.15) * 8, 0, 1));
     const glow = ring * swirl * inner;
-    const outerHaze = Math.exp(-dist * 2.5) * 0.3;
-    const total = glow + outerHaze * inner;
+    const outerHaze = Math.exp(-dist * 1.6) * 0.7; // Halo beaucoup plus puissant pour être visible de loin
+    const total = clamp(glow + outerHaze * inner, 0, 1.3);
     return [
       clamp(255 * total, 0, 255),
       clamp((180 + fbm(u * 8, v * 8, 3) * 60) * total, 0, 255),
-      clamp(60 * total, 0, 255),
+      clamp(70 * total, 0, 255),
       clamp(total * 255, 0, 255) | 0
     ];
   }, 256, 256);
@@ -930,19 +989,21 @@ function texCluster() {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     let brightness = 0;
-    // Scatter ~25 bright stars in the texture
-    for (let i = 0; i < 25; i++) {
+    // Scatter ~30 bright stars in the texture
+    for (let i = 0; i < 30; i++) {
       const sx = hash2d(i, 0) - 0.5, sy = hash2d(i, 1) - 0.5;
       const sd = Math.sqrt((cx - sx * 0.6) ** 2 + (cy - sy * 0.6) ** 2);
-      brightness += Math.exp(-sd * 40) * (0.5 + hash2d(i, 2) * 0.5);
+      brightness += Math.exp(-sd * 35) * (0.6 + hash2d(i, 2) * 0.5);
     }
-    const haze = Math.exp(-dist * 3) * 0.15;
-    const total = clamp(brightness + haze, 0, 1);
+    const haze = Math.exp(-dist * 2.2) * 0.45; // Halo bleuté élargi
+    const core = Math.exp(-Math.pow(dist * 3.0, 2)) * 2.5; // Noyau en surbrillance blanche (comme les 300 étoiles superposées de Près)
+    const total = clamp(brightness + haze + core, 0, 1.5);
+    const alpha = clamp((brightness + haze + core) * 1.5, 0, 1);
     return [
-      clamp(180 * total + 80 * haze, 0, 255),
-      clamp(200 * total + 120 * haze, 0, 255),
-      clamp(255 * total + 200 * haze, 0, 255),
-      clamp(total * 255, 0, 255) | 0
+      clamp(230 * total + 255 * core, 0, 255), // Centre blanc éblouissant
+      clamp(240 * total + 255 * core, 0, 255),
+      clamp(255 * total + 255 * core, 0, 255), // Bordure bleue cosmique
+      clamp(alpha * 255, 0, 255) | 0
     ];
   }, 256, 256);
 }

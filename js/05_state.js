@@ -3,10 +3,23 @@
 var asteroidBelt = null;
 
 // ============================================================
+// SPEED TIERS
+// ============================================================
+var SPEED_TIERS = {
+  IMPULSE: 8,
+  SUBLIGHT: 100,
+  WARP_1: 1000,
+  WARP_5: 10000,
+  WARP_MAX: 40000
+};
+var speedTierList = ['IMPULSE', 'SUBLIGHT', 'WARP_1', 'WARP_5', 'WARP_MAX'];
+
+// ============================================================
 // APP STATE
 // ============================================================
 var state = {
   time: 0,
+  currentSpeedTier: 'IMPULSE',
   timeScale: 0.8,
   solarSpeed: 0.1,
   galacticSpeed: 5.0,

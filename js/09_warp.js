@@ -143,7 +143,7 @@ function initiateWarpToPOI(poiId) {
 
   // Duration based on distance
   const dist = w.startPos.distanceTo(w.endPos);
-  w.totalDuration = clamp(3 + dist / 15000, 4, 10);
+  w.totalDuration = clamp(3 + dist / 150000, 4, 10);
 
   document.getElementById('warp-overlay').classList.add('active');
   document.getElementById('warp-fx').classList.add('active');
@@ -335,9 +335,9 @@ function performSceneSwitchToGalactic() {
     galacticScene.add(shipRig);
     ship.position.set(SUN_GAL.x, SUN_GAL.y + 500, SUN_GAL.z);
     shipRig.position.copy(ship.position);
-    cockpitCamera.far = 2000000; // Deep space visibility
+    cockpitCamera.far = 10000000; // Deep space visibility
     cockpitCamera.updateProjectionMatrix();
-    ship.maxSpeed = 3000; // ly/s cruise in galactic
+    // ship.maxSpeed = 3000; // ly/s cruise in galactic
   }
 
   // Switch tab
@@ -358,7 +358,7 @@ function performSceneSwitchToSystem(sysId) {
     shipRig.position.copy(ship.position);
     cockpitCamera.far = 100000;
     cockpitCamera.updateProjectionMatrix();
-    ship.maxSpeed = 8; // u/s cruise in solar
+    // ship.maxSpeed = 8; // u/s cruise in solar
   }
 
   state.selectedPOI = null;
@@ -367,7 +367,6 @@ function performSceneSwitchToSystem(sysId) {
 }
 
 function updateScaleUI() {
-  const badge = document.getElementById('scale-badge');
   const btnOrbits = document.getElementById('btn-orbits');
   const btnAsteroids = document.getElementById('btn-asteroids');
   const btnPause = document.getElementById('btn-pause');
@@ -377,19 +376,13 @@ function updateScaleUI() {
     if (btnOrbits) btnOrbits.style.display = 'none';
     if (btnAsteroids) btnAsteroids.style.display = 'none';
     if (btnPause) btnPause.style.display = 'none';
-    badge.textContent = 'MILKY WAY';
-    badge.classList.add('galactic');
     document.getElementById('hud-sector').textContent = 'SECTOR: ORION-CYGNUS ARM';
-    document.getElementById('hint').textContent = 'DRAG · SCROLL · CLICK POI · G = SOLAR · V = FTL COCKPIT';
   } else {
     syncSpeedUI(state.solarSpeed);
     if (btnOrbits) btnOrbits.style.display = '';
     if (btnAsteroids) btnAsteroids.style.display = '';
     if (btnPause) btnPause.style.display = '';
-    badge.textContent = 'SOLAR SYSTEM';
-    badge.classList.remove('galactic');
     document.getElementById('hud-sector').textContent = '';
-    document.getElementById('hint').textContent = 'DRAG · SCROLL · CLICK · P = PANEL · C = CINEMATIC · V = COCKPIT · G = GALAXY';
   }
 }
 

@@ -21,7 +21,8 @@ function createGalacticScene() {
 }
 
 function createGalacticBackground() {
-  const count = 3000;
+  // Layer 1: Dense background starfield with varied brightness and colors
+  const count = 8000;
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(count * 3);
   const col = new Float32Array(count * 3);
@@ -29,20 +30,99 @@ function createGalacticBackground() {
     const u = Math.random(), v = Math.random();
     const theta = 2 * Math.PI * u;
     const phi = Math.acos(2 * v - 1);
-    const r = 400000 + Math.random() * 100000;
+    const r = 4000000 + Math.random() * 1500000;
     pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
     pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
     pos[i * 3 + 2] = r * Math.cos(phi);
-    const b = 0.4 + Math.random() * 0.3;
-    col[i * 3] = b; col[i * 3 + 1] = b; col[i * 3 + 2] = b + 0.1;
+    // Magnitude distribution: many faint, few bright
+    const mag = Math.pow(Math.random(), 2.5);
+    const brightness = 0.15 + mag * 0.7;
+    // Color variety based on stellar temperature
+    const temp = Math.random();
+    if (temp < 0.50) {
+      // White / blue-white
+      col[i * 3] = (0.82 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 1] = (0.84 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 2] = (0.92 + Math.random() * 0.08) * brightness;
+    } else if (temp < 0.72) {
+      // Yellow-white (sun-like)
+      col[i * 3] = (0.92 + Math.random() * 0.08) * brightness;
+      col[i * 3 + 1] = (0.86 + Math.random() * 0.10) * brightness;
+      col[i * 3 + 2] = (0.68 + Math.random() * 0.12) * brightness;
+    } else if (temp < 0.88) {
+      // Orange-amber
+      col[i * 3] = (0.88 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 1] = (0.65 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 2] = (0.38 + Math.random() * 0.14) * brightness;
+    } else {
+      // Blue (hot stars)
+      col[i * 3] = (0.55 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 1] = (0.68 + Math.random() * 0.12) * brightness;
+      col[i * 3 + 2] = (0.92 + Math.random() * 0.08) * brightness;
+    }
   }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const mat = new THREE.PointsMaterial({
     size: 0.8, sizeAttenuation: false, vertexColors: true,
-    transparent: true, opacity: 0.6,
+    transparent: true, opacity: 0.7,
   });
   galacticScene.add(new THREE.Points(geo, mat));
+
+  // Layer 2: Fewer brighter accent stars with larger size
+  const brightCount = 800;
+  const geo2 = new THREE.BufferGeometry();
+  const pos2 = new Float32Array(brightCount * 3);
+  const col2 = new Float32Array(brightCount * 3);
+  for (let i = 0; i < brightCount; i++) {
+    const u = Math.random(), v = Math.random();
+    const theta = 2 * Math.PI * u;
+    const phi = Math.acos(2 * v - 1);
+    const r = 3900000 + Math.random() * 1200000;
+    pos2[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pos2[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    pos2[i * 3 + 2] = r * Math.cos(phi);
+    const brightness = 0.5 + Math.random() * 0.5;
+    const temp = Math.random();
+    if (temp < 0.4) {
+      col2[i * 3] = 0.95 * brightness; col2[i * 3 + 1] = 0.95 * brightness; col2[i * 3 + 2] = 1.0 * brightness;
+    } else if (temp < 0.7) {
+      col2[i * 3] = 1.0 * brightness; col2[i * 3 + 1] = 0.9 * brightness; col2[i * 3 + 2] = 0.7 * brightness;
+    } else {
+      col2[i * 3] = 0.7 * brightness; col2[i * 3 + 1] = 0.8 * brightness; col2[i * 3 + 2] = 1.0 * brightness;
+    }
+  }
+  geo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+  geo2.setAttribute('color', new THREE.BufferAttribute(col2, 3));
+  const mat2 = new THREE.PointsMaterial({
+    size: 1.4, sizeAttenuation: false, vertexColors: true,
+    transparent: true, opacity: 0.5,
+  });
+  galacticScene.add(new THREE.Points(geo2, mat2));
+
+  // Layer 3: Subtle diffuse nebulous patches for cosmic depth
+  const ptex = getParticleTexture();
+  const patchColors = [0x4a5570, 0x5a4555, 0x3e4d6a, 0x554660, 0x4a5060];
+  for (let i = 0; i < 5; i++) {
+    const u = Math.random(), v = Math.random();
+    const theta = 2 * Math.PI * u;
+    const phi = Math.acos(2 * v - 1);
+    const r = 4200000;
+    const pMat = new THREE.SpriteMaterial({
+      map: ptex, color: patchColors[i], transparent: true,
+      opacity: 0.06 + Math.random() * 0.04,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const patch = new THREE.Sprite(pMat);
+    patch.position.set(
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.sin(phi) * Math.sin(theta),
+      r * Math.cos(phi)
+    );
+    const ps = 800000 + Math.random() * 600000;
+    patch.scale.set(ps, ps, 1);
+    galacticScene.add(patch);
+  }
 }
 
 function createGalaxySpiral() {
@@ -58,8 +138,8 @@ function createGalaxySpiral() {
   const col = new Float32Array(N * 3);
   let idx = 0;
 
-  const SGR_EXCLUSION_R = 2200;
-  const SGR_FADE_R = 3500;
+  const SGR_EXCLUSION_R = 22000;
+  const SGR_FADE_R = 35000;
 
   // ── 4 spiral arms (similar density, like the NASA image) ──
   const armOffsets = [0, Math.PI * 0.52, Math.PI * 1.0, Math.PI * 1.52];
@@ -67,14 +147,14 @@ function createGalaxySpiral() {
     for (let i = 0; i < ARM_N; i++) {
       const t = Math.pow(Math.random(), 0.7); // bias toward outer regions
       const theta = t * 4.2 * Math.PI;
-      const r = 2800 * Math.exp(0.21 * theta);
+      const r = 28000 * Math.exp(0.21 * theta);
 
       // Width: tighter near core, wider at edges
-      const spreadW = 300 + r * 0.045;
+      const spreadW = 3000 + r * 0.045;
       const spread = (Math.random() - 0.5) * 2 * spreadW;
       // Thin Gaussian disk height
       const g1 = Math.random() + 0.001, g2 = Math.random();
-      const height = Math.sqrt(-2 * Math.log(g1)) * Math.cos(2 * Math.PI * g2) * (180 + r * 0.008);
+      const height = Math.sqrt(-2 * Math.log(g1)) * Math.cos(2 * Math.PI * g2) * (1800 + r * 0.008);
 
       const angle = theta + armOffsets[arm];
       const finalR = r + spread;
@@ -94,7 +174,7 @@ function createGalaxySpiral() {
       const dust = armCenter < 0.10 ? 0.35 + armCenter * 6.5 : 1.0;
 
       // Edge fadeout: dimmer toward galaxy edge
-      const edgeFade = clamp(1 - dc / 52000, 0.05, 1);
+      const edgeFade = clamp(1 - dc / 520000, 0.05, 1);
 
       const brightness = (0.35 + Math.random() * 0.55) * fade * dust * edgeFade;
 
@@ -123,11 +203,11 @@ function createGalaxySpiral() {
   // ── Central bulge: smooth golden ellipse (bar is just the elongation) ──
   for (let i = 0; i < BULGE_N; i++) {
     // Concentrated toward center with power distribution
-    const r = Math.pow(Math.random(), 2.5) * 8000;
+    const r = Math.pow(Math.random(), 2.5) * 80000;
     const theta = Math.random() * Math.PI * 2;
     // Elongation creates the "bar" naturally — no separate bar component
     const barAngle = 0.44; // ~25°
-    const stretch = 1.8 - clamp(r / 8000, 0, 1) * 0.6; // more elongated near center
+    const stretch = 1.8 - clamp(r / 80000, 0, 1) * 0.6; // more elongated near center
     const rawX = Math.cos(theta) * r * stretch;
     const rawZ = Math.sin(theta) * r;
     // Rotate by bar angle
@@ -145,7 +225,7 @@ function createGalaxySpiral() {
 
     const brightness = (0.50 + Math.random() * 0.50) * fade;
     // Smooth gradient: bright warm white at center → golden amber at edges
-    const rFrac = clamp(dc / 8000, 0, 1);
+    const rFrac = clamp(dc / 80000, 0, 1);
     col[idx * 3] = (1.0) * brightness;
     col[idx * 3 + 1] = (0.88 - rFrac * 0.25 + Math.random() * 0.05) * brightness;
     col[idx * 3 + 2] = (0.55 - rFrac * 0.30 + Math.random() * 0.06) * brightness;
@@ -154,10 +234,10 @@ function createGalaxySpiral() {
 
   // ── Diffuse disk fill: blue-lavender haze everywhere (gives the smooth glow) ──
   for (let i = 0; i < DISK_N; i++) {
-    const r = 1500 + Math.pow(Math.random(), 0.6) * 46000;
+    const r = 15000 + Math.pow(Math.random(), 0.6) * 460000;
     const theta = Math.random() * Math.PI * 2;
     const px = Math.cos(theta) * r;
-    const py = (Math.random() - 0.5) * 600;
+    const py = (Math.random() - 0.5) * 6000;
     const pz = Math.sin(theta) * r;
 
     const dc = Math.sqrt(px * px + py * py + pz * pz);
@@ -168,7 +248,7 @@ function createGalaxySpiral() {
     pos[idx * 3 + 1] = py;
     pos[idx * 3 + 2] = pz;
 
-    const edgeFade = clamp(1 - dc / 50000, 0, 1);
+    const edgeFade = clamp(1 - dc / 500000, 0, 1);
     const brightness = (0.12 + Math.random() * 0.20) * fade * edgeFade;
     // Soft lavender-blue fill
     col[idx * 3] = (0.50 + Math.random() * 0.15) * brightness;
@@ -183,10 +263,10 @@ function createGalaxySpiral() {
     const arm = Math.floor(Math.random() * 4);
     const t = Math.pow(Math.random(), 0.6);
     const theta = t * 4.2 * Math.PI;
-    const r = 2800 * Math.exp(0.21 * theta);
-    const spreadW = 300 + r * 0.04;
+    const r = 28000 * Math.exp(0.21 * theta);
+    const spreadW = 3000 + r * 0.04;
     const spread = (Math.random() - 0.5) * 2 * spreadW * 0.7; // closer to arm center
-    const height = (Math.random() - 0.5) * 350;
+    const height = (Math.random() - 0.5) * 3500;
 
     const angle = theta + armOffsets[arm];
     const finalR = r + spread;
@@ -242,22 +322,22 @@ function createBackgroundGalaxies() {
     else if (data.type === 'hd_6946') tex = texHD_NGC6946();
     else if (data.type === 'hd_m51') tex = texHD_M51();
     else if (data.type === 'hd_antennae') tex = texHD_Antennae();
-    else if (data.type === 'hd_elden') tex = texHD_EldenRing();
-    else if (data.type === 'hd_owls') tex = texHD_OwlsEyes();
-    else if (data.type === 'hd_fireball') tex = texHD_Fireball();
+    else if (data.type === 'hd_am0644') tex = texHD_AM0644();
+    else if (data.type === 'hd_quintet') tex = texHD_StephansQuintet();
+    else if (data.type === 'hd_ngc1365') tex = texHD_NGC1365();
     else if (data.type === 'hd_blackeye') tex = texHD_BlackEye();
     else if (data.type === 'hd_hoag') tex = texHD_Hoag();
     else if (data.type === 'hd_sculptor') tex = texHD_Sculptor();
-    else if (data.type === 'hd_slug') tex = texHD_Slug();
-    else if (data.type === 'hd_snowwhite') tex = texHD_Snowwhite();
+    else if (data.type === 'hd_ngc1300') tex = texHD_NGC1300();
+    else if (data.type === 'hd_ngc1316') tex = texHD_NGC1316();
     else if (data.type === 'hd_3627') tex = texHD_NGC3627();
     else if (data.type === 'hd_mist') tex = texHD_MorningMist();
-    else if (data.type === 'hd_finger') tex = texHD_GodsFinger();
-    else if (data.type === 'hd_netflix') tex = texHD_Netflix();
+    else if (data.type === 'hd_m87') tex = texHD_M87();
+    else if (data.type === 'hd_ngc4565') tex = texHD_NGC4565();
     else if (data.type === 'hd_sombrero') tex = texHD_Sombrero();
     else if (data.type === 'hd_1097') tex = texHD_NGC1097();
-    else if (data.type === 'hd_collider') tex = texHD_GiantCollider();
-    else if (data.type === 'hd_torpedo') tex = texHD_Torpedo();
+    else if (data.type === 'hd_arp273') tex = texHD_Arp273();
+    else if (data.type === 'hd_ngc4631') tex = texHD_NGC4631();
     else if (data.type === 'hd_m31') tex = texHD_M31();
     else if (data.type === 'hd_m101') tex = texHD_M101();
     else if (data.type === 'hd_m81') tex = texHD_M81();
@@ -290,10 +370,19 @@ function createBackgroundGalaxies() {
   galacticScene.add(group);
 }
 
+// ── GALACTIC LOD SYSTEM ──
+const galacticLODs = [];
+let currentLODIndex = 0;
+const LOD_UPDATES_PER_FRAME = 50; // Pour optimiser Intel UHD 620
+
 function createGalacticPOIs() {
   for (const poi of GALACTIC_POI) {
     const group = new THREE.Group();
     group.position.set(poi.pos[0], poi.pos[1], poi.pos[2]);
+
+    const lod = new THREE.LOD();
+    group.add(lod);
+    galacticLODs.push(lod);
 
     const s = poi.scale;
     const tier = poi.tier || 3;
@@ -309,7 +398,6 @@ function createGalacticPOIs() {
       });
       sprite = new THREE.Sprite(spriteMat);
       sprite.scale.set(s, s, 1);
-      group.add(sprite);
     }
 
     // Invisible clickable sphere
@@ -323,26 +411,57 @@ function createGalacticPOIs() {
 
     // ── Enhanced detail objects (LOD controlled) ──
     const detail = new THREE.Group();
-    detail.visible = false;
-    group.add(detail);
     let extras = null;
 
-    // Only generate expensive extra details for high tiers or visitable systems
-    if (tier <= 2 || poi.vType === 'system') {
-      if (poi.vType === 'blackhole') {
-        extras = createBlackHoleExtras(s, detail, poi.id);
-      } else if (poi.vType === 'nebula') {
-        extras = createNebulaExtras(s, poi, detail);
-      } else if (poi.vType === 'cluster') {
-        extras = createClusterExtras(s, detail);
-      } else if (poi.vType === 'supernova') {
-        extras = createSupernovaExtras(s, poi, detail);
-      } else if (poi.vType === 'system') {
-        const sBody = SYSTEMS_DATA[poi.id] ? SYSTEMS_DATA[poi.id].bodies.slice(0, 6) : BODIES.slice(0, 6);
-        const sRadius = SYSTEMS_DATA[poi.id] ? SYSTEMS_DATA[poi.id].sunRadius : 3.2;
-        extras = createMiniSystemExtras(s, detail, sBody, sRadius, poi.dotColor);
-      }
+    // Générer les détails 3D (LOD niveau 0, masqué et non animé à longue distance pour optimiser)
+    if (poi.vType === 'blackhole') {
+      extras = createBlackHoleExtras(s, detail, poi.id);
+    } else if (poi.vType === 'nebula') {
+      extras = createNebulaExtras(s, poi, detail);
+    } else if (poi.vType === 'cluster') {
+      extras = createClusterExtras(s, detail);
+    } else if (poi.vType === 'supernova') {
+      extras = createSupernovaExtras(s, poi, detail);
+    } else if (poi.vType === 'system') {
+      const sBody = SYSTEMS_DATA[poi.id] ? SYSTEMS_DATA[poi.id].bodies.slice(0, 6) : BODIES.slice(0, 6);
+      const sRadius = SYSTEMS_DATA[poi.id] ? SYSTEMS_DATA[poi.id].sunRadius : 3.2;
+      extras = createMiniSystemExtras(s, detail, sBody, sRadius, poi.dotColor);
     }
+
+    // ── NIVEAU 0 : DÉTAILS PROCHES ──
+    const level0 = new THREE.Group();
+    level0.add(detail);
+    
+    // Le sprite 2D est totalement invisible au niveau 0 pour les amas (il s'active exclusivement au niveau 1)
+    let dimmedSprite = null;
+    if (poi.vType !== 'cluster') {
+      const dimmedSpriteMat = sprite.material.clone();
+      if (poi.vType === 'blackhole') dimmedSpriteMat.opacity = 0.15;
+      else if (poi.vType === 'system') dimmedSpriteMat.opacity = 0.05;
+      dimmedSprite = new THREE.Sprite(dimmedSpriteMat);
+      dimmedSprite.scale.copy(sprite.scale);
+      level0.add(dimmedSprite);
+    }
+
+    lod.addLevel(level0, 0);
+
+    // ── NIVEAU 1 : SPRITE LOINTAIN ──
+    // Seuil de distance ~ 50 fois le scale, plafonné à 350 000 pour que les objets massifs (Sgr A*) basculent bien en 2D de loin
+    const transitionDist = Math.min(s * 50, 350000);
+    
+    // On booste l'opacité à 1.0 au loin
+    sprite.material.opacity = 1.0; 
+    
+    // Pour compenser la géométrie 3D, on ajuste le facteur d'échelle du sprite lointain
+    let farScaleMultiplier = 1.2;
+    if (poi.vType === 'blackhole') farScaleMultiplier = 2.6;
+    else if (poi.vType === 'cluster') farScaleMultiplier = 1.8; // Compenser l'envergure du nuage de 300 étoiles
+    sprite.scale.set(s * farScaleMultiplier, s * farScaleMultiplier, 1);
+    
+    lod.addLevel(sprite, transitionDist);
+    
+    // NIVEAU 2 SUPPRIMÉ : On ne cache plus complètement les petits astres lointains, 
+    // le rendu de simples sprites est suffisamment léger et permet de garder la galaxie peuplée.
 
     // Label
     const labelCls = poi.vType === 'system' ? 'sun-marker-label' : 'poi-label';
@@ -350,7 +469,7 @@ function createGalacticPOIs() {
     galacticLabelEls.push({ el: label, group: group, data: poi });
 
     galacticScene.add(group);
-    galacticPOIObjects[poi.id] = { group, sprite, clickMesh, label, data: poi, detail, extras };
+    galacticPOIObjects[poi.id] = { group, lod, sprite, dimmedSprite, clickMesh, label, data: poi, detail, extras };
   }
 }
 
@@ -564,32 +683,33 @@ function createNebulaExtras(s, poi, parent) {
   return { type: 'nebula', halo, glow2, s };
 }
 
-// ── Cluster: 300 scintillating star particles ──
+// ── Cluster: 700 scintillating star particles in dense 3D volume ──
 function createClusterExtras(s, parent) {
   const ptex = getParticleTexture();
-  const count = 300;
+  const count = 700;
   const posArr = new Float32Array(count * 3);
   const colArr = new Float32Array(count * 3);
   const phases = new Float32Array(count);
   for (let i = 0; i < count; i++) {
-    const r = Math.pow(Math.random(), 1.5) * s * 0.8;
+    // Concentration plus forte vers le centre pour un effet de cœur lumineux 3D naturel
+    const r = Math.pow(Math.random(), 2.2) * s * 0.85;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
     posArr[i * 3] = Math.sin(phi) * Math.cos(theta) * r;
-    posArr[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * r * 0.4;
+    posArr[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * r * 0.45;
     posArr[i * 3 + 2] = Math.cos(phi) * r;
     const temp = Math.random();
-    colArr[i * 3] = 0.7 + temp * 0.3;
-    colArr[i * 3 + 1] = 0.75 + temp * 0.15;
-    colArr[i * 3 + 2] = 1.0 - temp * 0.2;
+    colArr[i * 3] = 0.8 + temp * 0.2;
+    colArr[i * 3 + 1] = 0.85 + temp * 0.15;
+    colArr[i * 3 + 2] = 1.0 - temp * 0.1;
     phases[i] = Math.random() * Math.PI * 2;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
   const mat = new THREE.PointsMaterial({
-    size: 3.5, sizeAttenuation: false, vertexColors: true, map: ptex,
-    transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false,
+    size: 5.8, sizeAttenuation: false, vertexColors: true, map: ptex,
+    transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false,
   });
   const stars = new THREE.Points(geo, mat);
   parent.add(stars);
@@ -714,6 +834,19 @@ function updateGalacticPOIs(dt, activeCam) {
   activeCam.getWorldPosition(_camWorldPos);
   const now = performance.now() * 0.001;
 
+  // 1. Time-Slicing des LODs (répartit la charge CPU sur plusieurs frames)
+  if (galacticLODs.length > 0) {
+    const limit = Math.min(currentLODIndex + LOD_UPDATES_PER_FRAME, galacticLODs.length);
+    for (let i = currentLODIndex; i < limit; i++) {
+      galacticLODs[i].update(activeCam);
+    }
+    currentLODIndex += LOD_UPDATES_PER_FRAME;
+    if (currentLODIndex >= galacticLODs.length) {
+      currentLODIndex = 0;
+    }
+  }
+
+  // 2. Mise à jour des animations
   for (const id in galacticPOIObjects) {
     const obj = galacticPOIObjects[id];
 
@@ -724,25 +857,14 @@ function updateGalacticPOIs(dt, activeCam) {
         // Un pulse doux et continu qui donne envie de cliquer
         const p = 1.0 + Math.sin(now * 3.5 + obj.data.pos[0]) * 0.08;
         obj.sprite.scale.set(baseS * p, baseS * p, 1);
+        if (obj.dimmedSprite) obj.dimmedSprite.scale.set(baseS * p, baseS * p, 1);
       }
     }
 
     if (!obj.extras) continue;
 
-    const dist = _camWorldPos.distanceTo(obj.group.position);
-    const lodThreshold = obj.data.scale * 50;
-    const isNear = dist < lodThreshold;
-
-    // LOD: show/hide detail group
-    if (obj.detail) obj.detail.visible = isNear;
-
-    // ── Dim main sprite when detail is visible ──
-    if (obj.extras && obj.extras.isSgrA) {
-      obj.sprite.material.opacity = isNear ? 0.15 : 0.9;
-    } else if (obj.extras && obj.extras.type === 'sol') {
-      obj.sprite.material.opacity = isNear ? 0.05 : 0.9;
-    }
-
+    // CRITIQUE POUR LES PERFORMANCES : On n'anime les détails que si le LOD actif est 0 (proche)
+    const isNear = obj.lod.getCurrentLevel() === 0;
     if (!isNear) continue;
 
     const ex = obj.extras;
