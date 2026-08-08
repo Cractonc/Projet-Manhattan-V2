@@ -141,12 +141,13 @@ function texHD_M83() {
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const spiral = Math.sin(angle * 3 - dist * 8) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 2) * Math.exp(-dist * 1.2);
-    const h2 = fbm(u * 20, v * 20, 5) * arms;
+    const halo = Math.exp(-dist * 2.0) * 0.5;
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-dist * 1.8) * 0.6;
+    const h2 = fbm(u * 20, v * 20, 5) * arms * 0.4;
     const core = Math.exp(-dist * 8) * 1.5;
-    const total = clamp(core + arms + h2 * 0.5, 0, 1.2) * clamp(1.1 - dist, 0, 1);
+    const total = clamp(core + halo + arms + h2, 0, 1.2) * clamp(1.1 - dist, 0, 1);
     return [
-      clamp(total * 255 + h2 * 100, 0, 255),
+      clamp(total * 255 + h2 * 80, 0, 255),
       clamp(total * 80 + core * 100, 0, 255),
       clamp(total * 200 + core * 255, 0, 255),
       total * 255
@@ -239,9 +240,10 @@ function texHD_M51() {
     const core1 = Math.exp(-d1 * 8) * 1.8;
     const core2 = Math.exp(-d2 * 12) * 1.2;
     const spiral = Math.sin(Math.atan2(v - 0.45, u - 0.45) * 2 - d1 * 8) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 2) * Math.exp(-d1 * 1.2) * 0.8;
-    const bridge = Math.exp(-Math.pow((u - v), 2) * 50) * Math.exp(-(d1 + d2) * 0.5) * 0.4;
-    const total = (core1 + core2 + arms + bridge) * clamp(1.1 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
+    const halo1 = Math.exp(-d1 * 1.8) * 0.4;
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-d1 * 2.0) * 0.5;
+    const bridge = Math.exp(-Math.pow((u - v), 2) * 50) * Math.exp(-(d1 + d2) * 0.5) * 0.3;
+    const total = (core1 + core2 + halo1 + arms + bridge) * clamp(1.1 - Math.sqrt(cx * cx + cy * cy) * 2, 0, 1);
     return [
       clamp(total * 200, 0, 255),
       clamp(total * 220 + core1 * 50, 0, 255),
@@ -469,14 +471,15 @@ function texHD_NGC3627() {
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const bar = Math.exp(-(Math.pow(cx * 0.8, 2) + Math.pow(cy * 10, 2)) * 10) * 1.5;
+    const halo = Math.exp(-d * 2.0) * 0.4;
     const spiral = Math.sin(angle * 2 - d * 6) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 2) * Math.exp(-d * 1.2) * 1.2;
-    const clumps = Math.pow(fbm(u * 20, v * 20, 6), 3) * arms * 2.5;
-    const total = (bar + arms + clumps) * clamp(1.2 - d, 0, 1);
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-d * 1.8) * 0.6;
+    const clumps = Math.pow(fbm(u * 20, v * 20, 6), 2) * arms * 1.2;
+    const total = (bar + halo + arms + clumps) * clamp(1.2 - d, 0, 1);
     return [
-      clamp(total * 200 + clumps * 120, 0, 255),
+      clamp(total * 200 + clumps * 100, 0, 255),
       clamp(total * 220, 0, 255),
-      clamp(total * 255 + clumps * 100, 0, 255),
+      clamp(total * 255 + clumps * 80, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -587,9 +590,10 @@ function texHD_NGC1097() {
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const bar = Math.exp(-(Math.pow(cx * 0.6, 2) + Math.pow(cy * 8, 2)) * 15) * 1.8;
-    const spiral = Math.pow(Math.sin(angle * 2 - d * 5) * 0.5 + 0.5, 4) * Math.exp(-d * 0.8);
+    const halo = Math.exp(-d * 2.0) * 0.4;
+    const spiral = Math.pow(Math.sin(angle * 2 - d * 5) * 0.5 + 0.5, 1.8) * Math.exp(-d * 1.6) * 0.6;
     const core = Math.exp(-d * 20) * 3.0;
-    const total = (core + bar + spiral) * clamp(1.1 - d, 0, 1);
+    const total = (core + bar + halo + spiral) * clamp(1.1 - d, 0, 1);
     return [
       clamp(total * 255, 0, 255),
       clamp(total * 240 + core * 100, 0, 255),
@@ -670,15 +674,14 @@ function texHD_M31() {
   // Andromeda HD: massive tilted spiral (Fixed aspect & Clipping)
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
-    // Tilted ellipse: long in X, thin in Y
     const d = Math.sqrt(Math.pow(cx * 1.5, 2) + Math.pow(cy * 5.0, 2)) * 2;
     const angle = Math.atan2(cy * 4.0, cx);
-    const spiral = Math.sin(angle * 2 - d * 4) * 0.4 + 0.6;
-    const disk = Math.exp(-d * 1.1) * 1.2 * spiral;
+    const spiral = Math.sin(angle * 2 - d * 4) * 0.3 + 0.7;
+    const halo = Math.exp(-d * 1.8) * 0.5;
+    const disk = Math.exp(-d * 1.4) * 0.8 * spiral;
     const core = Math.exp(-(Math.sqrt(cx * cx + cy * cy) * 10)) * 2.5;
-    // Strict fade to 0 before edges
     const fade = clamp(1.0 - Math.sqrt(Math.pow(cx * 2, 2) + Math.pow(cy * 2, 2)), 0, 1);
-    const total = (core + disk) * fade;
+    const total = (core + halo + disk) * fade;
     return [
       clamp(total * 210 + core * 60, 0, 255),
       clamp(total * 230 + core * 50, 0, 255),
@@ -695,15 +698,15 @@ function texHD_M101() {
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const spiral = Math.sin(angle * 6 - d * 4) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 2) * Math.exp(-d * 1.0) * 1.3;
-    const h2 = Math.pow(fbm(u * 25, v * 25, 5), 3) * arms * 3.5;
+    const halo = Math.exp(-d * 2.0) * 0.5;
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-d * 1.6) * 0.6;
+    const h2 = Math.pow(fbm(u * 25, v * 25, 5), 2) * arms * 1.5;
     const core = Math.exp(-d * 12) * 2.2;
-    // Strict fade
-    const total = (core + arms + h2 * 0.4) * clamp(1.0 - d, 0, 1);
+    const total = (core + halo + arms + h2 * 0.3) * clamp(1.0 - d, 0, 1);
     return [
-      clamp(total * 200 + h2 * 160, 0, 255),
+      clamp(total * 200 + h2 * 120, 0, 255),
       clamp(total * 225, 0, 255),
-      clamp(total * 255 + h2 * 90, 0, 255),
+      clamp(total * 255 + h2 * 60, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -716,13 +719,15 @@ function texHD_M81() {
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const spiral = Math.sin(angle * 2 - d * 7) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 3) * Math.exp(-d * 1.1) * 1.4;
+    const halo = Math.exp(-d * 2.0) * 0.5;
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-d * 1.8) * 0.6;
+    const n = fbm(u * 12, v * 12, 4) * 0.15 * (halo + arms);
     const core = Math.exp(-d * 15) * 2.5;
-    const total = (core + arms) * clamp(1.1 - d, 0, 1);
+    const total = (core + halo + arms + n) * clamp(1.1 - d, 0, 1);
     return [
       clamp(total * 255 + core * 50, 0, 255),
       clamp(total * 230 + core * 30, 0, 255),
-      clamp(total * 180 + arms * 100, 0, 255),
+      clamp(total * 180 + arms * 80, 0, 255),
       total * 255
     ];
   }, 512, 512);
@@ -734,9 +739,10 @@ function texHD_M63() {
     const cx = u - 0.5, cy = v - 0.5;
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const n = fbm(u * 40, v * 40, 4);
-    const disk = Math.exp(-d * 1.4) * (0.6 + n * 0.8);
+    const halo = Math.exp(-d * 2.0) * 0.4;
+    const disk = Math.exp(-d * 1.8) * (0.5 + n * 0.5);
     const core = Math.exp(-d * 20) * 3.0;
-    const total = (core + disk) * clamp(1.0 - d, 0, 1);
+    const total = (core + halo + disk) * clamp(1.0 - d, 0, 1);
     return [
       clamp(total * 255, 0, 255),
       clamp(total * 240, 0, 255),
@@ -753,10 +759,11 @@ function texHD_M74() {
     const d = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
     const spiral = Math.sin(angle * 2 - d * 10) * 0.5 + 0.5;
-    const arms = Math.pow(spiral, 2) * Math.exp(-d * 1.3) * 1.5;
-    const dust = 1.0 - Math.pow(fbm(u * 30, v * 30, 4), 2) * 0.4;
+    const halo = Math.exp(-d * 2.0) * 0.5;
+    const arms = Math.pow(spiral, 1.5) * Math.exp(-d * 1.8) * 0.6;
+    const dust = 1.0 - Math.pow(fbm(u * 30, v * 30, 4), 2) * 0.2;
     const core = Math.exp(-d * 12) * 2.2;
-    const total = (core + arms) * dust * clamp(1.1 - d, 0, 1);
+    const total = (core + halo + arms) * dust * clamp(1.1 - d, 0, 1);
     return [
       clamp(total * 180 + core * 100, 0, 255),
       clamp(total * 210, 0, 255),
@@ -1014,8 +1021,8 @@ function texBrightStar(sr, sg, sb) {
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     const core = Math.exp(-dist * 8);
     const glow = Math.exp(-dist * 2.5) * 0.5;
-    const rays = Math.pow(Math.abs(Math.sin(Math.atan2(cy, cx) * 4)), 8) * Math.exp(-dist * 4) * 0.3;
-    const total = core + glow + rays;
+    const softHalo = Math.exp(-dist * 1.2) * 0.15;
+    const total = core + glow + softHalo;
     return [
       clamp(sr * total, 0, 255),
       clamp(sg * total, 0, 255),

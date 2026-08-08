@@ -144,37 +144,37 @@ var SYSTEMS_DATA = {
 // ============================================================
 // ── GALAXIES HAUTE FIDÉLITÉ (Sélection Finale) ──
 var EXTRA_GALAXIES = [
-  { id: 'm83-hd', name: 'M83 - Southern Pinwheel', type: 'hd_m83', pos: [-6000000, -1000000, 1000000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0 },
-  { id: 'm82-hd', name: 'M82 - Cigar Galaxy', type: 'hd_m82', pos: [1500000, 5500000, -1500000], color: '#ffffff', scale: 600000, opacity: 0.95, tilt: 0.8 },
-  { id: 'cena-hd', name: 'Centaurus A', type: 'hd_cena', pos: [-4500000, 3500000, 4000000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 0 },
-  { id: '7331-hd', name: 'NGC 7331', type: 'hd_7331', pos: [5500000, -3000000, 3000000], color: '#ffffff', scale: 950000, opacity: 0.9, tilt: 1.2 },
-  { id: '6946-hd', name: 'NGC 6946 - Fireworks', type: 'hd_6946', pos: [-2000000, -5000000, -4000000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0 },
+  { id: 'm83-hd', name: 'M83 - Southern Pinwheel', type: 'hd_m83', pos: [-6000000, -1000000, 1000000], color: '#ffffff', scale: 1000000, opacity: 0.88, tilt: 0 },
+  { id: 'm82-hd', name: 'M82 - Cigar Galaxy', type: 'hd_m82', pos: [1500000, 5500000, -1500000], color: '#ffffff', scale: 650000, opacity: 0.70, tilt: 0.8 },
+  { id: 'cena-hd', name: 'Centaurus A', type: 'hd_cena', pos: [-4500000, 3500000, 4000000], color: '#ffffff', scale: 950000, opacity: 0.85, tilt: 0 },
+  { id: '7331-hd', name: 'NGC 7331', type: 'hd_7331', pos: [5500000, -3000000, 3000000], color: '#ffffff', scale: 700000, opacity: 0.65, tilt: 1.2 },
+  { id: '6946-hd', name: 'NGC 6946 - Fireworks', type: 'hd_6946', pos: [-2000000, -5000000, -4000000], color: '#ffffff', scale: 600000, opacity: 0.60, tilt: 0 },
   // Lot 4 : Expansion Interaction & JWST Deep Field
-  { id: 'm51-hd', name: 'M51 - Whirlpool', type: 'hd_m51', pos: [4000000, 4000000, -5000000], color: '#ffffff', scale: 850000, opacity: 0.9, tilt: 0.1 },
-  { id: 'antennae-hd', name: 'Antennae Galaxies', type: 'hd_antennae', pos: [-6500000, 2000000, -2500000], color: '#ffffff', scale: 900000, opacity: 0.85, tilt: 0.5 },
-  { id: 'quintet-hd', name: 'Stephan\'s Quintet', type: 'hd_quintet', pos: [-4500000, -2500000, 5500000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0 },
-  { id: 'ngc1365-hd', name: 'NGC 1365', type: 'hd_ngc1365', pos: [1500000, 4500000, 6000000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0.7 },
+  { id: 'm51-hd', name: 'M51 - Whirlpool', type: 'hd_m51', pos: [4000000, 4000000, -5000000], color: '#ffffff', scale: 1050000, opacity: 0.88, tilt: 0.1 },
+  { id: 'antennae-hd', name: 'Antennae Galaxies', type: 'hd_antennae', pos: [-6500000, 2000000, -2500000], color: '#ffffff', scale: 680000, opacity: 0.65, tilt: 0.5 },
+  { id: 'quintet-hd', name: 'Stephan\'s Quintet', type: 'hd_quintet', pos: [-4500000, -2500000, 5500000], color: '#ffffff', scale: 550000, opacity: 0.55, tilt: 0 },
+  { id: 'ngc1365-hd', name: 'NGC 1365', type: 'hd_ngc1365', pos: [1500000, 4500000, 6000000], color: '#ffffff', scale: 650000, opacity: 0.65, tilt: 0.7 },
   // Lot 5 : Exotic Batch & Final Selection
-  { id: 'blackeye-hd', name: 'NGC 4826 - Black Eye', type: 'hd_blackeye', pos: [-2500000, 6000000, -3500000], color: '#ffffff', scale: 720000, opacity: 0.9, tilt: 0.3 },
-  { id: 'sculptor-hd', name: 'NGC 253 - Sculptor', type: 'hd_sculptor', pos: [-5500000, -4500000, 2500000], color: '#ffffff', scale: 880000, opacity: 0.9, tilt: 1.1 },
-  { id: 'ngc1300-hd', name: 'NGC 1300', type: 'hd_ngc1300', pos: [2500000, -1500000, -6500000], color: '#ffffff', scale: 700000, opacity: 0.9, tilt: 0.2 },
-  { id: 'ngc1316-hd', name: 'NGC 1316 - Fornax A', type: 'hd_ngc1316', pos: [4500000, -3500000, -4000000], color: '#ffffff', scale: 850000, opacity: 0.95, tilt: 0 },
+  { id: 'blackeye-hd', name: 'NGC 4826 - Black Eye', type: 'hd_blackeye', pos: [-2500000, 6000000, -3500000], color: '#ffffff', scale: 600000, opacity: 0.60, tilt: 0.3 },
+  { id: 'sculptor-hd', name: 'NGC 253 - Sculptor', type: 'hd_sculptor', pos: [-5500000, -4500000, 2500000], color: '#ffffff', scale: 1000000, opacity: 0.88, tilt: 1.1 },
+  { id: 'ngc1300-hd', name: 'NGC 1300', type: 'hd_ngc1300', pos: [2500000, -1500000, -6500000], color: '#ffffff', scale: 620000, opacity: 0.60, tilt: 0.2 },
+  { id: 'ngc1316-hd', name: 'NGC 1316 - Fornax A', type: 'hd_ngc1316', pos: [4500000, -3500000, -4000000], color: '#ffffff', scale: 380000, opacity: 0.42, tilt: 0 },
   // Lot 6 : Diversification Finale
-  { id: '3627-hd', name: 'NGC 3627', type: 'hd_3627', pos: [6500000, 2500000, 3500000], color: '#ffffff', scale: 820000, opacity: 0.9, tilt: 0.6 },
-  { id: 'mist-hd', name: 'Morning Mist', type: 'hd_mist', pos: [-3500000, 5500000, 5500000], color: '#ffffff', scale: 950000, opacity: 0.85, tilt: 0 },
-  { id: 'm87-hd', name: 'M87 - Virgo A', type: 'hd_m87', pos: [1500000, -5500000, 4500000], color: '#ffffff', scale: 780000, opacity: 0.9, tilt: 0.8 },
-  { id: 'ngc4565-hd', name: 'NGC 4565 - Needle', type: 'hd_ngc4565', pos: [-6000000, 5000000, -5000000], color: '#ffffff', scale: 720000, opacity: 0.85, tilt: 0.1 },
+  { id: '3627-hd', name: 'NGC 3627', type: 'hd_3627', pos: [6500000, 2500000, 3500000], color: '#ffffff', scale: 650000, opacity: 0.65, tilt: 0.6 },
+  { id: 'mist-hd', name: 'Morning Mist', type: 'hd_mist', pos: [-3500000, 5500000, 5500000], color: '#ffffff', scale: 300000, opacity: 0.30, tilt: 0 },
+  { id: 'm87-hd', name: 'M87 - Virgo A', type: 'hd_m87', pos: [1500000, -5500000, 4500000], color: '#ffffff', scale: 400000, opacity: 0.42, tilt: 0.8 },
+  { id: 'ngc4565-hd', name: 'NGC 4565 - Needle', type: 'hd_ngc4565', pos: [-6000000, 5000000, -5000000], color: '#ffffff', scale: 340000, opacity: 0.35, tilt: 0.1 },
   // Lot 7 : La Collection Finale (21 HD restants)
-  { id: 'sombrero-hd', name: 'M104 - Sombrero', type: 'hd_sombrero', pos: [2500000, 6500000, 1500000], color: '#ffffff', scale: 720000, opacity: 0.95, tilt: 1.5 },
-  { id: '1097-hd', name: 'NGC 1097', type: 'hd_1097', pos: [-1500000, -5500000, -6500000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 0.4 },
-  { id: 'arp273-hd', name: 'Arp 273 - Rose', type: 'hd_arp273', pos: [5500000, 5000000, 2500000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0 },
-  { id: 'ngc4631-hd', name: 'NGC 4631 - Whale', type: 'hd_ngc4631', pos: [-6500000, -1500000, 4500000], color: '#ffffff', scale: 650000, opacity: 0.9, tilt: 1.25 },
+  { id: 'sombrero-hd', name: 'M104 - Sombrero', type: 'hd_sombrero', pos: [2500000, 6500000, 1500000], color: '#ffffff', scale: 400000, opacity: 0.45, tilt: 1.5 },
+  { id: '1097-hd', name: 'NGC 1097', type: 'hd_1097', pos: [-1500000, -5500000, -6500000], color: '#ffffff', scale: 680000, opacity: 0.65, tilt: 0.4 },
+  { id: 'arp273-hd', name: 'Arp 273 - Rose', type: 'hd_arp273', pos: [5500000, 5000000, 2500000], color: '#ffffff', scale: 300000, opacity: 0.32, tilt: 0 },
+  { id: 'ngc4631-hd', name: 'NGC 4631 - Whale', type: 'hd_ngc4631', pos: [-6500000, -1500000, 4500000], color: '#ffffff', scale: 350000, opacity: 0.38, tilt: 1.25 },
   // Lot 8 : Spirales Classiques (Balance Panorama)
-  { id: 'm31-hd', name: 'M31 - Andromeda', type: 'hd_m31', pos: [-5500000, 4500000, -4500000], color: '#ffffff', scale: 1200000, opacity: 0.9, tilt: 1.3 },
-  { id: 'm101-hd', name: 'M101 - Pinwheel', type: 'hd_m101', pos: [5500000, -5500000, 4500000], color: '#ffffff', scale: 850000, opacity: 0.9, tilt: 0.2 },
-  { id: 'm81-hd', name: 'M81 - Bode\'s Galaxy', type: 'hd_m81', pos: [4500000, 5500000, 5500000], color: '#ffffff', scale: 800000, opacity: 0.9, tilt: 1.1 },
-  { id: 'm63-hd', name: 'M63 - Sunflower', type: 'hd_m63', pos: [-4500000, -5500000, -6500000], color: '#ffffff', scale: 750000, opacity: 0.9, tilt: 0.6 },
-  { id: 'm74-hd', name: 'M74 - Phantom', type: 'hd_m74', pos: [6500000, -3500000, -2500000], color: '#ffffff', scale: 780000, opacity: 0.9, tilt: 0.1 }
+  { id: 'm31-hd', name: 'M31 - Andromeda', type: 'hd_m31', pos: [-5500000, 4500000, -4500000], color: '#ffffff', scale: 1400000, opacity: 0.90, tilt: 1.3 },
+  { id: 'm101-hd', name: 'M101 - Pinwheel', type: 'hd_m101', pos: [5500000, -5500000, 4500000], color: '#ffffff', scale: 750000, opacity: 0.70, tilt: 0.2 },
+  { id: 'm81-hd', name: 'M81 - Bode\'s Galaxy', type: 'hd_m81', pos: [4500000, 5500000, 5500000], color: '#ffffff', scale: 720000, opacity: 0.70, tilt: 1.1 },
+  { id: 'm63-hd', name: 'M63 - Sunflower', type: 'hd_m63', pos: [-4500000, -5500000, -6500000], color: '#ffffff', scale: 380000, opacity: 0.38, tilt: 0.6 },
+  { id: 'm74-hd', name: 'M74 - Phantom', type: 'hd_m74', pos: [6500000, -3500000, -2500000], color: '#ffffff', scale: 420000, opacity: 0.40, tilt: 0.1 }
 ];
 
 var GALACTIC_POI = [
