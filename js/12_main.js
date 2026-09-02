@@ -660,6 +660,8 @@ function setLoadProgress(pct, label) {
 // INIT
 // ============================================================
 async function init() {
+  loadGame();
+
   setLoadProgress(5, 'BUILDING STARFIELD');
   await nextFrame();
 
@@ -714,6 +716,11 @@ async function init() {
     galCam.tPhi = 0.85;
     galCam.tTheta = -0.2;
   }, 100);
+
+  // Auto-save every 60 seconds
+  setInterval(() => {
+    saveGame();
+  }, 60000);
 }
 
 function nextFrame() {

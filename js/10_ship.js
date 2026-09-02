@@ -1367,6 +1367,14 @@ function updateShip(dt) {
     else cockpitLight.color.setHex(0x1a2a44);
   }
 
+  // Update global state coordinates periodically (1s) to avoid frame overload
+  ship.stateUpdateTimer = (ship.stateUpdateTimer || 0) + dt;
+  if (ship.stateUpdateTimer >= 1.0) {
+    state.shipPosition.copy(ship.position);
+    state.shipRotation.copy(ship.quaternion);
+    ship.stateUpdateTimer = 0;
+  }
+
   updateCockpitCamera(dt);
 }
 

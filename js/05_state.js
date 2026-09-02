@@ -48,6 +48,16 @@ var state = {
   currentSystem: 'sol',
   scaleLevel: 'GALACTIC',   // 'SOLAR' | 'GALACTIC'
   selectedPOI: null,
+  // Player state
+  player: {
+    credits: 0,
+    inventory: [],
+    activeQuests: [],
+    discoveredPOIs: []
+  },
+  // Ship coordinates
+  shipPosition: new THREE.Vector3(0, 5, 30),
+  shipRotation: new THREE.Quaternion(),
   // Warp state
   warp: {
     active: false,
@@ -62,6 +72,62 @@ var state = {
     endPos: new THREE.Vector3(),
   }
 };
+
+// ============================================================
+// SAVE / LOAD SYSTEM
+// ============================================================
+function mergeState(target, source) {
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (target[key] !== undefined && target[key] !== null) {
+        if (target[key] instanceof THREE.Vector3 && source[key]) {
+          target[key].set(source[key].x || 0, source[key].y || 0, source[key].z || 0);
+        } else if (target[key] instanceof THREE.Quaternion && source[key]) {
+          const x = source[key]._x !== undefined ? source[key]._x : source[key].x || 0;
+          const y = source[key]._y !== undefined ? source[key]._y : source[key].y || 0;
+          const z = source[key]._z !== undefined ? source[key]._z : source[key].z || 0;
+          const w = source[key]._w !== undefined ? source[key]._w : source[key].w !== undefined ? source[key].w : 1;
+          target[key].set(x, y, z, w);
+        } else if (typeof target[key] === 'object' && !Array.isArray(target[key])) {
+          mergeState(target[key], source[key]);
+        } else {
+          target[key] = source[key];
+        }
+      } else {
+        target[key] = source[key];
+      }
+    }
+  }
+}
+
+function saveGame() {
+  try {
+    localStorage.setItem('milkyWaySave', JSON.stringify(state));
+    console.log('Game saved automatically.');
+  } catch (e) {
+    console.warn('Failed to save game', e);
+  }
+}
+
+function loadGame() {
+  try {
+    const saveStr = localStorage.getItem('milkyWaySave');
+    if (saveStr) {
+      const parsed = JSON.parse(saveStr);
+      mergeState(state, parsed);
+      
+      // Sync ship object with loaded state if it exists
+      if (typeof ship !== 'undefined' && state.shipPosition && state.shipRotation) {
+        ship.position.copy(state.shipPosition);
+        ship.quaternion.copy(state.shipRotation);
+      }
+      
+      console.log('Game loaded from LocalStorage.');
+    }
+  } catch (e) {
+    console.warn('Failed to load game', e);
+  }
+}
 
 // Planet instances
 var planetObjects = {};
