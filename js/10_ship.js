@@ -859,7 +859,7 @@ function createCockpit() {
   cockpitLight.layers.set(1);
   cockpitCamera.layers.enableAll();
 
-  ship.position.copy(camera.position);
+  // ship.position is already loaded from save, just sync the rig
   shipRig.position.copy(ship.position);
 }
 
@@ -877,14 +877,7 @@ function enterCockpitMode() {
   initAudio();
 
   setTimeout(() => {
-    // Place ship at current camera
-    const activeCam = state.scaleLevel === 'SOLAR' ? camera : galacticCamera;
-    const lookTarget = state.scaleLevel === 'SOLAR' ? cam.lookAt : galCam.lookAt;
-
-    ship.position.copy(activeCam.position);
-    const fwd = new THREE.Vector3().subVectors(lookTarget, activeCam.position).normalize();
-    const mtx = new THREE.Matrix4().lookAt(new THREE.Vector3(), fwd, new THREE.Vector3(0, 1, 0));
-    ship.quaternion.setFromRotationMatrix(mtx);
+    // The ship is persistent, we don't move it to the spectator camera.
 
     // Move shipRig to appropriate scene
     if (state.scaleLevel === 'GALACTIC') {
