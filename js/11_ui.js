@@ -335,3 +335,327 @@ function updateCinematic(dt) {
   }
 }
 
+// ============================================================
+// NOTIFICATIONS SYSTEM
+// ============================================================
+function showNotification(text, duration = 4000) {
+  const container = document.getElementById('notifications-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'notif-toast';
+  toast.innerHTML = `
+    <span class="notif-icon">✦</span>
+    <span class="notif-text">${text}</span>
+  `;
+  container.appendChild(toast);
+
+  // Auto-remove after duration
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 450);
+  }, duration);
+}
+
+// ============================================================
+// QUEST HUD SYSTEM
+// ============================================================
+function updateQuestHUD() {
+  const hudEl = document.getElementById('quest-hud');
+  if (!hudEl) return;
+
+  const creditsEl = document.getElementById('quest-hud-credits');
+  const titleEl = document.getElementById('quest-hud-title');
+  const objEl = document.getElementById('quest-hud-obj');
+  const rewardEl = document.getElementById('quest-hud-reward');
+
+  const credits = state.player ? (state.player.credits || 0) : 0;
+  if (creditsEl) creditsEl.textContent = credits.toLocaleString() + ' CR';
+
+  if (!state.player || !state.player.activeQuestId || typeof QUESTS === 'undefined') {
+    if (titleEl) titleEl.textContent = 'Toutes missions accomplies !';
+    if (objEl) objEl.textContent = 'Explorez librement la galaxie.';
+    if (rewardEl) rewardEl.textContent = 'Explorateur d\'Élite';
+    return;
+  }
+
+  const quest = QUESTS.find(q => q.id === state.player.activeQuestId);
+  if (!quest) {
+    if (titleEl) titleEl.textContent = 'Toutes missions accomplies !';
+    if (objEl) objEl.textContent = 'Explorez librement la galaxie.';
+    if (rewardEl) rewardEl.textContent = 'Explorateur d\'Élite';
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = quest.title;
+
+  // Calculate real-time distance
+  const targetPoi = typeof GALACTIC_POI !== 'undefined' ? GALACTIC_POI.find(p => p.id === quest.targetPOI_ID) : null;
+  let distStr = '';
+  if (targetPoi && state.shipPosition) {
+    const targetPos = new THREE.Vector3(targetPoi.pos[0], targetPoi.pos[1], targetPoi.pos[2]);
+    const dist = state.shipPosition.distanceTo(targetPos);
+    distStr = ` (~${formatDistance(dist)})`;
+  }
+
+  const targetName = targetPoi ? targetPoi.name : quest.targetPOI_ID;
+  if (objEl) objEl.textContent = `Objectif : Atteindre ${targetName}${distStr}`;
+  if (rewardEl) rewardEl.textContent = `+${quest.reward || quest.credits || 500} CR`;
+}
+
+// ============================================================
+// CODEX SYSTEM
+// ============================================================
+var codexSelectedPOI = null;
+var codexActiveFilter = 'all';
+
+function openCodex() {
+  const overlay = document.getElementById('codex-overlay');
+  if (!overlay) return;
+  overlay.classList.add('active');
+
+  // Update header stats
+  const totalPOIs = typeof GALACTIC_POI !== 'undefined' ? GALACTIC_POI.length : 0;
+  const discoveredCount = (state.player && state.player.discoveredPOIs) ? state.player.discoveredPOIs.length : 0;
+  
+  const statDiscovered = document.getElementById('codex-stat-discovered');
+  if (statDiscovered) statDiscovered.textContent = `${discoveredCount} / ${totalPOIs}`;
+
+  const statCredits = document.getElementById('codex-stat-credits');
+  if (statCredits) statCredits.textContent = `${(state.player?.credits || 0).toLocaleString()} CR`;
+
+  // Select initial POI if none selected
+  if (!codexSelectedPOI && typeof GALACTIC_POI !== 'undefined' && GALACTIC_POI.length > 0) {
+    const activeQuest = (typeof QUESTS !== 'undefined' && state.player?.activeQuestId)
+      ? QUESTS.find(q => q.id === state.player.activeQuestId) : null;
+    if (activeQuest && activeQuest.targetPOI_ID) {
+      codexSelectedPOI = activeQuest.targetPOI_ID;
+    } else if (state.player?.discoveredPOIs?.length > 0) {
+      codexSelectedPOI = state.player.discoveredPOIs[0];
+    } else {
+      codexSelectedPOI = GALACTIC_POI[0].id;
+    }
+  }
+
+  renderCodexList();
+  if (codexSelectedPOI) renderCodexDetail(codexSelectedPOI);
+}
+
+function closeCodex() {
+  const overlay = document.getElementById('codex-overlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+function toggleCodex() {
+  const overlay = document.getElementById('codex-overlay');
+  if (!overlay) return;
+  if (overlay.classList.contains('active')) {
+    closeCodex();
+  } else {
+    openCodex();
+  }
+}
+
+function renderCodexList(searchQuery = '') {
+  const listEl = document.getElementById('codex-list');
+  if (!listEl || typeof GALACTIC_POI === 'undefined') return;
+
+  listEl.innerHTML = '';
+  const discovered = (state.player && state.player.discoveredPOIs) ? state.player.discoveredPOIs : [];
+  const q = searchQuery.toLowerCase().trim();
+
+  for (const poi of GALACTIC_POI) {
+    const isDiscovered = discovered.includes(poi.id);
+
+    // Filter checks
+    if (codexActiveFilter === 'discovered' && !isDiscovered) continue;
+    if (codexActiveFilter === 'locked' && isDiscovered) continue;
+
+    // Search checks
+    if (q) {
+      const nameMatch = isDiscovered && poi.name.toLowerCase().includes(q);
+      const typeMatch = isDiscovered && poi.type.toLowerCase().includes(q);
+      const idMatch = poi.id.toLowerCase().includes(q);
+      if (!nameMatch && !typeMatch && !idMatch) continue;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'codex-item' + (isDiscovered ? '' : ' locked') + (poi.id === codexSelectedPOI ? ' active' : '');
+    item.dataset.id = poi.id;
+
+    const displayName = isDiscovered ? poi.name : '??? - Données inconnues';
+    const displayType = isDiscovered ? poi.type : 'Secteur non exploré';
+    const dotColor = isDiscovered ? (poi.dotColor || '#4a90c4') : '#445566';
+    const badgeHtml = isDiscovered
+      ? `<span class="codex-item-badge discovered">✓ DÉCOUVERT</span>`
+      : `<span class="codex-item-badge locked">🔒 INCONNU</span>`;
+
+    item.innerHTML = `
+      <div class="codex-item-dot" style="background:${dotColor}"></div>
+      <div class="codex-item-content">
+        <div class="codex-item-name">${displayName}</div>
+        <div class="codex-item-type">${displayType}</div>
+      </div>
+      ${badgeHtml}
+    `;
+
+    item.addEventListener('click', () => {
+      codexSelectedPOI = poi.id;
+      document.querySelectorAll('#codex-list .codex-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      renderCodexDetail(poi.id);
+    });
+
+    listEl.appendChild(item);
+  }
+}
+
+function renderCodexDetail(poiId) {
+  const detailEl = document.getElementById('codex-detail');
+  if (!detailEl || typeof GALACTIC_POI === 'undefined') return;
+
+  const poi = GALACTIC_POI.find(p => p.id === poiId);
+  if (!poi) {
+    detailEl.innerHTML = '<div class="codex-locked-box"><div class="codex-locked-title">SÉLECTIONNEZ UN ASTRE</div></div>';
+    return;
+  }
+
+  const discovered = (state.player && state.player.discoveredPOIs) ? state.player.discoveredPOIs : [];
+  const isDiscovered = discovered.includes(poi.id);
+
+  if (!isDiscovered) {
+    // Locked view
+    detailEl.innerHTML = `
+      <div class="codex-locked-box">
+        <div class="codex-locked-icon">🔒</div>
+        <div class="codex-locked-title">??? - DONNÉES INCONNUES</div>
+        <div class="codex-locked-desc">
+          Ce secteur n'a pas encore été analysé par les capteurs de bord de votre vaisseau.
+          Rapprochez-vous de cette région dans la galaxie pour analyser l'astre et déverrouiller sa fiche scientifique détaillée dans le Codex.
+        </div>
+        <div class="codex-locked-hint">
+          Indice spatial : Coordonnées [X: ${Math.round(poi.pos[0])}, Y: ${Math.round(poi.pos[1])}, Z: ${Math.round(poi.pos[2])}]
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Discovered view
+  const entry = getCodexEntry(poi.id);
+  const title = entry.name || poi.name;
+  const catalog = entry.catalog || poi.info?.Catalog || poi.id.toUpperCase();
+  const category = entry.category || poi.type;
+  const distance = entry.distance || poi.info?.Distance || "Inconnue";
+  const desc = entry.description || "Données scientifiques enregistrées.";
+
+  // Build specs grid from features
+  let specsHtml = '';
+  const features = entry.features || poi.info || {};
+  for (const [k, v] of Object.entries(features)) {
+    specsHtml += `
+      <div class="codex-spec-card">
+        <div class="codex-spec-key">${k}</div>
+        <div class="codex-spec-val">${v}</div>
+      </div>
+    `;
+  }
+
+  detailEl.innerHTML = `
+    <div class="codex-detail-header">
+      <div class="codex-detail-top-tags">
+        <span class="codex-tag codex-tag-category">${category}</span>
+        <span class="codex-tag codex-tag-dist">📍 ${distance}</span>
+        <span class="codex-tag codex-tag-discovered">✓ ANALYSÉ</span>
+      </div>
+      <h3 class="codex-detail-title">${title}</h3>
+      <div class="codex-detail-catalog">DÉSIGNATION OFFICIELLE : ${catalog}</div>
+    </div>
+
+    <div class="codex-section-title">DONNÉES ASTROPHYSIQUES & OBSERVATION</div>
+    <div class="codex-detail-desc">${desc}</div>
+
+    <div class="codex-section-title">CARACTÉRISTIQUES SCIENTIFIQUES</div>
+    <div class="codex-specs-grid">
+      ${specsHtml}
+    </div>
+
+    <div class="codex-actions">
+      <button class="codex-btn-target" id="codex-btn-warp" data-poi="${poi.id}">
+        ⚡ NAVIGUER VERS ${title.toUpperCase()}
+      </button>
+    </div>
+  `;
+
+  // Attach target button handler
+  const warpBtn = document.getElementById('codex-btn-warp');
+  if (warpBtn) {
+    warpBtn.addEventListener('click', () => {
+      closeCodex();
+      const poiTarget = warpBtn.dataset.poi;
+      if (state.scaleLevel !== 'GALACTIC') {
+        initiateWarpToGalaxy();
+        setTimeout(() => {
+          if (typeof initiateWarpToPOI === 'function' && galacticPOIObjects[poiTarget]) {
+            state.cockpitTarget = poiTarget;
+            initiateWarpToPOI(poiTarget);
+          } else if (typeof galCam !== 'undefined') {
+            galCam.focusOn(poiTarget);
+          }
+        }, 4000);
+      } else {
+        if (state.cameraMode === 'COCKPIT' && typeof initiateWarpToPOI === 'function') {
+          state.cockpitTarget = poiTarget;
+          initiateWarpToPOI(poiTarget);
+        } else if (typeof galCam !== 'undefined') {
+          galCam.focusOn(poiTarget);
+          highlightPOIItem(poiTarget);
+        }
+      }
+    });
+  }
+}
+
+function setupCodexUI() {
+  // Close button
+  const btnClose = document.getElementById('btn-close-codex');
+  if (btnClose) btnClose.addEventListener('click', closeCodex);
+
+  // Overlay background click
+  const overlay = document.getElementById('codex-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeCodex();
+    });
+  }
+
+  // Filter tabs
+  document.querySelectorAll('.codex-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.codex-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      codexActiveFilter = tab.dataset.filter;
+      const searchInput = document.getElementById('codex-search');
+      renderCodexList(searchInput ? searchInput.value : '');
+    });
+  });
+
+  // Search input
+  const searchInput = document.getElementById('codex-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      renderCodexList(e.target.value);
+    });
+  }
+
+  // Side panel Codex button
+  const btnCodex = document.getElementById('btn-codex');
+  if (btnCodex) btnCodex.addEventListener('click', openCodex);
+
+  // Quest HUD click
+  const questHud = document.getElementById('quest-hud');
+  if (questHud) questHud.addEventListener('click', openCodex);
+}
+

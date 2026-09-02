@@ -16,6 +16,9 @@ function animate() {
   // Update warp
   if (state.warp.active) updateWarp(dt);
 
+  // Quest & POI discovery check
+  checkQuestAndPOIDiscovery(dt);
+
   if (!state.paused) {
     state.time += dt * state.timeScale;
     if (state.scaleLevel === 'SOLAR') {
@@ -172,6 +175,101 @@ function updateOrbits(dt) {
     for (const moon of obj.moons) {
       const moonSpeed = (1 / moon.data.period) * 0.6 * state.timeScale;
       moon.orbitGroup.rotation.y += dt * moonSpeed;
+    }
+  }
+}
+
+// ============================================================
+// QUESTS & DISCOVERY LOGIC
+// ============================================================
+var questCheckTimer = 0;
+
+function checkQuestAndPOIDiscovery(dt) {
+  // Synchroniser systématiquement state.shipPosition avec ship.position
+  if (typeof ship !== 'undefined' && ship && ship.position) {
+    state.shipPosition.copy(ship.position);
+  }
+
+  // Mettre à jour le HUD de quête de manière fluide (tous les 100ms)
+  questCheckTimer = (questCheckTimer || 0) + dt;
+  if (questCheckTimer >= 0.1) {
+    if (typeof updateQuestHUD === 'function') updateQuestHUD();
+    questCheckTimer = 0;
+  }
+
+  // Les vérifications de distance galactique s'appliquent en échelle galactique
+  if (state.scaleLevel !== 'GALACTIC') return;
+  if (!state.player) return;
+  if (!Array.isArray(state.player.discoveredPOIs)) state.player.discoveredPOIs = [];
+
+  const shipPos = state.shipPosition;
+
+  // 1. Vérification de la quête active
+  if (state.player.activeQuestId && typeof QUESTS !== 'undefined') {
+    const questIdx = QUESTS.findIndex(q => q.id === state.player.activeQuestId);
+    if (questIdx !== -1) {
+      const activeQuest = QUESTS[questIdx];
+      const targetPoi = (typeof GALACTIC_POI !== 'undefined')
+        ? GALACTIC_POI.find(p => p.id === activeQuest.targetPOI_ID) : null;
+
+      if (targetPoi) {
+        const targetPos = new THREE.Vector3(targetPoi.pos[0], targetPoi.pos[1], targetPoi.pos[2]);
+        const dist = shipPos.distanceTo(targetPos);
+        // Seuil ajusté pour la distance de sortie de warp (arrivalOffset = scale * 2.5)
+        const discoveryThreshold = Math.max((targetPoi.scale || 3000) * 2.7, 5000);
+
+        if (dist <= discoveryThreshold) {
+          // Découvrir le POI si ce n'est pas déjà fait
+          if (!state.player.discoveredPOIs.includes(targetPoi.id)) {
+            state.player.discoveredPOIs.push(targetPoi.id);
+          }
+
+          const reward = activeQuest.reward || activeQuest.credits || 500;
+          state.player.credits = (state.player.credits || 0) + reward;
+
+          // Notification: "Découverte : [Nom du POI]"
+          showNotification(`Découverte : ${targetPoi.name}`);
+          setTimeout(() => {
+            showNotification(`Mission accomplie : ${activeQuest.title} (+${reward} CR)`);
+          }, 900);
+
+          // Passer à la quête suivante
+          const nextQuest = QUESTS[questIdx + 1];
+          if (nextQuest) {
+            state.player.activeQuestId = nextQuest.id;
+            setTimeout(() => {
+              showNotification(`Nouvelle mission : ${nextQuest.title}`);
+            }, 2200);
+          } else {
+            state.player.activeQuestId = null;
+            setTimeout(() => {
+              showNotification(`Félicitations ! Toutes les quêtes sont accomplies !`);
+            }, 2200);
+          }
+
+          if (typeof updateQuestHUD === 'function') updateQuestHUD();
+          saveGame();
+        }
+      }
+    }
+  }
+
+  // 2. Découverte de proximité pour les autres POIs (nécessite d'être très proche de l'astre)
+  if (typeof GALACTIC_POI !== 'undefined') {
+    for (const poi of GALACTIC_POI) {
+      if (!state.player.discoveredPOIs.includes(poi.id)) {
+        const pPos = new THREE.Vector3(poi.pos[0], poi.pos[1], poi.pos[2]);
+        const dist = shipPos.distanceTo(pPos);
+        const thresh = Math.max((poi.scale || 3000) * 0.8, 2000);
+        if (dist <= thresh) {
+          state.player.discoveredPOIs.push(poi.id);
+          const bonus = 100;
+          state.player.credits = (state.player.credits || 0) + bonus;
+          showNotification(`Découverte : ${poi.name}`);
+          if (typeof updateQuestHUD === 'function') updateQuestHUD();
+          saveGame();
+        }
+      }
     }
   }
 }
@@ -338,6 +436,17 @@ function setupEvents() {
     const code = e.code;
     const key = e.key.toLowerCase();
 
+    // ── Handle Codex Modal ──
+    const codexOverlay = document.getElementById('codex-overlay');
+    if (codexOverlay && codexOverlay.classList.contains('active')) {
+      if (code === 'Escape' || code === 'KeyC' || code === 'KeyJ') {
+        closeCodex();
+        e.preventDefault();
+        return;
+      }
+      return; // Ignore general shortcuts while codex modal is active
+    }
+
     // ── Handle Settings Modal ──
     const settingsOverlay = document.getElementById('settings-overlay');
     if (settingsOverlay && settingsOverlay.classList.contains('active')) {
@@ -352,6 +461,13 @@ function setupEvents() {
     // ── Block shortcuts when typing in search/input ──
     const tag = document.activeElement?.tagName;
     if ((tag === 'INPUT' || tag === 'TEXTAREA') && code !== 'Escape') return;
+
+    // ── Global Codex Shortcut [J] or [C] ──
+    if (code === 'KeyJ' || code === 'KeyC') {
+      toggleCodex();
+      e.preventDefault();
+      return;
+    }
 
     // ── Walk mode controls ──
     if (state.cameraMode === 'WALK') {
@@ -696,6 +812,8 @@ async function init() {
   buildPOIList();
   setupSpeedSlider();
   setupEvents();
+  setupCodexUI();
+  updateQuestHUD();
   initWarpFx();
 
   setLoadProgress(100, 'READY');

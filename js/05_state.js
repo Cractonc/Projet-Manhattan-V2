@@ -53,7 +53,8 @@ var state = {
     credits: 0,
     inventory: [],
     activeQuests: [],
-    discoveredPOIs: []
+    discoveredPOIs: [],
+    activeQuestId: (typeof QUESTS !== 'undefined' && QUESTS.length > 0) ? QUESTS[0].id : 'quest_orion'
   },
   // Ship coordinates
   shipPosition: new THREE.Vector3(0, 5, 30),
@@ -120,6 +121,17 @@ function loadGame() {
       if (typeof ship !== 'undefined' && state.shipPosition && state.shipRotation) {
         ship.position.copy(state.shipPosition);
         ship.quaternion.copy(state.shipRotation);
+      }
+
+      // Ensure quest and codex state are valid
+      if (!state.player.activeQuestId && typeof QUESTS !== 'undefined' && QUESTS.length > 0) {
+        state.player.activeQuestId = QUESTS[0].id;
+      }
+      if (!Array.isArray(state.player.discoveredPOIs)) {
+        state.player.discoveredPOIs = [];
+      }
+      if (typeof state.player.credits !== 'number') {
+        state.player.credits = 0;
       }
       
       console.log('Game loaded from LocalStorage.');

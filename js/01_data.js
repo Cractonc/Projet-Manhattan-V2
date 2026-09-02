@@ -515,3 +515,323 @@ var GALACTIC_POI = [
   }
 ];
 
+// ============================================================
+// QUESTS SYSTEM DATA
+// ============================================================
+var QUESTS = [
+  {
+    id: 'quest_orion',
+    title: "Découvrir la Nébuleuse d'Orion",
+    description: "Rejoignez la Nébuleuse d'Orion (M42) pour analyser cette immense pouponnière stellaire dans le bras d'Orion.",
+    targetPOI_ID: 'orion-neb',
+    reward: 500,
+    credits: 500
+  },
+  {
+    id: 'quest_crab',
+    title: "Explorer la Nébuleuse du Crabe",
+    description: "Rapprochez-vous de la Nébuleuse du Crabe (M1), célèbre rémanent de supernova abritant un pulsar ultra-dense.",
+    targetPOI_ID: 'crab-neb',
+    reward: 750,
+    credits: 750
+  },
+  {
+    id: 'quest_sgr_a',
+    title: "S'approcher de Sagittarius A*",
+    description: "Bravez le voyage vers le centre galactique pour cartographier l'environnement gravitationnel extrême de Sagittarius A*.",
+    targetPOI_ID: 'sgr-a',
+    reward: 1500,
+    credits: 1500
+  }
+];
+
+// ============================================================
+// CODEX SCIENTIFIC DATA
+// ============================================================
+var CODEX_DATA = {
+  'sgr-a': {
+    name: "Sagittarius A*",
+    catalog: "Sgr A*",
+    category: "Trou Noir Supermassif",
+    distance: "~26 673 années-lumière",
+    constellation: "Sagittaire",
+    features: {
+      "Masse": "~4,15 millions M☉",
+      "Rayon de Schwarzschild": "~12,7 millions km",
+      "Disque d'accrétion": "Matière spiralant à vitesse relativiste",
+      "Confirmation": "Imagerie directe EHT (2022)"
+    },
+    description: "Sagittarius A* constitue le centre de masse et le cœur gravitationnel de la Voie Lactée. Découvert en 1974 par les radioastronomes Bruce Balick et Robert Brown, il concentre plus de 4 millions de fois la masse solaire dans une région plus compacte que l'orbite de Mercure. Sa gravité titanesque courbe la lumière des étoiles en orbite rapide (étoiles S) et guide la rotation galactique globale."
+  },
+  'orion-neb': {
+    name: "Nébuleuse d'Orion",
+    catalog: "M42 / NGC 1976",
+    category: "Nébuleuse diffuse en émission",
+    distance: "~1 344 années-lumière",
+    constellation: "Orion",
+    features: {
+      "Diamètre": "~24 années-lumière",
+      "Étoiles centrales": "Amas du Trapèze (Theta1 Orionis)",
+      "Processus": "Ionisation UV d'hydrogène (H II)",
+      "Découverte": "Nicolas-Claude Fabri de Peiresc (1610)"
+    },
+    description: "Visible à l'œil nu au sud du baudrier d'Orion, la grande nébuleuse d'Orion est le berceau stellaire massif le plus proche de la Terre. Au cœur de son voile de gaz incandescent, l'amas du Trapèze émet de violents flux d'ultraviolets qui ionisent l'hydrogène et sculptent des disques protoplanétaires (proplyds), où naissent de nouveaux systèmes solaires sous nos yeux."
+  },
+  'crab-neb': {
+    name: "Nébuleuse du Crabe",
+    catalog: "M1 / NGC 1952",
+    category: "Rémanent de Supernova / Plérion",
+    distance: "~6 500 années-lumière",
+    constellation: "Taureau",
+    features: {
+      "Diamètre": "~11 années-lumière",
+      "Événement historique": "Supernova SN 1054",
+      "Cœur": "Pulsar PSR B0531+21 (30 tours/s)",
+      "Expansion": "~1 500 km/s"
+    },
+    description: "Le 4 juillet 1054, des astronomes chinois et arabes observèrent une 'étoile invitée' si éclatante qu'elle resta visible en plein jour pendant 23 jours. La Nébuleuse du Crabe est le reliquat filamentaire en expansion de cette catastrophe cosmique. En son centre réside une étoile à neutrons de 1,4 masse solaire tournant 30 fois par seconde, émettant un phare de rayons gamma et X."
+  },
+  'eagle-neb': {
+    name: "Nébuleuse de l'Aigle",
+    catalog: "M16 / NGC 6611",
+    category: "Région H II & Colonnes d'érosion",
+    distance: "~7 000 années-lumière",
+    constellation: "Serpent",
+    features: {
+      "Structure culte": "Piliers de la Création (~4-5 AL de haut)",
+      "Type": "Nuage moléculaire d'effondrement",
+      "Température gaz": "~10 000 K dans la zone H II",
+      "Imagerie": "Télescopes spatiaux Hubble et James Webb"
+    },
+    description: "Rendue célèbre dans le monde entier par le cliché historique des 'Piliers de la Création' pris par Hubble en 1995 et revisité par James Webb, cette région est un monumental chantier de construction stellaire. D'immenses doigts de gaz froids et de poussières sombres résistent aux vents stellaires féroces des jeunes étoiles de l'amas ouvert NGC 6611."
+  },
+  'cygnus-x1': {
+    name: "Cygnus X-1",
+    catalog: "Cyg X-1 / HDE 226868",
+    category: "Binaire X / Trou Noir Stellaire",
+    distance: "~6 070 années-lumière",
+    constellation: "Cygne",
+    features: {
+      "Masse trou noir": "~21,2 M☉",
+      "Compagne": "Supergéante bleue HDE 226868 (~40 M☉)",
+      "Période orbitale": "5,6 jours",
+      "Statut": "Premier candidat trou noir confirmé (1971)"
+    },
+    description: "Cygnus X-1 fut la toute première source de rayons X céleste reconnue comme un trou noir. Ce système binaire infernal est composé d'une supergéante bleue dont les couches gazeuses supérieures sont inexorablement aspirées vers le trou noir. La friction de la matière dans le disque d'accrétion atteint des millions de degrés Kelvin, émettant un rayonnement X intense."
+  },
+  'eta-car': {
+    name: "Eta Carinae",
+    catalog: "η Carinae / HR 4210",
+    category: "Variable Lumineuse Bleue (LBV)",
+    distance: "~7 500 années-lumière",
+    constellation: "Carène",
+    features: {
+      "Masse système": "~100 - 120 M☉ + 30 M☉",
+      "Luminosité": "~5 millions de fois le Soleil",
+      "Nébuleuse propre": "Nébuleuse de l'Homunculus",
+      "Pronostic": "Future supernova ou hypernova à émission gamma"
+    },
+    description: "Eta Carinae est l'un des monstres stellaires les plus fascinants et instables de la Voie Lactée. Au cours des années 1840, elle subit la 'Grande Éruption' qui éjecta deux lobes gigantesques de gaz bipolaires sans détruire totalement l'étoile. Elle oscille à la limite d'Eddington et explosera en supernova spectaculaire dans un futur astronomique très proche."
+  },
+  'sol': {
+    name: "Système Solaire",
+    catalog: "Sol / Système Solaire",
+    category: "Étoile Naine Jaune (G2V)",
+    distance: "0 AL (Origine locale)",
+    constellation: "Bras d'Orion-Cygnus",
+    features: {
+      "Âge": "~4,57 milliards d'années",
+      "Planètes majeures": "8 (4 telluriques, 4 géantes)",
+      "Distance au centre": "~26 000 années-lumière",
+      "Période galactique": "~225-250 millions d'années"
+    },
+    description: "Le berceau de l'humanité. Situé à mi-chemin entre le cœur galactique et la périphérie sur le bord intérieur du bras spiral d'Orion. Sa composition chimique équilibrée de population I a permis le développement d'une biodiversité unique sur la troisième planète tellurique, la Terre."
+  },
+  'alpha-centauri': {
+    name: "Alpha Centauri",
+    catalog: "Rigil Kentaurus / Gliese 559",
+    category: "Système Stellaire Triple",
+    distance: "~4,37 années-lumière",
+    constellation: "Centaure",
+    features: {
+      "Composantes": "Rigil (G2V) + Toliman (K1V) + Proxima (M5.5Ve)",
+      "Proxima Centauri": "Étoile la plus proche du Soleil (~4,24 AL)",
+      "Exoplanète clé": "Proxima Centauri b (zone tempérée)",
+      "Période binaire A-B": "~79,9 ans"
+    },
+    description: "Le système d'étoiles le plus proche du Système Solaire. Il est formé d'un couple binaire serré très similaire à notre Soleil et d'une petite naine rouge distante, Proxima Centauri, qui abrite au moins deux exoplanètes connues. C'est la première étape théorique pour tout voyage interstellaire habité."
+  },
+  'sirius': {
+    name: "Sirius",
+    catalog: "Alpha Canis Majoris / HR 2491",
+    category: "Système Binaire (Étoile A1V + Naine Blanche)",
+    distance: "~8,6 années-lumière",
+    constellation: "Grand Chien",
+    features: {
+      "Magnitude apparente": "-1,46 (Étoile la plus brillante du ciel)",
+      "Sirius B": "Naine blanche dense ('Le Chiot')",
+      "Température Sirius A": "~9 940 K",
+      "Luminosité": "25,4 L☉"
+    },
+    description: "L'étoile la plus brillante du firmament terrestre. Sirius A est une jeune étoile blanche deux fois plus massive que le Soleil. Elle est orbitée tous les 50 ans par Sirius B, la première naine blanche identifiée par l'astronomie moderne, vestige extrêmement compact et dense où une masse solaire est comprimée dans le volume d'une planète terrestre."
+  },
+  'pleiades': {
+    name: "Les Pléiades",
+    catalog: "M45 / Les Sept Sœurs",
+    category: "Amas Ouvert & Nébuleuse par réflexion",
+    distance: "~444 années-lumière",
+    constellation: "Taureau",
+    features: {
+      "Nombre d'étoiles": "~1 000 membres",
+      "Âge de l'amas": "~100 millions d'années",
+      "Étoiles maîtresses": "Alcyone, Maia, Electra, Taygeta, etc.",
+      "Nébuleuse": "Poussière éclairée par réflexion de lumière bleue"
+    },
+    description: "L'un des plus magnifiques joyaux du ciel d'hiver. Cet amas ouvert regroupe de jeunes étoiles bleues ultra-chaudes de type spectral B formées il y a environ 100 millions d'années. Le voile bleuté qui les enveloppe n'est pas le gaz résiduel de leur naissance, mais un nuage interstellaire indépendant que l'amas traverse actuellement à grande vitesse."
+  },
+  'betelgeuse': {
+    name: "Bételgeuse",
+    catalog: "Alpha Orionis / HR 2061",
+    category: "Supergéante Rouge Pulsante",
+    distance: "~650 - 700 années-lumière",
+    constellation: "Orion",
+    features: {
+      "Diamètre": "~700 à 1 000 × le Soleil",
+      "Volume": "Pourrait contenir l'orbite de Jupiter",
+      "Luminosité": "~100 000 à 130 000 L☉",
+      "Fin de vie": "Explosion imminente en Supernova de Type II"
+    },
+    description: "Une étoile titan au crépuscule de sa vie. Bételgeuse a épuisé l'hydrogène de son cœur et fusionne désormais des éléments plus lourds, dilatant son enveloppe à des dimensions titanesques. Ses soubresauts de convection géante provoquent des baisses de luminosité historiques, comme le 'Grand Assombrissement' de 2019-2020."
+  },
+  'carina-neb': {
+    name: "Nébuleuse de la Carène",
+    catalog: "NGC 3372 / Grande Nébuleuse de la Carène",
+    category: "Nébuleuse diffuse géante en émission",
+    distance: "~7 600 années-lumière",
+    constellation: "Carène",
+    features: {
+      "Envergure": "~300 années-lumière",
+      "Objets notables": "Eta Carinae, Nébuleuse du Trou de Serrure",
+      "Puissance": "Quatre fois plus étendue qu'Orion",
+      "Population": "Plus de 60 étoiles de classe O ultra-massives"
+    },
+    description: "La nébuleuse de la Carène surpasse en taille et en déchaînement d'énergie presque toutes les régions de notre galaxie. C'est un complexe colossal de gaz d'hydrogène ionisé, de piliers d'érosion et de nébuleuses obscures entremêlées, hébergeant parmi les étoiles les plus massives et les plus brillantes connues de la Voie Lactée."
+  },
+  'ring-neb': {
+    name: "Nébuleuse de l'Anneau",
+    catalog: "M57 / NGC 6720",
+    category: "Nébuleuse Planétaire",
+    distance: "~2 570 années-lumière",
+    constellation: "Lyre",
+    features: {
+      "Diamètre": "~1,3 année-lumière",
+      "Étoile centrale": "Naine blanche naine (~120 000 K)",
+      "Âge estimé": "~4 000 à 6 000 ans",
+      "Morphologie": "Tore cylindrique vu presque par les pôles"
+    },
+    description: "Le modèle par excellence de la nébuleuse planétaire. En expulsant ses couches gazeuses externes lors de son agonie, une étoile similaire à notre Soleil a créé une bulle torique de matière en expansion. La naine blanche centrale, chauffée à blanc, excite le gaz environnant : l'oxygène ionisé brille d'un vert émeraude au centre, tandis que l'azote et l'hydrogène teintent l'anneau de rubis."
+  },
+  'helix-neb': {
+    name: "Nébuleuse de l'Hélice",
+    catalog: "NGC 7293 / L'Œil de Dieu",
+    category: "Nébuleuse Planétaire Proche",
+    distance: "~650 années-lumière",
+    constellation: "Verseau",
+    features: {
+      "Diamètre réel": "~5,7 années-lumière",
+      "Taille apparente": "La moitié du diamètre de la pleine Lune",
+      "Étoile centrale": "Naine blanche DAO (~120 000 K)",
+      "Filaments": "Milliers de nœuds cométaires gazeux"
+    },
+    description: "Surnommée 'L'Œil de Dieu' ou 'L'Œil de Sauron' en raison de son apparence saisissante vue depuis la Terre, l'Hélice est la plus proche de toutes les grandes nébuleuses planétaires. Ses couches de gaz expulsées depuis plus de 10 000 ans forment un labyrinthe complexe de filaments denses et de poussières cométaires qui s'évaporent lentement sous le flux ultraviolet."
+  },
+  'horsehead-neb': {
+    name: "Nébuleuse de la Tête de Cheval",
+    catalog: "Barnard 33 / IC 434",
+    category: "Nébuleuse Obscure d'Absorption",
+    distance: "~1 375 années-lumière",
+    constellation: "Orion",
+    features: {
+      "Taille": "~3 à 4 années-lumière",
+      "Arrière-plan": "Nébuleuse en émission IC 434 ionisée par Sigma Orionis",
+      "Découverte": "Williamina Fleming (1888)",
+      "Densité": "Poussières denses bloquant tout spectre visible"
+    },
+    description: "Silhouette astronomique iconique, cette colonne de poussières épaisses et denses se découpe en ombre chinoise sur le rideau d'hydrogène rougeoyant de la nébuleuse IC 434. La forme équine caractéristique est sculptée par les radiations énergétiques d'étoiles massives voisines qui détruisent progressivement le nuage."
+  },
+  'rosette-neb': {
+    name: "Nébuleuse de la Rosette",
+    catalog: "NGC 2237 / Caldwel 49",
+    category: "Région H II Géante",
+    distance: "~5 200 années-lumière",
+    constellation: "Licorne",
+    features: {
+      "Diamètre": "~130 années-lumière",
+      "Masse": "~10 000 masses solaires",
+      "Amas central": "NGC 2244",
+      "Forme": "Pétales symétriques de gaz ionisé"
+    },
+    description: "Une somptueuse rose cosmique de plus de 100 années-lumière de diamètre. L'amas central d'étoiles jeunes et ultra-chaudes NGC 2244 balaie le gaz au centre par sa pression de radiation, créant une cavité centrale tout en comprimant les parois externes pour initier une seconde vague de genèse stellaire."
+  },
+  'vela-pulsar': {
+    name: "Pulsar des Voiles",
+    catalog: "PSR B0833-45 / Vela SNR",
+    category: "Pulsar & Rémanent de Supernova",
+    distance: "~936 années-lumière",
+    constellation: "Voiles",
+    features: {
+      "Âge": "~11 000 à 12 000 ans",
+      "Rotation": "11,2 rotations complètes par seconde",
+      "Champ magnétique": "~3 × 10^12 Gauss",
+      "Émission": "L'une des sources de rayons gamma les plus intenses du ciel"
+    },
+    description: "Né de l'effondrement gravitationnel d'une étoile supergéante il y a 11 millénaires, le pulsar des Voiles projette un phare d'ondes radio, optiques et gamma balayant l'espace à chaque tour. Le rémanent qui l'entoure s'étend sur plus de 100 années-lumière et témoigne de la violence extrême des fins de vie stellaires."
+  },
+  'omega-centauri': {
+    name: "Oméga du Centaure",
+    catalog: "NGC 5139",
+    category: "Amas Globulaire Géant / Cœur de Galaxie Naine",
+    distance: "~15 800 années-lumière",
+    constellation: "Centaure",
+    features: {
+      "Nombre d'étoiles": "~10 millions d'étoiles",
+      "Diamètre": "~150 années-lumière",
+      "Masse": "~4 millions M☉",
+      "Hypothèse": "Vestige du noyau d'une galaxie naine cannibalisée"
+    },
+    description: "Le plus grand, le plus massif et le plus spectaculaire des 150 amas globulaires orbitant autour de la Voie Lactée. Contrairement aux amas classiques composés d'une génération unique d'étoiles, Oméga Centauri abrite plusieurs populations stellaires d'âges variés, suggérant qu'il s'agit du noyau fossile d'une galaxie naine absorbée par notre Voie Lactée il y a des milliards d'années."
+  },
+  'tarantula-neb': {
+    name: "Nébuleuse de la Tarentule",
+    catalog: "30 Doradus / NGC 2070",
+    category: "Super-région H II Extra-galactique (LMC)",
+    distance: "~160 000 années-lumière",
+    constellation: "Dorade (Grand Nuage de Magellan)",
+    features: {
+      "Diamètre": "~600 à 1 000 années-lumière",
+      "Cœur": "Super-amas R136 (abritant R136a1, ~200-250 M☉)",
+      "Échelle": "Si elle était à la place d'Orion, elle projetterait des ombres la nuit",
+      "Activité": "Plus grand complexe de formation stellaire du Groupe Local"
+    },
+    description: "Une merveille titanesque située dans la galaxie satellite du Grand Nuage de Magellan. C'est l'usine stellaire la plus active et colossale de tout notre Groupe Local de galaxies. Elle contient en son cœur l'amas R136, qui détient le record mondial de l'étoile la plus massive jamais mesurée par l'astrophysique, R136a1."
+  }
+};
+
+// Helper pour récupérer la fiche du Codex avec repli automatique
+function getCodexEntry(poiId) {
+  if (CODEX_DATA[poiId]) return CODEX_DATA[poiId];
+  const poi = GALACTIC_POI.find(p => p.id === poiId);
+  if (!poi) return null;
+  return {
+    name: poi.name,
+    catalog: poi.info?.Catalog || poi.id.toUpperCase(),
+    category: poi.type || "Objet Céleste",
+    distance: poi.info?.Distance || "Inconnue",
+    constellation: "Voie Lactée",
+    features: poi.info || {},
+    description: poi.info?.Feature 
+      ? `Astre remarquable de la Voie Lactée répertorié sous la classification ${poi.type}. Particularité majeure : ${poi.info.Feature}.`
+      : `Point d'intérêt galactique d'importance scientifique majeure répertorié dans la grille d'exploration spatiale.`
+  };
+}
+

@@ -70,6 +70,7 @@
       <div style="height:12px"></div>
       <button class="action-btn" id="btn-overview">◎ OVERVIEW</button>
       <button class="action-btn" id="btn-cockpit">🚀 COCKPIT VIEW</button>
+      <button class="action-btn" id="btn-codex">📖 CODEX & QUÊTES [J]</button>
       <button class="action-btn" id="btn-settings">⚙ PARAMÈTRES</button>
     </div>
   </div>
@@ -80,6 +81,23 @@
     <div class="hud-line">TIME SCALE <span class="hud-val" id="hud-timescale">1×</span></div>
     <div class="hud-sector" id="hud-sector"></div>
   </div>
+
+  <!-- Active Quest HUD -->
+  <div id="quest-hud" title="Cliquer pour ouvrir le Codex (Raccourci: J ou C)">
+    <div class="quest-hud-top">
+      <span class="quest-hud-badge"><span class="quest-pulse-dot"></span>MISSION ACTIVE</span>
+      <span class="quest-hud-credits" id="quest-hud-credits">0 CR</span>
+    </div>
+    <div class="quest-hud-title" id="quest-hud-title">Chargement...</div>
+    <div class="quest-hud-obj" id="quest-hud-obj">—</div>
+    <div class="quest-hud-footer">
+      <span class="quest-hud-reward" id="quest-hud-reward">+0 CR</span>
+      <span class="quest-hud-shortcut">[J] CODEX</span>
+    </div>
+  </div>
+
+  <!-- Notifications Container -->
+  <div id="notifications-container"></div>
 
   <!-- Labels -->
   <div id="labels"></div>
@@ -197,6 +215,7 @@
             <div class="shortcut-row"><span class="key-badge">P</span><span>Afficher / Masquer le Panneau</span></div>
             <div class="shortcut-row"><span class="key-badge">G</span><span>Basculer Système Solaire / Galaxie</span></div>
             <div class="shortcut-row"><span class="key-badge">V</span><span>Entrer en Vue Cockpit</span></div>
+            <div class="shortcut-row"><span class="key-badge">J / C</span><span>Ouvrir le Codex & Quêtes</span></div>
           </div>
           <div class="shortcut-group">
             <h4>🚀 Pilotage Vaisseau (Cockpit)</h4>
@@ -208,6 +227,7 @@
             <div class="shortcut-row"><span class="key-badge">Shift</span><span>Hyperpropulsion Boost</span></div>
             <div class="shortcut-row"><span class="key-badge">X</span><span>Arrêt immédiat (Stop)</span></div>
             <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le siège (Mode Marche)</span></div>
+            <div class="shortcut-row"><span class="key-badge">J</span><span>Ouvrir le Codex & Quêtes</span></div>
           </div>
           <div class="shortcut-group">
             <h4>🚶 Mode Vaisseau (Marche à pied)</h4>
@@ -215,8 +235,43 @@
             <div class="shortcut-row"><span class="key-badge">Souris</span><span>Regarder autour (Free look)</span></div>
             <div class="shortcut-row"><span class="key-badge">F</span><span>Interagir (Siège / Télescope)</span></div>
             <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le vaisseau (Mode Libre)</span></div>
+            <div class="shortcut-row"><span class="key-badge">J</span><span>Ouvrir le Codex & Quêtes</span></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Codex Modal -->
+  <div id="codex-overlay" class="modal-overlay">
+    <div class="modal-window codex-window">
+      <div class="modal-header">
+        <div class="codex-title-wrap">
+          <h2 class="modal-title">📖 CODEX GALACTIQUE & REGISTRE SCIENTIFIQUE</h2>
+          <div class="codex-stats-row">
+            <span class="codex-stat-tag">DÉCOUVERTES : <strong id="codex-stat-discovered">0 / 0</strong></span>
+            <span class="codex-stat-tag">CRÉDITS : <strong id="codex-stat-credits">0 CR</strong></span>
+          </div>
+        </div>
+        <button class="modal-close" id="btn-close-codex" title="Fermer (Échap / J / C)">✕</button>
+      </div>
+
+      <div class="codex-container">
+        <!-- Sidebar -->
+        <div class="codex-sidebar">
+          <div class="codex-search-box">
+            <input type="text" id="codex-search" placeholder="Rechercher un astre..." autocomplete="off">
+          </div>
+          <div class="codex-filter-tabs">
+            <button class="codex-tab active" data-filter="all">TOUS</button>
+            <button class="codex-tab" data-filter="discovered">DÉCOUVERTS</button>
+            <button class="codex-tab" data-filter="locked">INCONNUS</button>
+          </div>
+          <div class="codex-list" id="codex-list"></div>
+        </div>
+
+        <!-- Details pane -->
+        <div class="codex-detail-pane" id="codex-detail"></div>
       </div>
     </div>
   </div>
