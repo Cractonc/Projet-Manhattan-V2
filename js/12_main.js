@@ -120,59 +120,40 @@ function animate() {
     planetObjects['sun'].mesh.rotation.y += dt * 0.03;
   }
 
-  // Render
-  renderer.clear();
+  // ── RENDU POST-PROCESSING ──
+  // Avec logarithmicDepthBuffer: true, plus besoin de faire 2 passes manuelles 
+  // pour le cockpit ! Le z-buffer logarithmique gère parfaitement la différence 
+  // d'échelle entre le vaisseau (near: 0.05) et la galaxie (far: 20 millions).
 
-  let activeCam;
-  if (state.scaleLevel === 'SOLAR') {
-    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
-      activeCam = cockpitCamera;
-      
-      // Pass 1: World
-      activeCam.layers.set(0);
-      activeCam.near = 1;
-      activeCam.far = 100000;
-      activeCam.updateProjectionMatrix();
-      renderer.render(scene, activeCam);
-      
-      // Pass 2: Cockpit
-      renderer.clearDepth();
-      activeCam.layers.set(1);
-      activeCam.near = 0.05;
-      activeCam.far = 500;
-      activeCam.updateProjectionMatrix();
-      renderer.render(scene, activeCam);
-    } else {
-      activeCam = camera;
-      activeCam.layers.set(0);
-      renderer.render(scene, activeCam);
-    }
+  if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
+    const activeCam = cockpitCamera;
+    const activeScene = (state.scaleLevel === 'SOLAR') ? scene : galacticScene;
+
+    if (state.scaleLevel === 'GALACTIC') updateGalacticPOIs(dt, activeCam);
+
+    // Ajustement de la caméra pour voir à la fois le cockpit (très près) et l'espace (très loin)
+    activeCam.near = 0.05;
+    activeCam.far = (state.scaleLevel === 'SOLAR') ? 100000 : 20000000;
+    activeCam.layers.enableAll(); // Rend la galaxie (layer 0) et le vaisseau (layer 1)
+    activeCam.updateProjectionMatrix();
+
+    renderPass.scene = activeScene;
+    renderPass.camera = activeCam;
+    composer.render();
+
   } else {
-    // GALACTIC
-    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
-      activeCam = cockpitCamera;
-      updateGalacticPOIs(dt, activeCam);
-      
-      // Pass 1: World (Galaxy)
-      activeCam.layers.set(0);
-      activeCam.near = 50; // Reduced near plane to prevent POI clipping on zoom
-      activeCam.far = 20000000;
-      activeCam.updateProjectionMatrix();
-      renderer.render(galacticScene, activeCam);
-      
-      // Pass 2: Cockpit
-      renderer.clearDepth();
-      activeCam.layers.set(1);
-      activeCam.near = 0.05;
-      activeCam.far = 500;
-      activeCam.updateProjectionMatrix();
-      renderer.render(galacticScene, activeCam);
+    // ── Mode spectateur : composer.render() standard ──
+    if (state.scaleLevel === 'SOLAR') {
+      renderPass.scene  = scene;
+      renderPass.camera = camera;
+      camera.layers.set(0);
     } else {
-      activeCam = galacticCamera;
-      activeCam.layers.set(0);
-      updateGalacticPOIs(dt, activeCam);
-      renderer.render(galacticScene, activeCam);
+      renderPass.scene  = galacticScene;
+      renderPass.camera = galacticCamera;
+      galacticCamera.layers.set(0);
+      updateGalacticPOIs(dt, galacticCamera);
     }
+    composer.render();
   }
 }
 
@@ -518,18 +499,26 @@ function setupEvents() {
 
   // Resize
   window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const nw = window.innerWidth;
+    const nh = window.innerHeight;
+
+    camera.aspect = nw / nh;
     camera.updateProjectionMatrix();
-    galacticCamera.aspect = window.innerWidth / window.innerHeight;
+    galacticCamera.aspect = nw / nh;
     galacticCamera.updateProjectionMatrix();
     if (cockpitCamera) {
-      cockpitCamera.aspect = window.innerWidth / window.innerHeight;
+      cockpitCamera.aspect = nw / nh;
       cockpitCamera.updateProjectionMatrix();
     }
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(nw, nh);
+
+    // Redimensionner le composer et recalculer la résolution du bloom (toujours 1/4)
+    composer.setSize(nw, nh);
+    bloomPass.resolution.set(Math.floor(nw / 4), Math.floor(nh / 4));
+
     // Resize warp canvas
-    warpFxCanvas.width = window.innerWidth;
-    warpFxCanvas.height = window.innerHeight;
+    warpFxCanvas.width  = nw;
+    warpFxCanvas.height = nh;
   });
 
   // Panel toggle

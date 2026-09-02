@@ -1039,6 +1039,35 @@ canvas {
   color: var(--warp);
 }
 
+.ckp-btn {
+  margin-top: 15px;
+  padding: 6px 12px;
+  background: rgba(255, 60, 60, 0.1);
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  color: #ff5555;
+  font-family: 'Courier New', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  pointer-events: auto;
+  display: inline-block;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.ckp-btn:hover {
+  background: rgba(255, 60, 60, 0.3);
+  border-color: #ff5555;
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.5);
+}
+
+.ckp-btn.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Walk Mode HUD */
 #walk-hud {
   position: fixed;

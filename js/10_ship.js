@@ -233,7 +233,11 @@ function createShipInterior() {
   // COCKPIT DECORATION & PROPS
   bx(2.9, 0.5, 0.15, panel, 0, -0.4, -1.05); // main lower console
 
-  const cockpitLight = new THREE.PointLight(0x5090ff, 0.8, 4);
+  // Dedicated interior fill light (ensures zero pitch-black corners inside the ship)
+  const shipFillLight = new THREE.HemisphereLight(0x6080b0, 0x202530, 0.7);
+  shipInterior.add(shipFillLight);
+
+  const cockpitLight = new THREE.PointLight(0x70b0ff, 2.5, 8);
   cockpitLight.position.set(0, 0.8, -0.4);
   shipInterior.add(cockpitLight);
 
@@ -672,15 +676,15 @@ function createShipInterior() {
   hublot(1.44, -2.87, 1.8, -Math.PI / 2); // Right
 
   // LUMIÈRES 
-  const corridorLight = new THREE.PointLight(0x1a2a44, 0.8, 6);
+  const corridorLight = new THREE.PointLight(0x406090, 2.2, 10);
   corridorLight.position.set(0, 0.7, 2.1);
   shipInterior.add(corridorLight);
 
-  const obsLight = new THREE.PointLight(0x1a3058, 1.0, 6);
+  const obsLight = new THREE.PointLight(0x4070b0, 2.5, 10);
   obsLight.position.set(0, 4.0, 1.8);
   shipInterior.add(obsLight);
 
-  const galMapLight = new THREE.PointLight(0x2a1a58, 0.9, 5);
+  const galMapLight = new THREE.PointLight(0x504090, 2.2, 8);
   galMapLight.position.set(1.5, 0.6, 1.8);
   shipInterior.add(galMapLight);
 

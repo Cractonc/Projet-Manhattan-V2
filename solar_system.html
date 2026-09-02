@@ -122,6 +122,7 @@
       <div class="ckp-vel-big" id="ckp-vel-big">0</div>
       <div class="ckp-vel-unit" id="ckp-vel-unit">U/S</div>
       <div class="ckp-vel-mode-label" id="ckp-vel-mode">IDLE</div>
+      <div id="ckp-btn-stop-auto" class="ckp-btn">STOP AUTO</div>
     </div>
     <!-- Radar scanner -->
     <div class="ckp-radar-container">
@@ -222,6 +223,15 @@
 
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Post-processing addons (r128 — scope global, dépendances dans l'ordre) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+
   <script src="js/01_data.js"></script>
   <script src="js/02_helpers.js"></script>
   <script src="js/03_textures_solar.js"></script>

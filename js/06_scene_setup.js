@@ -143,3 +143,74 @@ var galCam = {
   }
 };
 
+
+// ============================================================
+// POST-PROCESSING PIPELINE
+// Optimisé pour Intel UHD 620 : bloom à 1/4 résolution,
+// un seul ShaderPass custom (aberration + vignette).
+// Total : 3 passes GPU (RenderPass + BloomPass + ShaderPass).
+// ============================================================
+
+// ── ShaderPass custom : Aberration Chromatique + Vignette ──
+// Un seul fragment shader = une seule passe GPU supplémentaire.
+var ChromaVignetteShader = {
+  uniforms: {
+    'tDiffuse':       { value: null },
+    'u_chromaAmount': { value: 0.0020 }, // Légèrement réduit pour être très propre
+    'u_vignetteAmt':  { value: 0.30 },   // Vignette douce sans bandes
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float u_chromaAmount;
+    uniform float u_vignetteAmt;
+    varying vec2 vUv;
+
+    void main() {
+      vec2 center = vec2(0.5);
+      vec2 delta  = vUv - center;
+      float dist2 = dot(delta, delta);
+
+      float aberr = u_chromaAmount * dist2 * 4.0;
+      vec2 rOffset = center + delta * (1.0 + aberr);
+      vec2 bOffset = center + delta * (1.0 - aberr);
+
+      float r = texture2D(tDiffuse, rOffset).r;
+      float g = texture2D(tDiffuse, vUv).g;
+      float b = texture2D(tDiffuse, bOffset).b;
+
+      // Vignette fluide
+      float vignette = 1.0 - smoothstep(0.4, 0.9, dist2 * 2.0) * u_vignetteAmt;
+
+      gl_FragColor = vec4(vec3(r, g, b) * vignette, 1.0);
+    }
+  `
+};
+
+// ── Bloom Pass — UHD 620 : résolution 1/4, threshold élevé ──
+var bloomResX = Math.floor(window.innerWidth  / 4);
+var bloomResY = Math.floor(window.innerHeight / 4);
+
+var composer   = new THREE.EffectComposer(renderer);
+var renderPass = new THREE.RenderPass(scene, camera); // scène/cam changées dynamiquement dans 12_main.js
+var bloomPass  = new THREE.UnrealBloomPass(
+  new THREE.Vector2(bloomResX, bloomResY),
+  0.40,   // strength  — halo subtil sans brûler le cœur de galaxie
+  0.40,   // radius    — diffusion modérée
+  0.88    // threshold — ne bloom que les éléments très lumineux
+);
+var chromaPass = new THREE.ShaderPass(ChromaVignetteShader);
+chromaPass.renderToScreen = true; // dernière passe → sortie directe framebuffer
+
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
+composer.addPass(chromaPass);
+
+
+
