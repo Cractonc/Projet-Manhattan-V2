@@ -23,6 +23,15 @@ uniform vec3 u_cameraLocalPos;
 uniform float u_cameraDistance;
 uniform float u_qualityLevel; // 0.0 = Low, 1.0 = Med, 2.0 = High
 
+// Palette & Dynamique paramétrables (ex: Sgr A* orange vs Cygnus X-1 cyan/violet)
+uniform vec3 u_colorOuter;
+uniform vec3 u_colorMid;
+uniform vec3 u_colorInner;
+uniform vec3 u_colorDopplerBlue;
+uniform vec3 u_colorDopplerRed;
+uniform float u_diskSpeed;
+uniform float u_emissionStrength;
+
 varying vec3 vLocalPosition;
 varying vec3 vWorldPosition;
 
@@ -132,7 +141,7 @@ void main() {
             geomEnv *= smoothstep(diskOuter, diskOuter - 4.0, r);
             
             if (geomEnv > 0.005) {
-                float velAngle = (2.0 / pow(r, 1.5)) * u_time * 0.8;
+                float velAngle = (2.0 / pow(r, 1.5)) * u_time * u_diskSpeed;
                 vec3 pRot = p;
                 float cosA = cos(velAngle), sinA = sin(velAngle);
                 pRot.xz = mat2(cosA, -sinA, sinA, cosA) * pRot.xz;
@@ -147,18 +156,15 @@ void main() {
                     float beaming = pow(max(0.0, 1.0 + doppler * 1.5), 3.5);
                     
                     float temp = smoothstep(diskOuter, diskInner, r);
-                    vec3 outerCol = vec3(0.55, 0.13, 0.02);
-                    vec3 midCol   = vec3(0.95, 0.52, 0.10);
-                    vec3 innerCol = vec3(1.0, 0.90, 0.72);
                     
                     vec3 baseCol = (temp > 0.5) 
-                        ? mix(midCol, innerCol, (temp - 0.5) * 2.0)
-                        : mix(outerCol, midCol, temp * 2.0);
+                        ? mix(u_colorMid, u_colorInner, (temp - 0.5) * 2.0)
+                        : mix(u_colorOuter, u_colorMid, temp * 2.0);
                     
-                    if (doppler > 0.0) baseCol = mix(baseCol, vec3(1.0, 0.93, 0.80), doppler * 1.2);
-                    else baseCol = mix(baseCol, vec3(0.6, 0.08, 0.0), -doppler * 1.0);
+                    if (doppler > 0.0) baseCol = mix(baseCol, u_colorDopplerBlue, doppler * 1.2);
+                    else baseCol = mix(baseCol, u_colorDopplerRed, -doppler * 1.0);
                     
-                    vec3 emission = baseCol * dens * beaming * 5.85;
+                    vec3 emission = baseCol * dens * beaming * u_emissionStrength;
                     float absorption = exp(-dens * dt * 7.0);
                     
                     col += emission * transmittance * dt;
@@ -185,15 +191,25 @@ void main() {
 class BlackHole {
   constructor(options = {}) {
     // Calcul du facteur d'échelle : l'espace local du shader a un BOUND_RADIUS = 32.0.
-    // Si options.radius est fourni (ex: 21000 pour Sgr A*), l'échelle devient 21000 / 32 = 656.25.
     const worldRadius = options.radius || 21000.0;
     this.scaleFactor = options.scaleFactor || (worldRadius / 32.0);
     this.qualityLevel = options.qualityLevel !== undefined ? options.qualityLevel : 2.0; // 2.0 = High
-    
+    this.theme = options.theme || 'orange'; // 'orange' (Sgr A*) ou 'cyan_violet' / 'cygnus' (Cygnus X-1)
+
+    // Configuration chromatique et dynamique selon le type de trou noir
+    const isCyan = (this.theme === 'cyan_violet' || this.theme === 'cygnus');
+    const colorOuter       = isCyan ? new THREE.Vector3(0.35, 0.08, 0.75) : new THREE.Vector3(0.55, 0.13, 0.02);
+    const colorMid         = isCyan ? new THREE.Vector3(0.18, 0.60, 1.00) : new THREE.Vector3(0.95, 0.52, 0.10);
+    const colorInner       = isCyan ? new THREE.Vector3(0.80, 0.96, 1.00) : new THREE.Vector3(1.00, 0.90, 0.72);
+    const colorDopplerBlue = isCyan ? new THREE.Vector3(0.92, 0.98, 1.00) : new THREE.Vector3(1.00, 0.93, 0.80);
+    const colorDopplerRed  = isCyan ? new THREE.Vector3(0.32, 0.04, 0.60) : new THREE.Vector3(0.60, 0.08, 0.00);
+    const diskSpeed        = isCyan ? 2.2 : 0.8;
+    const emissionStrength = isCyan ? 6.2 : 5.85;
+
     this._tempVec = new THREE.Vector3();
     this.group = new THREE.Group();
-    
-    // Matériau volumétrique principal (Shaders non modifiés)
+
+    // Matériau volumétrique principal
     this.volumetricMaterial = new THREE.ShaderMaterial({
       vertexShader: blackHoleVertexShader,
       fragmentShader: blackHoleFragmentShader,
@@ -201,7 +217,14 @@ class BlackHole {
         u_time: { value: 0 },
         u_cameraLocalPos: { value: new THREE.Vector3(0, 0, 0) },
         u_cameraDistance: { value: 20.0 },
-        u_qualityLevel: { value: this.qualityLevel }
+        u_qualityLevel: { value: this.qualityLevel },
+        u_colorOuter: { value: colorOuter },
+        u_colorMid: { value: colorMid },
+        u_colorInner: { value: colorInner },
+        u_colorDopplerBlue: { value: colorDopplerBlue },
+        u_colorDopplerRed: { value: colorDopplerRed },
+        u_diskSpeed: { value: diskSpeed },
+        u_emissionStrength: { value: emissionStrength }
       },
       side: THREE.BackSide,
       depthWrite: false,
@@ -212,10 +235,9 @@ class BlackHole {
     // Sphère géométrique de rayon local 32.0
     const sphereGeom = new THREE.SphereGeometry(32.0, 48, 48);
     this.volumetricMesh = new THREE.Mesh(sphereGeom, this.volumetricMaterial);
-    
     this.group.add(this.volumetricMesh);
-    
-    // Mise à l'échelle du groupe pour correspondre à la taille de Sagittarius A* dans le monde
+
+    // Mise à l'échelle du groupe dans le monde
     this.group.scale.set(this.scaleFactor, this.scaleFactor, this.scaleFactor);
   }
 
@@ -224,14 +246,14 @@ class BlackHole {
     this.group.position.set(x, y, z);
   }
 
-  update(time, camera, renderer) {
+  update(time, camera, renderer, dt = 0.016) {
     if (!camera) return;
 
     this.volumetricMaterial.uniforms.u_time.value = time;
     
     // Calcul précis de la position caméra dans l'espace local du Mesh
     this.volumetricMesh.updateMatrixWorld();
-    this._tempVec.copy(camera.position);
+    camera.getWorldPosition(this._tempVec);
     this.volumetricMesh.worldToLocal(this._tempVec);
     this.volumetricMaterial.uniforms.u_cameraLocalPos.value.copy(this._tempVec);
     

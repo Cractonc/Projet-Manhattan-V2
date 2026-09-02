@@ -953,7 +953,7 @@ function texShellSNR(r1, g1, b1, r2, g2, b2) {
   }, 256, 256);
 }
 
-function texBlackHole() {
+function texBlackHole(r1 = 255, g1 = 180, b1 = 70, r2 = 255, g2 = 120, b2 = 30) {
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
@@ -962,12 +962,13 @@ function texBlackHole() {
     const swirl = Math.sin(angle * 3 + dist * 12) * 0.15 + 0.85;
     const inner = smoothstep(clamp((dist - 0.15) * 8, 0, 1));
     const glow = ring * swirl * inner;
-    const outerHaze = Math.exp(-dist * 1.6) * 0.7; // Halo beaucoup plus puissant pour être visible de loin
+    const outerHaze = Math.exp(-dist * 1.6) * 0.7; // Halo puissant pour être visible de loin
     const total = clamp(glow + outerHaze * inner, 0, 1.3);
+    const n = fbm(u * 8, v * 8, 3);
     return [
-      clamp(255 * total, 0, 255),
-      clamp((180 + fbm(u * 8, v * 8, 3) * 60) * total, 0, 255),
-      clamp(70 * total, 0, 255),
+      clamp(lerp(r1, r2, n) * total, 0, 255),
+      clamp(lerp(g1, g2, n) * total, 0, 255),
+      clamp(lerp(b1, b2, n) * total, 0, 255),
       clamp(total * 255, 0, 255) | 0
     ];
   }, 256, 256);
@@ -1074,7 +1075,13 @@ function getGalacticTexture(poi) {
   if (galTexCache[poi.id]) return galTexCache[poi.id];
   let tex;
   switch (poi.vType) {
-    case 'blackhole': tex = texBlackHole(); break;
+    case 'blackhole': 
+      if (poi.id === 'cygnus-x1') {
+        tex = texBlackHole(100, 190, 255, 170, 80, 240);
+      } else {
+        tex = texBlackHole();
+      }
+      break;
     case 'nebula': tex = texNebula(...(poi.colors || [200, 80, 140, 140, 60, 200])); break;
     case 'darkneb': tex = texDarkNebula(...(poi.colors || [140, 100, 70, 80, 60, 50])); break;
     case 'reflection': tex = texReflectionNebula(...(poi.colors || [100, 140, 220, 60, 80, 180])); break;

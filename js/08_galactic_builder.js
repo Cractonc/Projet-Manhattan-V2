@@ -416,11 +416,23 @@ function createGalacticPOIs() {
     // Générer les détails 3D (LOD niveau 0, masqué et non animé à longue distance pour optimiser)
     if (poi.vType === 'blackhole') {
       if (poi.id === 'sgr-a') {
-        const bh = new BlackHole({ radius: s });
+        const bh = new BlackHole({ radius: s, theme: 'orange' });
         detail.add(bh.getMesh());
         extras = {
           type: 'blackhole',
           isSgrA: true,
+          blackHole: bh,
+          s: s
+        };
+      } else if (poi.id === 'cygnus-x1') {
+        const bh = new BlackHole({
+          radius: s,
+          theme: 'cyan_violet'
+        });
+        detail.add(bh.getMesh());
+        extras = {
+          type: 'blackhole',
+          isSgrA: false,
           blackHole: bh,
           s: s
         };
@@ -443,9 +455,9 @@ function createGalacticPOIs() {
     const level0 = new THREE.Group();
     level0.add(detail);
     
-    // Le sprite 2D est totalement invisible au niveau 0 pour les amas et pour Sagittarius A* volumétrique
+    // Le sprite 2D est totalement invisible au niveau 0 pour les amas, Sgr A* et Cygnus X-1 volumétrique
     let dimmedSprite = null;
-    if (poi.vType !== 'cluster' && poi.id !== 'sgr-a') {
+    if (poi.vType !== 'cluster' && poi.id !== 'sgr-a' && poi.id !== 'cygnus-x1') {
       const dimmedSpriteMat = sprite.material.clone();
       if (poi.vType === 'blackhole') dimmedSpriteMat.opacity = 0.15;
       else if (poi.vType === 'system') dimmedSpriteMat.opacity = 0.05;
@@ -884,8 +896,8 @@ function updateGalacticPOIs(dt, activeCam) {
     const ex = obj.extras;
 
     if (ex.type === 'blackhole') {
-      if (ex.isSgrA && ex.blackHole) {
-        ex.blackHole.update(now, activeCam, renderer);
+      if (ex.blackHole) {
+        ex.blackHole.update(now, activeCam, renderer, dt);
       } else if (ex.disk) {
         // Rotate accretion disks (pour les autres trous noirs classiques comme Cygnus X-1)
         const rotSpeed = 0.4;

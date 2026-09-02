@@ -202,7 +202,8 @@ var GALACTIC_POI = [
   },
   {
     id: 'cygnus-x1', name: 'Cygnus X-1', type: 'Stellar Black Hole', tier: 2,
-    pos: [285000, 2000, 55000], vType: 'blackhole', scale: 3500, dotColor: '#ff6600',
+    pos: [285000, 2000, 55000], vType: 'blackhole', scale: 3500, dotColor: '#55aaff',
+    colors: [90, 180, 255, 160, 70, 240],
     info: { 'Type': 'Stellar Black Hole', 'Mass': '~21.2 M☉', 'Distance': '~6 070 ly', 'Companion': 'HDE 226868 (blue supergiant)', 'Feature': 'First widely accepted BH candidate' }
   },
   {
