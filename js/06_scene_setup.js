@@ -109,7 +109,7 @@ var galCam = {
     if (!obj) return;
     const pos = obj.group.position;
     this.tLookAt.copy(pos);
-    this.tRadius = clamp(obj.data.scale * 5, 500, 40000);
+    this.tRadius = clamp(obj.data.scale * 3.5, 500, 60000);
     if (poiId === 'sol') this.tRadius = 350; // closer look for mini solar system
     state.selectedPOI = poiId;
     updateGalacticInfoCard(obj.data);

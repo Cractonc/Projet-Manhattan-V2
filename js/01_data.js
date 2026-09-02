@@ -180,7 +180,7 @@ var EXTRA_GALAXIES = [
 var GALACTIC_POI = [
   {
     id: 'sgr-a', name: 'Sagittarius A*', type: 'Supermassive Black Hole', tier: 1,
-    pos: [0, 0, 0], vType: 'blackhole', scale: 14000, dotColor: '#ff8800',
+    pos: [0, 0, 0], vType: 'blackhole', scale: 21000, dotColor: '#ff8800',
     info: { 'Type': 'Supermassive Black Hole', 'Mass': '~4 million M☉', 'Distance': '~26 000 ly from Sol', 'Feature': 'Galactic center' }
   },
   {
@@ -328,8 +328,8 @@ var GALACTIC_POI = [
   },
   {
     id: 'sgr-b2', name: 'Sagittarius B2', type: 'Molecular Cloud', tier: 4,
-    pos: [18000, -2000, 4000], vType: 'darkneb', scale: 5000, dotColor: '#997744',
-    colors: [150, 120, 70, 100, 80, 50],
+    pos: [18000, -2000, 4000], vType: 'darkneb', scale: 6000, dotColor: '#ffaa44',
+    colors: [255, 185, 85, 170, 75, 20],
     info: { 'Type': 'Giant Molecular Cloud', 'Distance': '~390 ly from Sgr A*', 'Mass': '~3 million M☉', 'Feature': 'Contains complex organic molecules' }
   },
   {

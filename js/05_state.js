@@ -82,15 +82,22 @@ function mergeState(target, source) {
     if (source.hasOwnProperty(key)) {
       if (target[key] !== undefined && target[key] !== null) {
         if (target[key] instanceof THREE.Vector3 && source[key]) {
-          target[key].set(source[key].x || 0, source[key].y || 0, source[key].z || 0);
+          const x = Number(source[key].x) || 0;
+          const y = Number(source[key].y) || 0;
+          const z = Number(source[key].z) || 0;
+          target[key].set(x, y, z);
         } else if (target[key] instanceof THREE.Quaternion && source[key]) {
-          const x = source[key]._x !== undefined ? source[key]._x : source[key].x || 0;
-          const y = source[key]._y !== undefined ? source[key]._y : source[key].y || 0;
-          const z = source[key]._z !== undefined ? source[key]._z : source[key].z || 0;
-          const w = source[key]._w !== undefined ? source[key]._w : source[key].w !== undefined ? source[key].w : 1;
+          const x = Number(source[key]._x !== undefined ? source[key]._x : source[key].x) || 0;
+          const y = Number(source[key]._y !== undefined ? source[key]._y : source[key].y) || 0;
+          const z = Number(source[key]._z !== undefined ? source[key]._z : source[key].z) || 0;
+          let w = Number(source[key]._w !== undefined ? source[key]._w : (source[key].w !== undefined ? source[key].w : 1));
+          if (isNaN(w)) w = 1;
           target[key].set(x, y, z, w);
         } else if (typeof target[key] === 'object' && !Array.isArray(target[key])) {
           mergeState(target[key], source[key]);
+        } else if (typeof target[key] === 'number') {
+          const n = Number(source[key]);
+          target[key] = isNaN(n) ? target[key] : n;
         } else {
           target[key] = source[key];
         }

@@ -791,22 +791,23 @@ function texNebula(r1, g1, b1, r2, g2, b2) {
   }, 256, 256);
 }
 
-// Dark nebula / molecular cloud: dense, opaque, muted
+// Dark nebula / molecular cloud: dense, high contrast, warm dust & filaments
 function texDarkNebula(r1, g1, b1, r2, g2, b2) {
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     const n1 = fbm(u * 3 + 2.1, v * 3 + 0.9, 6);
     const n2 = fbm(u * 5 + 0.3, v * 5 - 1.4, 5);
-    const density = clamp(n1 * 0.7 + 0.45, 0, 1) * clamp(1 - dist * 0.95, 0, 1);
-    const dark = clamp(1 - n2 * 0.6, 0.3, 1);
+    const density = clamp(n1 * 0.75 + 0.45, 0, 1) * clamp(1 - dist * 0.95, 0, 1);
+    const dark = clamp(1 - n2 * 0.65, 0.25, 1);
     const edge = Math.exp(-Math.pow((dist - 0.5) * 3, 2)) * 0.35;
     const total = density * dark + edge;
+    const contrast = Math.pow(total, 1.25);
     return [
-      clamp(lerp(r1, r2, n1) * total * 0.6, 0, 255),
-      clamp(lerp(g1, g2, n1) * total * 0.6, 0, 255),
-      clamp(lerp(b1, b2, n1) * total * 0.6, 0, 255),
-      clamp(total * 200, 0, 255) | 0
+      clamp(lerp(r1, r2, n1 * n1) * contrast * 0.95, 0, 255),
+      clamp(lerp(g1, g2, n1 * n1) * contrast * 0.95, 0, 255),
+      clamp(lerp(b1, b2, n1 * n1) * contrast * 0.95, 0, 255),
+      clamp(total * 230, 0, 255) | 0
     ];
   }, 256, 256);
 }

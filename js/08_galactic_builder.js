@@ -415,8 +415,19 @@ function createGalacticPOIs() {
 
     // Générer les détails 3D (LOD niveau 0, masqué et non animé à longue distance pour optimiser)
     if (poi.vType === 'blackhole') {
-      extras = createBlackHoleExtras(s, detail, poi.id);
-    } else if (poi.vType === 'nebula') {
+      if (poi.id === 'sgr-a') {
+        const bh = new BlackHole({ radius: s });
+        detail.add(bh.getMesh());
+        extras = {
+          type: 'blackhole',
+          isSgrA: true,
+          blackHole: bh,
+          s: s
+        };
+      } else {
+        extras = createBlackHoleExtras(s, detail, poi.id);
+      }
+    } else if (poi.vType === 'nebula' || poi.vType === 'darkneb' || poi.vType === 'reflection') {
       extras = createNebulaExtras(s, poi, detail);
     } else if (poi.vType === 'cluster') {
       extras = createClusterExtras(s, detail);
@@ -432,9 +443,9 @@ function createGalacticPOIs() {
     const level0 = new THREE.Group();
     level0.add(detail);
     
-    // Le sprite 2D est totalement invisible au niveau 0 pour les amas (il s'active exclusivement au niveau 1)
+    // Le sprite 2D est totalement invisible au niveau 0 pour les amas et pour Sagittarius A* volumétrique
     let dimmedSprite = null;
-    if (poi.vType !== 'cluster') {
+    if (poi.vType !== 'cluster' && poi.id !== 'sgr-a') {
       const dimmedSpriteMat = sprite.material.clone();
       if (poi.vType === 'blackhole') dimmedSpriteMat.opacity = 0.15;
       else if (poi.vType === 'system') dimmedSpriteMat.opacity = 0.05;
@@ -446,19 +457,22 @@ function createGalacticPOIs() {
     lod.addLevel(level0, 0);
 
     // ── NIVEAU 1 : SPRITE LOINTAIN ──
-    // Seuil de distance ~ 50 fois le scale, plafonné à 350 000 pour que les objets massifs (Sgr A*) basculent bien en 2D de loin
-    const transitionDist = Math.min(s * 50, 350000);
-    
-    // On booste l'opacité à 1.0 au loin
-    sprite.material.opacity = 1.0; 
-    
-    // Pour compenser la géométrie 3D, on ajuste le facteur d'échelle du sprite lointain
-    let farScaleMultiplier = 1.2;
-    if (poi.vType === 'blackhole') farScaleMultiplier = 2.6;
-    else if (poi.vType === 'cluster') farScaleMultiplier = 1.8; // Compenser l'envergure du nuage de 300 étoiles
-    sprite.scale.set(s * farScaleMultiplier, s * farScaleMultiplier, 1);
-    
-    lod.addLevel(sprite, transitionDist);
+    // Pour Sagittarius A*, on ne bascule jamais en sprite 2D : le modèle volumétrique 3D reste actif à toute distance
+    if (poi.id !== 'sgr-a') {
+      // Seuil de distance ~ 50 fois le scale, plafonné à 350 000 pour que les objets basculent bien en 2D de loin
+      const transitionDist = Math.min(s * 50, 350000);
+      
+      // On booste l'opacité à 1.0 au loin
+      sprite.material.opacity = 1.0; 
+      
+      // Pour compenser la géométrie 3D, on ajuste le facteur d'échelle du sprite lointain
+      let farScaleMultiplier = 1.2;
+      if (poi.vType === 'blackhole') farScaleMultiplier = 2.6;
+      else if (poi.vType === 'cluster') farScaleMultiplier = 1.8; // Compenser l'envergure du nuage de 300 étoiles
+      sprite.scale.set(s * farScaleMultiplier, s * farScaleMultiplier, 1);
+      
+      lod.addLevel(sprite, transitionDist);
+    }
     
     // NIVEAU 2 SUPPRIMÉ : On ne cache plus complètement les petits astres lointains, 
     // le rendu de simples sprites est suffisamment léger et permet de garder la galaxie peuplée.
@@ -863,44 +877,47 @@ function updateGalacticPOIs(dt, activeCam) {
 
     if (!obj.extras) continue;
 
-    // CRITIQUE POUR LES PERFORMANCES : On n'anime les détails que si le LOD actif est 0 (proche)
-    const isNear = obj.lod.getCurrentLevel() === 0;
+    // On anime les détails si le LOD actif est 0 (proche) ou s'il s'agit de Sagittarius A* (toujours en 3D)
+    const isNear = (id === 'sgr-a') || (obj.lod.getCurrentLevel() === 0);
     if (!isNear) continue;
 
     const ex = obj.extras;
 
     if (ex.type === 'blackhole') {
-      // Rotate accretion disks
-      const rotSpeed = ex.isSgrA ? 0.35 : 0.4; // slightly faster for Sgr A* to show hot spots turning
-      ex.disk.rotation.z += dt * rotSpeed;
-      ex.outerDisk.rotation.z += dt * rotSpeed * 0.6;
-      ex.innerDisk.rotation.z -= dt * rotSpeed * 1.4;
+      if (ex.isSgrA && ex.blackHole) {
+        ex.blackHole.update(now, activeCam, renderer);
+      } else if (ex.disk) {
+        // Rotate accretion disks (pour les autres trous noirs classiques comme Cygnus X-1)
+        const rotSpeed = 0.4;
+        ex.disk.rotation.z += dt * rotSpeed;
+        ex.outerDisk.rotation.z += dt * rotSpeed * 0.6;
+        ex.innerDisk.rotation.z -= dt * rotSpeed * 1.4;
 
-      // Animate secondary photon ring for Sgr A*
-      if (ex.photonRing2) {
-        ex.photonRing2.rotation.z += dt * 0.15;
-      }
-      // Pulse lens halo subtly
-      if (ex.lensHalo) {
-        const hPulse = 0.08 + Math.sin(now * 0.4) * 0.04;
-        ex.lensHalo.material.opacity = hPulse;
-      }
-
-      // Animate jet particles
-      const jetMaxH = ex.isSgrA ? ex.s * 1.8 : ex.s * 1.5;
-      const jetSpread = ex.isSgrA ? ex.s * 0.015 : ex.s * 0.03;
-      const jp = ex.jets.geometry.attributes.position.array;
-      for (let i = 0; i < ex.jetCount; i++) {
-        const half = i < ex.jetCount / 2 ? 1 : -1;
-        jp[i * 3 + 1] += half * dt * ex.s * (ex.isSgrA ? 0.35 : 0.5);
-        if (Math.abs(jp[i * 3 + 1]) > jetMaxH) {
-          jp[i * 3] = (Math.random() - 0.5) * jetSpread;
-          jp[i * 3 + 1] = half * Math.random() * ex.s * 0.06;
-          jp[i * 3 + 2] = (Math.random() - 0.5) * jetSpread;
+        // Animate secondary photon ring
+        if (ex.photonRing2) {
+          ex.photonRing2.rotation.z += dt * 0.15;
         }
-      }
-      ex.jets.geometry.attributes.position.needsUpdate = true;
+        // Pulse lens halo subtly
+        if (ex.lensHalo) {
+          const hPulse = 0.08 + Math.sin(now * 0.4) * 0.04;
+          ex.lensHalo.material.opacity = hPulse;
+        }
 
+        // Animate jet particles
+        const jetMaxH = ex.s * 1.5;
+        const jetSpread = ex.s * 0.03;
+        const jp = ex.jets.geometry.attributes.position.array;
+        for (let i = 0; i < ex.jetCount; i++) {
+          const half = i < ex.jetCount / 2 ? 1 : -1;
+          jp[i * 3 + 1] += half * dt * ex.s * 0.5;
+          if (Math.abs(jp[i * 3 + 1]) > jetMaxH) {
+            jp[i * 3] = (Math.random() - 0.5) * jetSpread;
+            jp[i * 3 + 1] = half * Math.random() * ex.s * 0.06;
+            jp[i * 3 + 2] = (Math.random() - 0.5) * jetSpread;
+          }
+        }
+        ex.jets.geometry.attributes.position.needsUpdate = true;
+      }
     } else if (ex.type === 'nebula') {
       obj.sprite.material.rotation += dt * 0.015;
       ex.halo.material.rotation -= dt * 0.008;
