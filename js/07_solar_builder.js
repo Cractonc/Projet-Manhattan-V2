@@ -397,24 +397,25 @@ var sunGroup = null;
 var sunPulseTimer = 0;
 var sunOuterCoronaSprite = null;
 var sunMidCoronaSprite = null;
-var sunDiffractionSprite = null;
 
 function makeSunCoreTexture(colorObj) {
-  const size = 256;
+  const size = 512;
   const cvs = document.createElement('canvas');
   cvs.width = cvs.height = size;
   const ctx = cvs.getContext('2d');
-  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  const cx = size / 2, cy = size / 2;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cx);
   if (colorObj) {
     grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.18, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.95)`);
-    grad.addColorStop(0.5, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.6)},${Math.floor(colorObj.b * 0.3)},0.45)`);
+    grad.addColorStop(0.35, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.95)`);
+    grad.addColorStop(0.65, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.7)},${Math.floor(colorObj.b * 0.4)},0.65)`);
+    grad.addColorStop(0.85, `rgba(${Math.floor(colorObj.r * 0.9)},${Math.floor(colorObj.g * 0.45)},${Math.floor(colorObj.b * 0.15)},0.15)`);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
   } else {
     grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.18, 'rgba(255,235,160,0.95)');
-    grad.addColorStop(0.5, 'rgba(255,160,50,0.45)');
-    grad.addColorStop(0.8, 'rgba(230,100,20,0.12)');
+    grad.addColorStop(0.35, 'rgba(255,240,180,0.95)');
+    grad.addColorStop(0.65, 'rgba(255,175,50,0.65)');
+    grad.addColorStop(0.85, 'rgba(235,100,15,0.15)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
   }
   ctx.fillStyle = grad;
@@ -423,64 +424,25 @@ function makeSunCoreTexture(colorObj) {
 }
 
 function makeSunOuterHazeTexture(colorObj) {
-  const size = 256;
-  const cvs = document.createElement('canvas');
-  cvs.width = cvs.height = size;
-  const ctx = cvs.getContext('2d');
-  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  if (colorObj) {
-    grad.addColorStop(0, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.28)`);
-    grad.addColorStop(0.35, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.7)},${Math.floor(colorObj.b * 0.4)},0.12)`);
-    grad.addColorStop(0.7, `rgba(${Math.floor(colorObj.r * 0.8)},${Math.floor(colorObj.g * 0.4)},${Math.floor(colorObj.b * 0.2)},0.03)`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-  } else {
-    grad.addColorStop(0, 'rgba(255,210,130,0.28)');
-    grad.addColorStop(0.35, 'rgba(255,150,55,0.12)');
-    grad.addColorStop(0.7, 'rgba(230,90,25,0.03)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-  }
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(cvs);
-}
-
-function makeSunDiffractionTexture(colorObj) {
   const size = 512;
   const cvs = document.createElement('canvas');
   cvs.width = cvs.height = size;
   const ctx = cvs.getContext('2d');
   const cx = size / 2, cy = size / 2;
-
-  // Rayon horizontal fin
-  const gH = ctx.createLinearGradient(0, cy, size, cy);
-  gH.addColorStop(0, 'rgba(255,255,255,0)');
-  gH.addColorStop(0.42, 'rgba(255,230,170,0.18)');
-  gH.addColorStop(0.5, 'rgba(255,255,255,0.85)');
-  gH.addColorStop(0.58, 'rgba(255,230,170,0.18)');
-  gH.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gH;
-  ctx.fillRect(0, cy - 2, size, 4);
-
-  // Rayon vertical fin
-  const gV = ctx.createLinearGradient(cx, 0, cx, size);
-  gV.addColorStop(0, 'rgba(255,255,255,0)');
-  gV.addColorStop(0.42, 'rgba(255,230,170,0.18)');
-  gV.addColorStop(0.5, 'rgba(255,255,255,0.85)');
-  gV.addColorStop(0.58, 'rgba(255,230,170,0.18)');
-  gV.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = gV;
-  ctx.fillRect(cx - 2, 0, 4, size);
-
-  // Cœur doux au centre de la diffraction
-  const gC = ctx.createRadialGradient(cx, cy, 0, cx, cy, 36);
-  gC.addColorStop(0, 'rgba(255,255,255,0.9)');
-  gC.addColorStop(0.4, 'rgba(255,220,140,0.4)');
-  gC.addColorStop(1, 'rgba(255,200,100,0)');
-  ctx.fillStyle = gC;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 36, 0, Math.PI * 2);
-  ctx.fill();
-
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cx);
+  if (colorObj) {
+    grad.addColorStop(0, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.35)`);
+    grad.addColorStop(0.28, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.7)},${Math.floor(colorObj.b * 0.35)},0.20)`);
+    grad.addColorStop(0.60, `rgba(${Math.floor(colorObj.r * 0.85)},${Math.floor(colorObj.g * 0.4)},${Math.floor(colorObj.b * 0.15)},0.06)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(255,215,120,0.35)');
+    grad.addColorStop(0.28, 'rgba(255,150,45,0.20)');
+    grad.addColorStop(0.60, 'rgba(230,85,15,0.06)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(cvs);
 }
 
@@ -521,44 +483,34 @@ function createSun() {
   sunGroup.add(sun);
   clickables.push(sun);
 
-  // 2. Couronne interne dense (incandescente, r * 2.2)
+  // 2. Couronne interne dense (incandescente, r * 2.8)
   const coreTex = makeSunCoreTexture(sysData.sunColor);
   const innerCoronaMat = new THREE.SpriteMaterial({
     map: coreTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
     blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.95
   });
   const innerCorona = new THREE.Sprite(innerCoronaMat);
-  innerCorona.scale.set(r * 2.2, r * 2.2, 1);
+  innerCorona.scale.set(r * 2.8, r * 2.8, 1);
   sunGroup.add(innerCorona);
 
-  // 3. Chromosphère intermédiaire rayonnante (r * 4.0)
+  // 3. Chromosphère intermédiaire rayonnante (r * 4.8)
   const midCoronaMat = new THREE.SpriteMaterial({
     map: coreTex, color: new THREE.Color(glowR * 0.95, glowG * 0.85, glowB * 0.7), transparent: true,
     blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.65
   });
   sunMidCoronaSprite = new THREE.Sprite(midCoronaMat);
-  sunMidCoronaSprite.scale.set(r * 4.0, r * 4.0, 1);
+  sunMidCoronaSprite.scale.set(r * 4.8, r * 4.8, 1);
   sunGroup.add(sunMidCoronaSprite);
 
-  // 4. Grand voile solaire externe vaporeux (r * 8.0 ~ 56 u de rayonnement majestueux)
+  // 4. Grand voile solaire externe vaporeux et sphérique (r * 8.0)
   const hazeTex = makeSunOuterHazeTexture(sysData.sunColor);
   const outerCoronaMat = new THREE.SpriteMaterial({
     map: hazeTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
-    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.40
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.38
   });
   sunOuterCoronaSprite = new THREE.Sprite(outerCoronaMat);
   sunOuterCoronaSprite.scale.set(r * 8.0, r * 8.0, 1);
   sunGroup.add(sunOuterCoronaSprite);
-
-  // 5. Rayons de diffraction optique discrets
-  const diffTex = makeSunDiffractionTexture(sysData.sunColor);
-  const diffMat = new THREE.SpriteMaterial({
-    map: diffTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
-    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.32
-  });
-  sunDiffractionSprite = new THREE.Sprite(diffMat);
-  sunDiffractionSprite.scale.set(r * 7.0, r * 7.0, 1);
-  sunGroup.add(sunDiffractionSprite);
 
   planetObjects['sun'] = {
     mesh: sun,
@@ -577,7 +529,7 @@ function updateSun(dt) {
   // Rotation axiale lente du Soleil
   planetObjects['sun'].mesh.rotation.y += dt * 0.04 * state.timeScale;
 
-  // Respiration thermique lente de la couronne solaire (période de ~4s)
+  // Respiration thermique douce de la couronne solaire (période de ~4s)
   sunPulseTimer += dt * 1.5 * state.timeScale;
   const pulse = 1.0 + Math.sin(sunPulseTimer) * 0.025;
 
@@ -585,15 +537,12 @@ function updateSun(dt) {
     const baseR = planetObjects['sun'].data.scaledRadius;
     const s = baseR * 8.0 * pulse;
     sunOuterCoronaSprite.scale.set(s, s, 1);
-    sunOuterCoronaSprite.material.opacity = 0.38 + Math.sin(sunPulseTimer * 1.1) * 0.05;
+    sunOuterCoronaSprite.material.opacity = 0.36 + Math.sin(sunPulseTimer * 1.1) * 0.04;
   }
   if (sunMidCoronaSprite) {
     const baseR = planetObjects['sun'].data.scaledRadius;
-    const s = baseR * 4.0 * (1.0 + Math.cos(sunPulseTimer * 0.9) * 0.02);
+    const s = baseR * 4.8 * (1.0 + Math.cos(sunPulseTimer * 0.9) * 0.02);
     sunMidCoronaSprite.scale.set(s, s, 1);
-  }
-  if (sunDiffractionSprite && sunDiffractionSprite.material) {
-    sunDiffractionSprite.material.rotation += dt * 0.003 * state.timeScale;
   }
 }
 
