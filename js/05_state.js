@@ -69,8 +69,8 @@ var state = {
     discoveredPOIs: [],
     activeQuestId: (typeof QUESTS !== 'undefined' && QUESTS.length > 0) ? QUESTS[0].id : 'quest_orion'
   },
-  // Ship coordinates
-  shipPosition: new THREE.Vector3(0, 5, 30),
+  // Ship coordinates (par défaut entre orbite Terre à 15 u et Mars à 23 u)
+  shipPosition: new THREE.Vector3(0, 3, 18),
   shipRotation: new THREE.Quaternion(),
   // Warp state
   warp: {
@@ -139,6 +139,10 @@ function loadGame() {
       
       // Sync ship object with loaded state if it exists
       if (typeof ship !== 'undefined' && state.shipPosition && state.shipRotation) {
+        // Spécificité système solaire : assainir les coordonnées résiduelles galactiques (> 500 u)
+        if (state.scaleLevel === 'SOLAR' && state.shipPosition.length() > 500) {
+          state.shipPosition.set(0, 3, 18);
+        }
         ship.position.copy(state.shipPosition);
         ship.quaternion.copy(state.shipRotation);
       }
@@ -215,7 +219,7 @@ var cockpitCodeToHeld = {
 };
 
 var ship = {
-  position: new THREE.Vector3(0, 5, 30),
+  position: new THREE.Vector3(0, 3, 18),
   quaternion: new THREE.Quaternion(),
   speed: 0,
   maxSpeed: 8,            // solar: 8 units/s cruise

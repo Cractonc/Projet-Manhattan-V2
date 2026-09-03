@@ -395,13 +395,24 @@ function updateQuestHUD() {
   const targetPoi = typeof GALACTIC_POI !== 'undefined' ? GALACTIC_POI.find(p => p.id === quest.targetPOI_ID) : null;
   let distStr = '';
   if (targetPoi && state.shipPosition) {
+    let shipGalPos = state.shipPosition;
+    if (state.scaleLevel === 'SOLAR' && typeof SUN_GAL !== 'undefined') {
+      // Dans le système solaire, la position galactique est celle du Soleil
+      shipGalPos = new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z);
+    }
     const targetPos = new THREE.Vector3(targetPoi.pos[0], targetPoi.pos[1], targetPoi.pos[2]);
-    const dist = state.shipPosition.distanceTo(targetPos);
+    const dist = shipGalPos.distanceTo(targetPos);
     distStr = ` (~${formatDistance(dist)})`;
   }
 
   const targetName = targetPoi ? targetPoi.name : quest.targetPOI_ID;
-  if (objEl) objEl.textContent = `Objectif : Atteindre ${targetName}${distStr}`;
+  if (objEl) {
+    if (state.scaleLevel === 'SOLAR') {
+      objEl.textContent = `Objectif : Passer en Galaxie (G) → ${targetName}${distStr}`;
+    } else {
+      objEl.textContent = `Objectif : Atteindre ${targetName}${distStr}`;
+    }
+  }
   if (rewardEl) rewardEl.textContent = `+${quest.reward || quest.credits || 500} CR`;
 }
 

@@ -299,6 +299,16 @@ function clearLocalScene() {
     asteroidBelt = null;
   }
 
+  // Ciel étoilé réaliste adapté au système
+  if (typeof solarStarfieldGroup !== 'undefined' && solarStarfieldGroup) {
+    scene.remove(solarStarfieldGroup);
+    solarStarfieldGroup.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+    solarStarfieldGroup = null;
+  }
+
   cinematicSequence = [];
 }
 
@@ -307,6 +317,11 @@ function loadStarSystem(sysId) {
   const data = SYSTEMS_DATA[sysId];
   if (!data) return;
   state.currentSystem = sysId;
+
+  // Créer le ciel étoilé réaliste adapté à ce système stellaire
+  if (typeof createStarfield === 'function') {
+    createStarfield(sysId);
+  }
 
   createSun();
 
@@ -327,6 +342,10 @@ function loadStarSystem(sysId) {
 
 function performSceneSwitchToGalactic() {
   state.scaleLevel = 'GALACTIC';
+  if (typeof SPEED_TIERS_GALACTIC !== 'undefined') SPEED_TIERS = SPEED_TIERS_GALACTIC;
+  state.currentSpeedTier = 'SUBLIGHT';
+  ship.throttlePercent = 0;
+  ship.speed = 0;
 
   // If inside ship (cockpit or walk), update camera far plane
   const inShip = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK');
@@ -337,7 +356,6 @@ function performSceneSwitchToGalactic() {
     shipRig.position.copy(ship.position);
     cockpitCamera.far = 10000000; // Deep space visibility
     cockpitCamera.updateProjectionMatrix();
-    // ship.maxSpeed = 3000; // ly/s cruise in galactic
   }
 
   // Switch tab
@@ -348,17 +366,28 @@ function performSceneSwitchToGalactic() {
 function performSceneSwitchToSystem(sysId) {
   loadStarSystem(sysId);
   state.scaleLevel = 'SOLAR';
+  if (typeof SPEED_TIERS_SOLAR !== 'undefined') SPEED_TIERS = SPEED_TIERS_SOLAR;
+  state.currentSpeedTier = 'SUBLIGHT';
+  ship.throttlePercent = 0;
+  ship.speed = 0;
 
   // If inside ship (cockpit or walk), update camera far plane
   const inShip = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK');
   if (inShip && shipRig) {
     if (shipRig.parent) shipRig.parent.remove(shipRig);
     scene.add(shipRig);
-    ship.position.set(0, 10, 60);
+    // Spécificité systèmes visitables : spawner sur l'orbite de la Terre ou Mars
+    if (typeof planetObjects !== 'undefined' && planetObjects['earth']) {
+      const earthPos = new THREE.Vector3();
+      planetObjects['earth'].mesh.getWorldPosition(earthPos);
+      ship.position.copy(earthPos).add(new THREE.Vector3(2, 1.2, 4));
+    } else {
+      ship.position.set(0, 3, 18);
+    }
+    state.shipPosition.copy(ship.position);
     shipRig.position.copy(ship.position);
     cockpitCamera.far = 100000;
     cockpitCamera.updateProjectionMatrix();
-    // ship.maxSpeed = 8; // u/s cruise in solar
   }
 
   state.selectedPOI = null;

@@ -876,6 +876,63 @@ function toggleCockpitMode() {
   else enterCockpitMode();
 }
 
+// Spécificité pour les systèmes visitables : positionnement sur l'orbite Terre / Mars ou astre sélectionné
+function ensureValidSolarShipPosition() {
+  const isOutOfBounds = ship.position.length() > 500 || ship.position.length() < 1;
+
+  // Cas 1 : Le joueur a ciblé / sélectionné un astre précis (Terre, Mars, Jupiter, etc.)
+  if (state.selectedBody && planetObjects[state.selectedBody]) {
+    const targetMesh = planetObjects[state.selectedBody].mesh;
+    const targetPos = new THREE.Vector3();
+    targetMesh.getWorldPosition(targetPos);
+    const r = planetObjects[state.selectedBody].data.scaledRadius || 1;
+
+    // Si on vient de la galaxie ou si on est trop loin de l'astre sélectionné (> 40 u)
+    if (isOutOfBounds || ship.position.distanceTo(targetPos) > 40) {
+      ship.position.copy(targetPos).add(new THREE.Vector3(0, r * 1.2, r * 3.8));
+      const m = new THREE.Matrix4().lookAt(ship.position, targetPos, new THREE.Vector3(0, 1, 0));
+      ship.quaternion.setFromRotationMatrix(m);
+      state.cockpitTarget = state.selectedBody;
+      state.shipPosition.copy(ship.position);
+      state.shipRotation.copy(ship.quaternion);
+      return;
+    }
+  }
+
+  // Cas 2 : Coordonnées hors limites (ex: coordonnées galactiques de 260 000 u)
+  // Spawner au niveau de l'orbite de la Terre ou de Mars
+  if (isOutOfBounds) {
+    let spawnPos = null;
+    let targetLook = new THREE.Vector3(0, 0, 0); // Regarder vers le centre / Soleil
+
+    if (planetObjects['earth']) {
+      const earthPos = new THREE.Vector3();
+      planetObjects['earth'].mesh.getWorldPosition(earthPos);
+      // Spawner directement au niveau de l'orbite terrestre à ~4 u de la Terre
+      spawnPos = earthPos.clone().add(new THREE.Vector3(2, 1.2, 4));
+      targetLook.copy(earthPos);
+      state.cockpitTarget = 'earth';
+    } else if (planetObjects['mars']) {
+      const marsPos = new THREE.Vector3();
+      planetObjects['mars'].mesh.getWorldPosition(marsPos);
+      spawnPos = marsPos.clone().add(new THREE.Vector3(2, 1.2, 4));
+      targetLook.copy(marsPos);
+      state.cockpitTarget = 'mars';
+    } else {
+      // Autre système stellaire visitable : position sécurisée vers 18 u du soleil
+      spawnPos = new THREE.Vector3(0, 3, 18);
+      state.cockpitTarget = planetObjects['sun'] ? 'sun' : null;
+    }
+
+    ship.position.copy(spawnPos);
+    const m = new THREE.Matrix4().lookAt(ship.position, targetLook, new THREE.Vector3(0, 1, 0));
+    ship.quaternion.setFromRotationMatrix(m);
+
+    state.shipPosition.copy(ship.position);
+    state.shipRotation.copy(ship.quaternion);
+  }
+}
+
 function enterCockpitMode() {
   state.prevCameraMode = state.cameraMode;
   const ov = document.getElementById('cockpit-transition');
@@ -885,15 +942,16 @@ function enterCockpitMode() {
   initAudio();
 
   setTimeout(() => {
-    // The ship is persistent, we don't move it to the spectator camera.
-
     // Move shipRig to appropriate scene
     if (state.scaleLevel === 'GALACTIC') {
       if (shipRig.parent) shipRig.parent.remove(shipRig);
       galacticScene.add(shipRig);
       cockpitCamera.far = 600000;
       cockpitCamera.updateProjectionMatrix();
-      // ship.maxSpeed = 3000; // ly/s cruise in galactic
+      if (ship.position.length() < 1000) {
+        ship.position.set(SUN_GAL.x, SUN_GAL.y + 500, SUN_GAL.z);
+        state.shipPosition.copy(ship.position);
+      }
     } else {
       if (shipRig.parent !== scene) {
         if (shipRig.parent) shipRig.parent.remove(shipRig);
@@ -901,7 +959,9 @@ function enterCockpitMode() {
       }
       cockpitCamera.far = 100000;
       cockpitCamera.updateProjectionMatrix();
-      // ship.maxSpeed = 8; // units/s cruise in solar
+
+      // Spécificité pour les systèmes visitables : s'assurer qu'on spawne sur l'orbite Terre / Mars
+      ensureValidSolarShipPosition();
     }
 
     shipRig.position.copy(ship.position);
@@ -917,7 +977,7 @@ function enterCockpitMode() {
     ship.freeLookYaw = 0; ship.freeLookPitch = 0;
     ship.coupledRoll = 0; ship.shakeAmt = 0;
 
-    state.cockpitTarget = state.scaleLevel === 'SOLAR' ? state.selectedBody : state.selectedPOI;
+    state.cockpitTarget = state.scaleLevel === 'SOLAR' ? (state.selectedBody || state.cockpitTarget || 'earth') : state.selectedPOI;
     state.cockpitAutoNav = false;
     state.cockpitAutoTimer = 0;
 
@@ -966,11 +1026,20 @@ function exitCockpitMode() {
       galCam.tRadius = 5000;
     }
 
-    // Move ship back to solar scene always
-    if (shipRig.parent) shipRig.parent.remove(shipRig);
-    scene.add(shipRig);
-    // ship.maxSpeed = 8;
-    cockpitCamera.far = 100000;
+    // Move ship back to correct scene
+    if (state.scaleLevel === 'SOLAR') {
+      if (shipRig.parent !== scene) {
+        if (shipRig.parent) shipRig.parent.remove(shipRig);
+        scene.add(shipRig);
+      }
+      cockpitCamera.far = 100000;
+    } else {
+      if (shipRig.parent !== galacticScene) {
+        if (shipRig.parent) shipRig.parent.remove(shipRig);
+        galacticScene.add(shipRig);
+      }
+      cockpitCamera.far = 600000;
+    }
     cockpitCamera.updateProjectionMatrix();
 
     // cockpitGroup.visible = false; // Intentionally left visible for exterior view
@@ -1703,7 +1772,22 @@ function updateScanSystem(dt) {
   }
 
   // Afficher/masquer le panneau
-  if (!hasScanQuest || state.cameraMode !== 'COCKPIT') {
+  // Spécificité : le scanner de POI galactiques n'est actif QU'À L'ÉCHELLE GALACTIQUE et en vue cockpit
+  if (!hasScanQuest || state.cameraMode !== 'COCKPIT' || state.scaleLevel !== 'GALACTIC') {
+    panel.classList.remove('visible');
+    scanState.signalStrength = 0;
+    scanState.scanProgress   = 0;
+    scanState.active         = false;
+    return;
+  }
+
+  // ── Calcul de distance et d'alignement à l'échelle galactique ──
+  var targetPos = new THREE.Vector3(targetPoi.pos[0], targetPoi.pos[1], targetPoi.pos[2]);
+  var dist = ship.position.distanceTo(targetPos);
+  var maxScanDist = Math.max((targetPoi.scale || 4000) * 8, 45000); // Portée de détection du scanner
+
+  // Si on est trop loin dans la galaxie, le signal est hors de portée
+  if (dist > maxScanDist) {
     panel.classList.remove('visible');
     scanState.signalStrength = 0;
     scanState.scanProgress   = 0;
@@ -1714,20 +1798,17 @@ function updateScanSystem(dt) {
   panel.classList.add('visible');
   scanState.active = true;
 
-  // ── Calcul du dot product : forward vaisseau ↔ direction vers cible ──
+  // ── Calcul de l'alignement : forward vaisseau ↔ direction vers cible ──
   var forward = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
-  var toTarget = new THREE.Vector3(
-    targetPoi.pos[0] - ship.position.x,
-    targetPoi.pos[1] - ship.position.y,
-    targetPoi.pos[2] - ship.position.z
-  ).normalize();
-
+  var toTarget = new THREE.Vector3().subVectors(targetPos, ship.position).normalize();
   var dot = forward.dot(toTarget); // [-1 .. +1]
 
-  // Courbe quadratique : signal nul si on tourne le dos, 100% si parfaitement aligné
-  // clamp de 0 à 1 puis puissance 2 pour exiger un bon alignement
-  var rawFraction  = Math.max(0, (dot + 1) / 2); // [0..1]
-  var strength     = Math.pow(rawFraction, 2) * 100;
+  // Le signal augmente à mesure qu'on approche du POI et qu'on pointe le vaisseau vers lui
+  var distRatio = clamp(1.0 - (dist / maxScanDist), 0, 1);
+  var distFactor = Math.pow(distRatio, 0.65); // Facteur distance
+
+  var alignFactor = Math.pow(Math.max(0, dot), 2.0); // Facteur alignement (0 si on tourne le dos)
+  var strength = distFactor * alignFactor * 100;
   scanState.signalStrength = strength;
 
   // ── Mise à jour barre signal ──
@@ -1735,11 +1816,11 @@ function updateScanSystem(dt) {
   sigText.textContent = Math.round(strength) + '%';
   // Couleur selon intensité
   sigBar.classList.remove('med', 'high');
-  if (strength >= 90)      sigBar.classList.add('high');
-  else if (strength >= 50) sigBar.classList.add('med');
+  if (strength >= 80)      sigBar.classList.add('high');
+  else if (strength >= 40) sigBar.classList.add('med');
 
   // ── Logique de scan (touche R maintenue) ──
-  var aligned   = strength >= 90;
+  var aligned   = strength >= 80;
   var scanHeld  = !!(typeof cockpitKeys !== 'undefined' && cockpitKeys.scanHeld);
 
   if (aligned && scanHeld) {
