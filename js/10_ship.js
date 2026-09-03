@@ -1269,14 +1269,17 @@ function updateWalkMode(dt) {
 }
 
 function updateShip(dt) {
-  ship.maxSpeed = SPEED_TIERS[state.currentSpeedTier];
+  const isFTL = state.scaleLevel === 'GALACTIC';
+  const currentTiers = isFTL ? SPEED_TIERS_GALACTIC : SPEED_TIERS_SOLAR;
+  SPEED_TIERS = currentTiers;
+  ship.maxSpeed = currentTiers[state.currentSpeedTier] || currentTiers.IMPULSE;
+
   if (state.cameraMode !== 'COCKPIT' && state.cameraMode !== 'WALK') return;
   if (state.warp.active && state.warp.type === 'TO_POI') {
     updateCockpitCamera(dt);
     return;
   }
 
-  const isFTL = state.scaleLevel === 'GALACTIC';
   const TURN_RATE = isFTL ? 0.6 : 1.5;
   const STRAFE_MAX = isFTL ? 1200 : 3;
 
@@ -1349,6 +1352,29 @@ function updateShip(dt) {
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
   ship.position.addScaledVector(fwd, ship.speed * dt);
 
+  // ── Système de retenue / Sécurité du Système Solaire (Perimeter Safety) ──
+  if (!isFTL) {
+    const distFromCenter = Math.sqrt(ship.position.x * ship.position.x + ship.position.z * ship.position.z);
+    const MAX_SAFE_RADIUS = 600; // Au-delà de Neptune (~450 u) et de la ceinture de Kuiper (~550 u)
+    
+    if (distFromCenter > MAX_SAFE_RADIUS) {
+      const outward = new THREE.Vector3(ship.position.x, 0, ship.position.z).normalize();
+      const dot = fwd.dot(outward); // > 0 si on vole vers l'extérieur
+      
+      if (dot > 0) {
+        // Freinage de sécurité progressif pour ne jamais perdre le système
+        const excess = distFromCenter - MAX_SAFE_RADIUS;
+        const damping = Math.max(0.05, 1 - (excess / 120));
+        ship.speed = Math.min(ship.speed, ship.maxSpeed * damping);
+        
+        if (distFromCenter > MAX_SAFE_RADIUS + 80) {
+          ship.speed *= 0.90;
+          if (Math.abs(ship.speed) < 0.2) ship.speed = 0;
+        }
+      }
+    }
+  }
+
   // ── Strafe movement ──
   const strafeX = ((cockpitKeys.strafeRight ? 1 : 0) - (cockpitKeys.strafeLeft ? 1 : 0));
   const strafeY = ((cockpitKeys.strafeUp ? 1 : 0) - (cockpitKeys.strafeDown ? 1 : 0));
@@ -1358,6 +1384,55 @@ function updateShip(dt) {
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(ship.quaternion);
   ship.position.addScaledVector(right, ship.strafeX * dt);
   ship.position.addScaledVector(up, ship.strafeY * dt);
+
+  // ── Laser Mining (Étape 2.4) ──
+  if (state.laserCooldown > 0) {
+    state.laserCooldown -= dt;
+    if (state.laserCooldown <= 0) state.laserCooldown = 0;
+  }
+
+  if (!window.laserLine && typeof scene !== 'undefined') {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0,0,-1)]);
+    const mat = new THREE.LineBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.8 });
+    window.laserLine = new THREE.Line(geo, mat);
+    window.laserLine.frustumCulled = false;
+    scene.add(window.laserLine);
+  }
+
+  if (cockpitKeys.fireLaser && state.laserCooldown <= 0) {
+    state.shipHeat += dt * 35; // ~3 seconds to overheat
+    if (state.shipHeat >= 100) {
+      state.shipHeat = 100;
+      state.laserCooldown = 5.0; // 5s cooldown
+      cockpitKeys.fireLaser = false;
+    }
+
+    let hitPoint = null;
+    if (typeof mineableObjects !== 'undefined' && mineableObjects.length > 0) {
+      const raycaster = new THREE.Raycaster(ship.position, fwd, 0, 80); // range 80
+      const hits = raycaster.intersectObjects(mineableObjects, true);
+      if (hits.length > 0) {
+        state.player.credits = (state.player.credits || 0) + 5;
+        hitPoint = hits[0].point;
+      }
+    }
+
+    if (window.laserLine) {
+      const targetPos = hitPoint ? hitPoint : ship.position.clone().addScaledVector(fwd, 80);
+      const positions = window.laserLine.geometry.attributes.position.array;
+      
+      // We want the laser to start a bit below and forward of the cockpit
+      const startPos = ship.position.clone().addScaledVector(fwd, 2).addScaledVector(up, -0.5);
+      
+      positions[0] = startPos.x; positions[1] = startPos.y; positions[2] = startPos.z;
+      positions[3] = targetPos.x; positions[4] = targetPos.y; positions[5] = targetPos.z;
+      window.laserLine.geometry.attributes.position.needsUpdate = true;
+      window.laserLine.visible = true;
+    }
+  } else {
+    state.shipHeat = Math.max(0, state.shipHeat - dt * 25);
+    if (window.laserLine) window.laserLine.visible = false;
+  }
 
   shipRig.position.copy(ship.position);
   shipRig.quaternion.copy(ship.quaternion);
@@ -1501,6 +1576,7 @@ function updateCockpitHUD(dt) {
       proxEl.className = 'ckp-proximity';
     }
   } else {
+    const distFromCenter = Math.sqrt(ship.position.x * ship.position.x + ship.position.z * ship.position.z);
     if (state.cockpitTarget && planetObjects[state.cockpitTarget]) {
       const obj = planetObjects[state.cockpitTarget];
       nameEl.textContent = obj.data.name.toUpperCase();
@@ -1509,10 +1585,16 @@ function updateCockpitHUD(dt) {
       const d = tp.distanceTo(ship.position);
       distEl.textContent = (d / AU).toFixed(2) + ' AU';
       const bR = obj.data.scaledRadius || 1;
-      proxEl.className = d < bR * 5 ? 'ckp-proximity danger' : d < bR * 15 ? 'ckp-proximity warn' : 'ckp-proximity';
+      proxEl.className = d < bR * 5 ? 'ckp-proximity danger' : d < bR * 15 ? 'ckp-proximity warn' : (distFromCenter > 600 ? 'ckp-proximity danger' : distFromCenter > 500 ? 'ckp-proximity warn' : 'ckp-proximity');
     } else {
-      nameEl.textContent = '—'; distEl.textContent = '';
-      proxEl.className = 'ckp-proximity';
+      if (distFromCenter > 500) {
+        nameEl.textContent = distFromCenter > 600 ? '⚠️ LIMITE DU SYSTÈME' : 'FRONTIÈRE SYSTÈME';
+        distEl.textContent = (distFromCenter / AU).toFixed(1) + ' AU DU SOLEIL';
+        proxEl.className = distFromCenter > 600 ? 'ckp-proximity danger' : 'ckp-proximity warn';
+      } else {
+        nameEl.textContent = '—'; distEl.textContent = '';
+        proxEl.className = 'ckp-proximity';
+      }
     }
   }
 
@@ -1541,6 +1623,23 @@ function updateCockpitHUD(dt) {
     bStatus.className = 'ckp-boost-status';
   }
 
+  // ── Laser Heat (Étape 2.4) ──
+  const laserHeatFill = document.getElementById('ckp-heat-fill');
+  const laserHeatContainer = document.getElementById('ckp-heat');
+  const creditsDisplay = document.getElementById('ckp-credits-display');
+  
+  if (laserHeatFill && laserHeatContainer) {
+    laserHeatFill.style.width = state.shipHeat + '%';
+    if (state.shipHeat >= 100 || state.laserCooldown > 0) {
+      laserHeatContainer.classList.add('overheat');
+    } else {
+      laserHeatContainer.classList.remove('overheat');
+    }
+  }
+  if (creditsDisplay && state.player) {
+    creditsDisplay.textContent = (state.player.credits || 0).toLocaleString() + ' CR';
+  }
+
   // ── Velocity display ──
   const velBig = document.getElementById('ckp-vel-big');
   const velUnit = document.getElementById('ckp-vel-unit');
@@ -1565,7 +1664,8 @@ function updateCockpitHUD(dt) {
   
   if (!state.cockpitAutoNav && !state.warp.active) {
     const gearNum = speedTierList.indexOf(state.currentSpeedTier) + 1;
-    mode += ' [GEAR ' + gearNum + ']';
+    const maxSpdLabel = isFTL ? (ship.maxSpeed >= 1000 ? (ship.maxSpeed / 1000) + 'k LY/S' : ship.maxSpeed + ' LY/S') : ship.maxSpeed + ' U/S';
+    mode += ' [GEAR ' + gearNum + ' : ' + maxSpdLabel + ']';
   }
   
   velMode.textContent = mode;

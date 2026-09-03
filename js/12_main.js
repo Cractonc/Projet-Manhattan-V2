@@ -382,7 +382,10 @@ function setupEvents() {
   let isDragging = false, lastX = 0, lastY = 0;
 
   canvas.addEventListener('mousedown', e => {
-    if (e.button === 0) { isDragging = true; lastX = e.clientX; lastY = e.clientY; }
+    if (e.button === 0) { 
+      isDragging = true; lastX = e.clientX; lastY = e.clientY; 
+      cockpitKeys.fireLaser = true; // Étape 2.4
+    }
     if (state.cameraMode === 'CINEMATIC') stopCinematic();
   });
 
@@ -413,7 +416,10 @@ function setupEvents() {
     }
   });
 
-  window.addEventListener('mouseup', () => { isDragging = false; });
+  window.addEventListener('mouseup', (e) => { 
+    isDragging = false; 
+    if (e.button === 0) cockpitKeys.fireLaser = false; // Étape 2.4
+  });
 
   // Scroll zoom
   canvas.addEventListener('wheel', e => {

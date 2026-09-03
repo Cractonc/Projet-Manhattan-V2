@@ -286,6 +286,7 @@ function createAsteroidBelt() {
   }
   belt.instanceMatrix.needsUpdate = true;
   scene.add(belt);
+  mineableObjects = [belt]; // Étape 2.4 : On ajoute la ceinture d'astéroïdes (InstancedMesh) aux objets minables
   return belt;
 }
 

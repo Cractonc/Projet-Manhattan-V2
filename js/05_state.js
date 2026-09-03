@@ -1,17 +1,28 @@
 'use strict';
 
 var asteroidBelt = null;
+var mineableObjects = []; // Etape 2.4 : Minage Thermique
 
 // ============================================================
-// SPEED TIERS
+// SPEED TIERS (SOLAR VS GALACTIC)
 // ============================================================
-var SPEED_TIERS = {
-  IMPULSE: 8,
-  SUBLIGHT: 100,
-  WARP_1: 1000,
-  WARP_5: 10000,
-  WARP_MAX: 40000
+var SPEED_TIERS_SOLAR = {
+  IMPULSE: 4,      // Manœuvres précises, minage astéroïdes, approche (4 u/s)
+  SUBLIGHT: 15,    // Croisière locale inter-lunes et planétaire (15 u/s)
+  WARP_1: 40,      // Transit interplanétaire intérieur (40 u/s)
+  WARP_5: 90,      // Transit vers les géantes gazeuses (90 u/s)
+  WARP_MAX: 180    // Vitesse maximale contrôlée sans perte du système (180 u/s)
 };
+
+var SPEED_TIERS_GALACTIC = {
+  IMPULSE: 100,
+  SUBLIGHT: 1000,
+  WARP_1: 5000,
+  WARP_5: 20000,
+  WARP_MAX: 50000
+};
+
+var SPEED_TIERS = SPEED_TIERS_SOLAR;
 var speedTierList = ['IMPULSE', 'SUBLIGHT', 'WARP_1', 'WARP_5', 'WARP_MAX'];
 
 // ============================================================
@@ -48,6 +59,8 @@ var state = {
   currentSystem: 'sol',
   scaleLevel: 'GALACTIC',   // 'SOLAR' | 'GALACTIC'
   selectedPOI: null,
+  shipHeat: 0,              // Étape 2.4: Minage thermique (0-100)
+  laserCooldown: 0,         // Étape 2.4: Cooldown en secondes (si > 0, tir impossible)
   // Player state
   player: {
     credits: 0,
@@ -184,6 +197,7 @@ var cockpitKeys = {
   boost: false,
   mouseDX: 0, mouseDY: 0,
   scanHeld: false,  // Étape 2.3 : touche R pour scanner
+  fireLaser: false, // Étape 2.4 : Minage thermique
 };
 
 // Physical key → held action mapping (works on both AZERTY and QWERTY)
@@ -197,6 +211,7 @@ var cockpitCodeToHeld = {
   'ArrowUp': 'pitchUp', 'ArrowDown': 'pitchDown',
   'ArrowLeft': 'yawLeft', 'ArrowRight': 'yawRight',
   'ShiftLeft': 'boost', 'ShiftRight': 'boost',
+  'KeyM': 'fireLaser'
 };
 
 var ship = {

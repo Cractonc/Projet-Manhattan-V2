@@ -671,6 +671,54 @@ canvas {
   margin-top: 4px;
 }
 
+/* Étape 2.4 : Minage Thermique - Jauge de chaleur */
+.ckp-heat {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.ckp-heat-lbl {
+  font-size: 0.48rem;
+  letter-spacing: 0.25em;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+
+.ckp-heat-bar {
+  width: 140px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.ckp-heat-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f39c12, #e74c3c);
+  width: 0%;
+  transition: width 0.1s linear, background-color 0.2s;
+}
+
+.ckp-heat.overheat .ckp-heat-lbl {
+  color: #e74c3c;
+  animation: overheat-pulse 0.5s infinite alternate;
+}
+.ckp-heat.overheat .ckp-heat-fill {
+  background: #e74c3c;
+  animation: overheat-pulse 0.5s infinite alternate;
+}
+
+@keyframes overheat-pulse {
+  0% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
 .ckp-reticle {
   position: absolute;
   top: 50%;
