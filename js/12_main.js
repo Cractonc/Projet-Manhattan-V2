@@ -180,6 +180,80 @@ function updateOrbits(dt) {
 }
 
 // ============================================================
+// SCAN COMPLETE CALLBACK (Étape 2.3)
+// ============================================================
+
+/**
+ * Appelée par updateScanSystem (10_ship.js) quand la progression atteint 100%.
+ * Révèle le POI, affiche la notification et valide la quête active.
+ */
+function onScanComplete() {
+  // Anti-spam : ignorer si déjà déclenché très récemment
+  if (onScanComplete._cooldown) return;
+  onScanComplete._cooldown = true;
+  setTimeout(function() { onScanComplete._cooldown = false; }, 2000);
+
+  // --- Récupérer la quête + POI cible ---
+  if (!state.player || !state.player.activeQuestId ||
+      typeof QUESTS === 'undefined' || typeof GALACTIC_POI === 'undefined') return;
+
+  var quest = QUESTS.find(function(q) { return q.id === state.player.activeQuestId; });
+  if (!quest) return;
+
+  var targetPoi = GALACTIC_POI.find(function(p) { return p.id === quest.targetPOI_ID; });
+
+  // --- Révéler le POI (l'ajouter aux découverts s'il ne l'est pas déjà) ---
+  if (targetPoi && !state.player.discoveredPOIs.includes(targetPoi.id)) {
+    state.player.discoveredPOIs.push(targetPoi.id);
+  }
+
+  // --- Notification ---
+  showNotification('📡 Signal Triangulé : Coordonnées acquises !');
+  if (targetPoi) {
+    setTimeout(function() {
+      showNotification('Découverte enregistrée : ' + targetPoi.name);
+    }, 1200);
+  }
+
+  // --- Effet visuel : flash sur l'écran ---
+  var scanPanel = document.getElementById('scanner-panel');
+  if (scanPanel) {
+    scanPanel.style.transition = 'opacity 0.1s';
+    scanPanel.style.opacity = '0';
+    setTimeout(function() {
+      if (scanPanel) { scanPanel.style.opacity = '1'; }
+    }, 200);
+  }
+
+  // --- Avancer la quête (récompense + quête suivante) ---
+  var questIdx = QUESTS.findIndex(function(q) { return q.id === state.player.activeQuestId; });
+  if (questIdx !== -1) {
+    var reward = quest.reward || quest.credits || 500;
+    state.player.credits = (state.player.credits || 0) + reward;
+
+    setTimeout(function() {
+      showNotification('Mission accomplie : ' + quest.title + ' (+' + reward + ' CR)');
+    }, 900);
+
+    var nextQuest = QUESTS[questIdx + 1];
+    if (nextQuest) {
+      state.player.activeQuestId = nextQuest.id;
+      setTimeout(function() {
+        showNotification('Nouvelle mission : ' + nextQuest.title);
+      }, 2200);
+    } else {
+      state.player.activeQuestId = null;
+      setTimeout(function() {
+        showNotification('Félicitations ! Toutes les quêtes sont accomplies !');
+      }, 2200);
+    }
+
+    if (typeof updateQuestHUD === 'function') updateQuestHUD();
+    saveGame();
+  }
+}
+
+// ============================================================
 // QUESTS & DISCOVERY LOGIC
 // ============================================================
 var questCheckTimer = 0;
@@ -561,6 +635,10 @@ function setupEvents() {
         case 'KeyP': // Panel toggle (in cockpit)
           document.getElementById('panel').classList.toggle('open');
           break;
+        case 'KeyR': // Scanner / Radar (maintenu pour scanner)
+          e.preventDefault();
+          cockpitKeys.scanHeld = true;
+          break;
       }
       return;
     }
@@ -611,6 +689,8 @@ function setupEvents() {
     // Release throttle held keys
     if (code === 'KeyW') cockpitKeys.throttleUp = false;
     if (code === 'KeyS') cockpitKeys.throttleDown = false;
+    // Release scan key
+    if (code === 'KeyR') cockpitKeys.scanHeld = false;
   });
 
   // Resize

@@ -180,6 +180,14 @@ function updateAudio() {
 var radarCtx = null;
 var radarAngle = 0;
 
+// ── Scan state (Étape 2.3) ──
+var scanState = {
+  signalStrength: 0,   // 0–100
+  scanProgress:  0,    // 0–100
+  scanDuration:  5,    // secondes (peut être écrasé par les données de quête)
+  active:        false // true si le panneau est visible
+};
+
 var elevatorPad = null;
 
 function initRadar() {
@@ -1562,6 +1570,111 @@ function updateCockpitHUD(dt) {
   
   velMode.textContent = mode;
   velMode.className = modeClass;
+
+  // ── Scanner signal & progression (Étape 2.3) ──
+  updateScanSystem(dt);
+}
+
+// ── Scan System (Étape 2.3) ──
+function updateScanSystem(dt) {
+  var panel       = document.getElementById('scanner-panel');
+  var sigBar      = document.getElementById('signal-strength-bar');
+  var sigText     = document.getElementById('signal-strength-text');
+  var progSection = document.getElementById('scan-progress-section');
+  var progBar     = document.getElementById('scan-progress-bar');
+  var progText    = document.getElementById('scan-progress-text');
+  if (!panel || !sigBar) return;
+
+  // ── Vérifier si une quête avec un POI cible est active ──
+  var hasScanQuest = false;
+  var targetPoi    = null;
+
+  if (state.player && state.player.activeQuestId &&
+      typeof QUESTS !== 'undefined' && typeof GALACTIC_POI !== 'undefined') {
+    var quest = QUESTS.find(function(q) { return q.id === state.player.activeQuestId; });
+    if (quest && quest.targetPOI_ID) {
+      targetPoi = GALACTIC_POI.find(function(p) { return p.id === quest.targetPOI_ID; });
+      if (targetPoi) {
+        hasScanQuest = true;
+        // Récupérer la durée de scan si définie dans la quête
+        if (quest.scanDuration) scanState.scanDuration = quest.scanDuration;
+      }
+    }
+  }
+
+  // Afficher/masquer le panneau
+  if (!hasScanQuest || state.cameraMode !== 'COCKPIT') {
+    panel.classList.remove('visible');
+    scanState.signalStrength = 0;
+    scanState.scanProgress   = 0;
+    scanState.active         = false;
+    return;
+  }
+
+  panel.classList.add('visible');
+  scanState.active = true;
+
+  // ── Calcul du dot product : forward vaisseau ↔ direction vers cible ──
+  var forward = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
+  var toTarget = new THREE.Vector3(
+    targetPoi.pos[0] - ship.position.x,
+    targetPoi.pos[1] - ship.position.y,
+    targetPoi.pos[2] - ship.position.z
+  ).normalize();
+
+  var dot = forward.dot(toTarget); // [-1 .. +1]
+
+  // Courbe quadratique : signal nul si on tourne le dos, 100% si parfaitement aligné
+  // clamp de 0 à 1 puis puissance 2 pour exiger un bon alignement
+  var rawFraction  = Math.max(0, (dot + 1) / 2); // [0..1]
+  var strength     = Math.pow(rawFraction, 2) * 100;
+  scanState.signalStrength = strength;
+
+  // ── Mise à jour barre signal ──
+  sigBar.style.width = strength.toFixed(1) + '%';
+  sigText.textContent = Math.round(strength) + '%';
+  // Couleur selon intensité
+  sigBar.classList.remove('med', 'high');
+  if (strength >= 90)      sigBar.classList.add('high');
+  else if (strength >= 50) sigBar.classList.add('med');
+
+  // ── Logique de scan (touche R maintenue) ──
+  var aligned   = strength >= 90;
+  var scanHeld  = !!(typeof cockpitKeys !== 'undefined' && cockpitKeys.scanHeld);
+
+  if (aligned && scanHeld) {
+    // Remplir la barre sur scanDuration secondes
+    scanState.scanProgress += (100 / scanState.scanDuration) * dt;
+    if (scanState.scanProgress >= 100) {
+      scanState.scanProgress = 100;
+      // Déclencher l'achèvement via la fonction globale (définie dans 12_main.js)
+      if (typeof onScanComplete === 'function') {
+        onScanComplete();
+      }
+      scanState.scanProgress = 0; // réinitialiser après le déclenchement
+    }
+  } else {
+    // Retomber à 0 si relâché ou désaligné
+    scanState.scanProgress = Math.max(0, scanState.scanProgress - (100 / 1.5) * dt);
+  }
+
+  var isScanning = aligned && scanHeld && scanState.scanProgress > 0;
+
+  // Afficher/masquer la section de progression
+  if (aligned) {
+    progSection.classList.add('visible');
+  } else {
+    progSection.classList.remove('visible');
+  }
+
+  // Mise à jour barre progression
+  progBar.style.width = scanState.scanProgress.toFixed(1) + '%';
+  progText.textContent = Math.round(scanState.scanProgress) + '%';
+  if (isScanning) {
+    progBar.classList.add('scanning');
+  } else {
+    progBar.classList.remove('scanning');
+  }
 }
 
 // ── Radar Scanner ──

@@ -183,6 +183,7 @@ var cockpitKeys = {
   rollLeft: false, rollRight: false,
   boost: false,
   mouseDX: 0, mouseDY: 0,
+  scanHeld: false,  // Étape 2.3 : touche R pour scanner
 };
 
 // Physical key → held action mapping (works on both AZERTY and QWERTY)

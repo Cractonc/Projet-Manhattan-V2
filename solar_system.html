@@ -147,6 +147,26 @@
       <div class="ckp-radar-label">SCANNER</div>
       <canvas id="ckp-radar" width="340" height="340"></canvas>
     </div>
+
+    <!-- Scanner Signal & Scan Panel (Étape 2.3) -->
+    <div id="scanner-panel">
+      <!-- Force du Signal -->
+      <div class="scanner-label">Force du Signal</div>
+      <div class="scanner-bar-bg">
+        <div id="signal-strength-bar"></div>
+      </div>
+      <div id="signal-strength-text">0%</div>
+      <!-- Progression du Scan (cachée par défaut) -->
+      <div id="scan-progress-section">
+        <div class="scanner-label">Progression du Scan</div>
+        <div class="scanner-bar-bg">
+          <div id="scan-progress-bar"></div>
+        </div>
+        <div id="scan-progress-text">0%</div>
+        <div class="scan-key-hint">Maintenir [R] pour scanner</div>
+      </div>
+    </div>
+
   </div>
   <div id="cockpit-transition"></div>
 
