@@ -1939,7 +1939,11 @@ function cockpitLockTarget() {
       const d = p.distanceTo(ship.position);
       if (d < bestD) { bestD = d; best = id; }
     }
+    if (!best && planetObjects['sun']) best = 'sun';
     state.cockpitTarget = best;
+    if (best && planetObjects[best] && typeof showNotification === 'function') {
+      showNotification('🎯 CIBLE VERROUILLÉE : ' + planetObjects[best].data.name.toUpperCase(), 1500);
+    }
   }
 }
 
@@ -1965,15 +1969,26 @@ window.addEventListener('keydown', function(e) {
   const tag = document.activeElement?.tagName;
   if ((tag === 'INPUT' || tag === 'TEXTAREA') && e.code !== 'Escape') return;
 
+  const isFTL = state.scaleLevel === 'GALACTIC';
+  const tiers = isFTL ? SPEED_TIERS_GALACTIC : SPEED_TIERS_SOLAR;
+
   if (e.key === '+' || e.key === '=' || e.code === 'Equal' || e.code === 'NumpadAdd') {
     let idx = speedTierList.indexOf(state.currentSpeedTier);
     if (idx < speedTierList.length - 1) {
       state.currentSpeedTier = speedTierList[idx + 1];
+      const maxSpd = tiers[state.currentSpeedTier];
+      if (typeof showNotification === 'function') {
+        showNotification('⚡ VITESSE GEAR ' + (idx + 2) + ' : ' + state.currentSpeedTier + ' (' + maxSpd + (isFTL ? ' LY/S)' : ' U/S)'), 1500);
+      }
     }
   } else if (e.key === '-' || e.code === 'Minus' || e.code === 'Digit6' || e.code === 'NumpadSubtract') {
     let idx = speedTierList.indexOf(state.currentSpeedTier);
     if (idx > 0) {
       state.currentSpeedTier = speedTierList[idx - 1];
+      const maxSpd = tiers[state.currentSpeedTier];
+      if (typeof showNotification === 'function') {
+        showNotification('⚡ VITESSE GEAR ' + idx + ' : ' + state.currentSpeedTier + ' (' + maxSpd + (isFTL ? ' LY/S)' : ' U/S)'), 1500);
+      }
     }
   }
 });
