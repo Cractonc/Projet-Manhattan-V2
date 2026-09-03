@@ -139,9 +139,9 @@ function loadGame() {
       
       // Sync ship object with loaded state if it exists
       if (typeof ship !== 'undefined' && state.shipPosition && state.shipRotation) {
-        // Spécificité système solaire : assainir les coordonnées résiduelles galactiques (> 500 u)
-        if (state.scaleLevel === 'SOLAR' && state.shipPosition.length() > 500) {
-          state.shipPosition.set(0, 3, 18);
+        // Spécificité système solaire : assainir les coordonnées résiduelles galactiques (> 1500 u)
+        if (state.scaleLevel === 'SOLAR' && state.shipPosition.length() > 1500) {
+          state.shipPosition.set(0, 3, 23.5);
         }
         ship.position.copy(state.shipPosition);
         ship.quaternion.copy(state.shipRotation);

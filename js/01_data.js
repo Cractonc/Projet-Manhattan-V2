@@ -3,10 +3,10 @@
 // ============================================================
 // CONSTANTS & SCALE
 // ============================================================
-var AU = 15;
+var AU = 23.5;
 var PLANET_SCALE = 7;
-var SUN_RADIUS = 3.2;
-var MIN_RADIUS = 0.32;
+var SUN_RADIUS = 7.0;
+var MIN_RADIUS = 0.25;
 
 // Galactic scale: 1 unit = 1 light year
 var GAL_RADIUS = 500000;    // galaxy radius in ly
@@ -38,7 +38,7 @@ var BODIES = [
     tilt: 23.4, dotColor: '#4a8fcc',
     colors: { ocean: [26, 79, 138], land: [55, 110, 55], land2: [90, 130, 60], ice: [220, 235, 245] },
     atmo: { r: 80, g: 140, b: 210, opacity: 0.22, scale: 1.035 },
-    moons: [{ name: 'Moon', radius: 0.272, distance: 1.4, period: 0.0748, color: '#888880' }],
+    moons: [{ name: 'Moon', radius: 0.272, distance: 2.8, period: 0.0748, color: '#888880' }],
     info: { 'Type': 'Terrestrial', 'Diameter': '12 742 km', 'Distance': '1.00 AU', 'Orbit': '365 days', 'Rotation': '24 hours' }
   },
   {
@@ -93,14 +93,14 @@ var SYSTEMS_DATA = {
   'sol': {
     name: 'Solar System',
     sunColor: null,
-    sunRadius: 3.2,
+    sunRadius: 7.0,
     asteroids: true,
     bodies: BODIES
   },
   'alpha-centauri': {
     name: 'Alpha Centauri',
     sunColor: { r: 255, g: 240, b: 210 },
-    sunRadius: 3.5, // G2V star, slightly larger than our Sun in simulation
+    sunRadius: 7.2, // G2V star, slightly larger than our Sun in simulation
     asteroids: false,
     bodies: [
       {
@@ -124,7 +124,7 @@ var SYSTEMS_DATA = {
   'sirius': {
     name: 'Sirius',
     sunColor: { r: 210, g: 235, b: 255 },
-    sunRadius: 6.5, // Massive glowing star
+    sunRadius: 10.5, // Massive glowing star
     asteroids: false,
     bodies: [
       {

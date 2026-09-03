@@ -878,7 +878,7 @@ function toggleCockpitMode() {
 
 // Spécificité pour les systèmes visitables : positionnement sur l'orbite Terre / Mars ou astre sélectionné
 function ensureValidSolarShipPosition() {
-  const isOutOfBounds = ship.position.length() > 500 || ship.position.length() < 1;
+  const isOutOfBounds = ship.position.length() > 1500 || ship.position.length() < 1;
 
   // Cas 1 : Le joueur a ciblé / sélectionné un astre précis (Terre, Mars, Jupiter, etc.)
   if (state.selectedBody && planetObjects[state.selectedBody]) {
@@ -919,8 +919,8 @@ function ensureValidSolarShipPosition() {
       targetLook.copy(marsPos);
       state.cockpitTarget = 'mars';
     } else {
-      // Autre système stellaire visitable : position sécurisée vers 18 u du soleil
-      spawnPos = new THREE.Vector3(0, 3, 18);
+      // Autre système stellaire visitable : position sécurisée vers 23.5 u du soleil
+      spawnPos = new THREE.Vector3(0, 3, 23.5);
       state.cockpitTarget = planetObjects['sun'] ? 'sun' : null;
     }
 

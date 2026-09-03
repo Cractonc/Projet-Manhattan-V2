@@ -391,15 +391,120 @@ function createStarfield(sysId) {
 }
 
 // ============================================================
-// SUN
+// SUN & SOLAR CORONA
 // ============================================================
+var sunGroup = null;
+var sunPulseTimer = 0;
+var sunOuterCoronaSprite = null;
+var sunMidCoronaSprite = null;
+var sunDiffractionSprite = null;
+
+function makeSunCoreTexture(colorObj) {
+  const size = 256;
+  const cvs = document.createElement('canvas');
+  cvs.width = cvs.height = size;
+  const ctx = cvs.getContext('2d');
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  if (colorObj) {
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.18, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.95)`);
+    grad.addColorStop(0.5, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.6)},${Math.floor(colorObj.b * 0.3)},0.45)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.18, 'rgba(255,235,160,0.95)');
+    grad.addColorStop(0.5, 'rgba(255,160,50,0.45)');
+    grad.addColorStop(0.8, 'rgba(230,100,20,0.12)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(cvs);
+}
+
+function makeSunOuterHazeTexture(colorObj) {
+  const size = 256;
+  const cvs = document.createElement('canvas');
+  cvs.width = cvs.height = size;
+  const ctx = cvs.getContext('2d');
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  if (colorObj) {
+    grad.addColorStop(0, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.28)`);
+    grad.addColorStop(0.35, `rgba(${colorObj.r},${Math.floor(colorObj.g * 0.7)},${Math.floor(colorObj.b * 0.4)},0.12)`);
+    grad.addColorStop(0.7, `rgba(${Math.floor(colorObj.r * 0.8)},${Math.floor(colorObj.g * 0.4)},${Math.floor(colorObj.b * 0.2)},0.03)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  } else {
+    grad.addColorStop(0, 'rgba(255,210,130,0.28)');
+    grad.addColorStop(0.35, 'rgba(255,150,55,0.12)');
+    grad.addColorStop(0.7, 'rgba(230,90,25,0.03)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(cvs);
+}
+
+function makeSunDiffractionTexture(colorObj) {
+  const size = 512;
+  const cvs = document.createElement('canvas');
+  cvs.width = cvs.height = size;
+  const ctx = cvs.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+
+  // Rayon horizontal fin
+  const gH = ctx.createLinearGradient(0, cy, size, cy);
+  gH.addColorStop(0, 'rgba(255,255,255,0)');
+  gH.addColorStop(0.42, 'rgba(255,230,170,0.18)');
+  gH.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+  gH.addColorStop(0.58, 'rgba(255,230,170,0.18)');
+  gH.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gH;
+  ctx.fillRect(0, cy - 2, size, 4);
+
+  // Rayon vertical fin
+  const gV = ctx.createLinearGradient(cx, 0, cx, size);
+  gV.addColorStop(0, 'rgba(255,255,255,0)');
+  gV.addColorStop(0.42, 'rgba(255,230,170,0.18)');
+  gV.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+  gV.addColorStop(0.58, 'rgba(255,230,170,0.18)');
+  gV.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gV;
+  ctx.fillRect(cx - 2, 0, 4, size);
+
+  // Cœur doux au centre de la diffraction
+  const gC = ctx.createRadialGradient(cx, cy, 0, cx, cy, 36);
+  gC.addColorStop(0, 'rgba(255,255,255,0.9)');
+  gC.addColorStop(0.4, 'rgba(255,220,140,0.4)');
+  gC.addColorStop(1, 'rgba(255,200,100,0)');
+  ctx.fillStyle = gC;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 36, 0, Math.PI * 2);
+  ctx.fill();
+
+  return new THREE.CanvasTexture(cvs);
+}
+
 function createSun() {
   const sysData = SYSTEMS_DATA[state.currentSystem];
   const r = sysData.sunRadius;
+
+  // Nettoyage complet préalable du groupe solaire
+  if (sunGroup) {
+    scene.remove(sunGroup);
+    sunGroup.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+  }
+
+  sunGroup = new THREE.Group();
+  sunGroup.name = 'sunGroup';
+  scene.add(sunGroup);
+
+  // 1. Photosphère solide incandescente
   const geo = new THREE.SphereGeometry(r, 48, 48);
   const matParams = { map: texSun() };
-
-  let glowR = 1, glowG = 0.686, glowB = 0.376;
+  let glowR = 1, glowG = 0.72, glowB = 0.40;
 
   if (sysData.sunColor) {
     matParams.color = new THREE.Color(`rgb(${sysData.sunColor.r}, ${sysData.sunColor.g}, ${sysData.sunColor.b})`);
@@ -407,35 +512,57 @@ function createSun() {
     glowG = sysData.sunColor.g / 255;
     glowB = sysData.sunColor.b / 255;
   } else {
-    matParams.color = 0xfff0e0;
+    matParams.color = 0xfff2e0;
   }
 
   const mat = new THREE.MeshBasicMaterial(matParams);
   const sun = new THREE.Mesh(geo, mat);
-  scene.add(sun);
-
-  const glowTex = makeGlowTexture(sysData.sunColor);
-  const glowMat = new THREE.SpriteMaterial({
-    map: glowTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
-    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.85,
-  });
-  const glow = new THREE.Sprite(glowMat);
-  glow.scale.set(r * 7, r * 7, 1);
-  scene.add(glow);
-
-  const haloMat = new THREE.SpriteMaterial({
-    map: glowTex, color: new THREE.Color(glowR * 0.9, glowG * 0.9, glowB * 0.8), transparent: true,
-    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55,
-  });
-  const halo = new THREE.Sprite(haloMat);
-  halo.scale.set(r * 3.5, r * 3.5, 1);
-  scene.add(halo);
-
-  clickables.push(sun);
   sun.userData.bodyId = 'sun';
+  sunGroup.add(sun);
+  clickables.push(sun);
+
+  // 2. Couronne interne dense (incandescente, r * 2.2)
+  const coreTex = makeSunCoreTexture(sysData.sunColor);
+  const innerCoronaMat = new THREE.SpriteMaterial({
+    map: coreTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.95
+  });
+  const innerCorona = new THREE.Sprite(innerCoronaMat);
+  innerCorona.scale.set(r * 2.2, r * 2.2, 1);
+  sunGroup.add(innerCorona);
+
+  // 3. Chromosphère intermédiaire rayonnante (r * 4.0)
+  const midCoronaMat = new THREE.SpriteMaterial({
+    map: coreTex, color: new THREE.Color(glowR * 0.95, glowG * 0.85, glowB * 0.7), transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.65
+  });
+  sunMidCoronaSprite = new THREE.Sprite(midCoronaMat);
+  sunMidCoronaSprite.scale.set(r * 4.0, r * 4.0, 1);
+  sunGroup.add(sunMidCoronaSprite);
+
+  // 4. Grand voile solaire externe vaporeux (r * 8.0 ~ 56 u de rayonnement majestueux)
+  const hazeTex = makeSunOuterHazeTexture(sysData.sunColor);
+  const outerCoronaMat = new THREE.SpriteMaterial({
+    map: hazeTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.40
+  });
+  sunOuterCoronaSprite = new THREE.Sprite(outerCoronaMat);
+  sunOuterCoronaSprite.scale.set(r * 8.0, r * 8.0, 1);
+  sunGroup.add(sunOuterCoronaSprite);
+
+  // 5. Rayons de diffraction optique discrets
+  const diffTex = makeSunDiffractionTexture(sysData.sunColor);
+  const diffMat = new THREE.SpriteMaterial({
+    map: diffTex, color: new THREE.Color(glowR, glowG, glowB), transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.32
+  });
+  sunDiffractionSprite = new THREE.Sprite(diffMat);
+  sunDiffractionSprite.scale.set(r * 7.0, r * 7.0, 1);
+  sunGroup.add(sunDiffractionSprite);
 
   planetObjects['sun'] = {
     mesh: sun,
+    group: sunGroup,
     data: {
       id: 'sun', name: sysData.name + ' Star', scaledRadius: r,
       info: { 'Type': 'Star', 'Radius': r }
@@ -444,44 +571,67 @@ function createSun() {
   };
 }
 
-function makeGlowTexture(colorObj) {
-  const size = 256;
-  const cvs = document.createElement('canvas');
-  cvs.width = cvs.height = size;
-  const ctx = cvs.getContext('2d');
-  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  if (colorObj) {
-    grad.addColorStop(0, `rgba(255,255,255,1)`);
-    grad.addColorStop(0.15, `rgba(${colorObj.r},${colorObj.g},${colorObj.b},0.9)`);
-    grad.addColorStop(0.4, `rgba(${colorObj.r},${Math.floor(colorObj.g / 2)},${Math.floor(colorObj.b / 3)},0.4)`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-  } else {
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.15, 'rgba(255,230,160,0.9)');
-    grad.addColorStop(0.4, 'rgba(255,160,60,0.4)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
+function updateSun(dt) {
+  if (!planetObjects['sun'] || !planetObjects['sun'].mesh) return;
+
+  // Rotation axiale lente du Soleil
+  planetObjects['sun'].mesh.rotation.y += dt * 0.04 * state.timeScale;
+
+  // Respiration thermique lente de la couronne solaire (période de ~4s)
+  sunPulseTimer += dt * 1.5 * state.timeScale;
+  const pulse = 1.0 + Math.sin(sunPulseTimer) * 0.025;
+
+  if (sunOuterCoronaSprite) {
+    const baseR = planetObjects['sun'].data.scaledRadius;
+    const s = baseR * 8.0 * pulse;
+    sunOuterCoronaSprite.scale.set(s, s, 1);
+    sunOuterCoronaSprite.material.opacity = 0.38 + Math.sin(sunPulseTimer * 1.1) * 0.05;
   }
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(cvs);
+  if (sunMidCoronaSprite) {
+    const baseR = planetObjects['sun'].data.scaledRadius;
+    const s = baseR * 4.0 * (1.0 + Math.cos(sunPulseTimer * 0.9) * 0.02);
+    sunMidCoronaSprite.scale.set(s, s, 1);
+  }
+  if (sunDiffractionSprite && sunDiffractionSprite.material) {
+    sunDiffractionSprite.material.rotation += dt * 0.003 * state.timeScale;
+  }
 }
 
 // ============================================================
 // LIGHTS
 // ============================================================
 function setupLights() {
-  const sunLight = new THREE.PointLight(0xfff5e0, 2.2, 0, 1.2);
+  // Lumière directe du soleil (décroissance adoucie pour que les planètes distantes restent bien éclairées)
+  const sunLight = new THREE.PointLight(0xfff5e0, 2.4, 0, 0.75);
   sunLight.position.set(0, 0, 0);
   scene.add(sunLight);
-  const ambient = new THREE.AmbientLight(0x101825, 0.6);
+
+  // Ambiance cosmique douce : évite le noir complet sur la face nocturne tout en préservant l'effet d'ombre
+  const ambient = new THREE.AmbientLight(0x283446, 1.15);
   scene.add(ambient);
+
+  // Légère lueur hémisphérique pour révéler le relief et la silhouette des planètes dans l'ombre
+  const hemi = new THREE.HemisphereLight(0x32425a, 0x16202c, 0.45);
+  scene.add(hemi);
 }
 
 // ============================================================
 // PLANETS
 // ============================================================
-function scaledRadius(data) { return Math.max(MIN_RADIUS, data.radius * PLANET_SCALE * 0.1); }
-function scaledDistance(data) { return data.distance * AU; }
+function scaledRadius(data) {
+  // Échelle progressive rééquilibrée (Option 1 - Ratio Soleil/Jupiter de 3.5x) :
+  // Telluriques bien lisibles : Terre = 0.58 u, Vénus = 0.56 u, Mars = 0.42 u, Mercure = 0.35 u
+  // Géantes gazeuses harmonisées : Jupiter = 2.04 u, Saturne = 1.86 u, Uranus = 1.19 u, Neptune = 1.17 u
+  // Le Soleil (r = 7.0 u, d = 14.0 u) domine nettement Jupiter (d = 4.08 u) avec un ratio de ~3.5x
+  return Math.max(MIN_RADIUS, 0.58 * Math.pow(data.radius, 0.52));
+}
+
+function scaledDistance(data) {
+  // Dégagement gracieux autour du Soleil (r = 7.0 u) :
+  // Mercure = 12.47 u (5.5 u de vide au-dessus de la surface solaire)
+  // Vénus = 18.51 u, Terre = 23.50 u (1.0 AU), Mars = 32.93 u, Jupiter = 99.15 u, Neptune = 546.8 u
+  return 5.5 + data.distance * 18.0;
+}
 
 var textureCache = {};
 function getTexture(id) {
@@ -630,7 +780,7 @@ function createAsteroidBelt() {
   const belt = new THREE.InstancedMesh(geo, mat, count);
   belt.userData.isAsteroid = true;
   const dummy = new THREE.Object3D();
-  const inner = 2.2 * AU, outer = 3.2 * AU;
+  const inner = 45.0, outer = 68.0;
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const r = inner + Math.random() * (outer - inner);

@@ -309,6 +309,16 @@ function clearLocalScene() {
     solarStarfieldGroup = null;
   }
 
+  // Nettoyage complet du groupe solaire
+  if (typeof sunGroup !== 'undefined' && sunGroup) {
+    scene.remove(sunGroup);
+    sunGroup.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+    sunGroup = null;
+  }
+
   cinematicSequence = [];
 }
 
@@ -382,7 +392,7 @@ function performSceneSwitchToSystem(sysId) {
       planetObjects['earth'].mesh.getWorldPosition(earthPos);
       ship.position.copy(earthPos).add(new THREE.Vector3(2, 1.2, 4));
     } else {
-      ship.position.set(0, 3, 18);
+      ship.position.set(0, 3, 23.5);
     }
     state.shipPosition.copy(ship.position);
     shipRig.position.copy(ship.position);

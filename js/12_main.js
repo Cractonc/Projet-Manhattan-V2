@@ -23,6 +23,7 @@ function animate() {
     state.time += dt * state.timeScale;
     if (state.scaleLevel === 'SOLAR') {
       updateOrbits(dt);
+      if (typeof updateSun === 'function') updateSun(dt);
       updateCinematic(dt);
     }
   }
@@ -173,7 +174,10 @@ function updateOrbits(dt) {
       obj.cloudMesh.rotation.y += dt * rotSpeed * 1.08 * state.timeScale;
     }
     for (const moon of obj.moons) {
-      const moonSpeed = (1 / moon.data.period) * 0.6 * state.timeScale;
+      // Amortissement esthétique des vitesses lunaires :
+      // Évite l'effet "hélice/mixeur" (Io à 20 tours/sec) tout en conservant la hiérarchie astronomique réelle
+      // Io: ~8s | Europe: ~11s | Ganymède: ~16s | Callisto: ~24s | Lune: ~31s
+      const moonSpeed = (0.055 / Math.sqrt(Math.max(0.001, moon.data.period))) * state.timeScale;
       moon.orbitGroup.rotation.y += dt * moonSpeed;
     }
   }

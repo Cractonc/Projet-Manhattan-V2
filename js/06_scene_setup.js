@@ -33,8 +33,8 @@ var clickables = []; // solar meshes
 // CAMERA CONTROLLER — SOLAR
 // ============================================================
 var cam = {
-  theta: 0.5, phi: 1.1, radius: 200,
-  tTheta: 0.5, tPhi: 1.1, tRadius: 200,
+  theta: 0.5, phi: 1.1, radius: 240,
+  tTheta: 0.5, tPhi: 1.1, tRadius: 240,
   lookAt: new THREE.Vector3(0, 0, 0),
   tLookAt: new THREE.Vector3(0, 0, 0),
   isDragging: false, lastX: 0, lastY: 0, speed: 0.005,
@@ -46,7 +46,7 @@ var cam = {
     obj.mesh.getWorldPosition(pos);
     const r = obj.data.scaledRadius;
     this.tLookAt.copy(pos);
-    this.tRadius = clamp(r * 6, 4, 300);
+    this.tRadius = clamp(r * 6, 4, 400);
     state.selectedBody = bodyId;
     updateHUD();
     updateInfoCard(obj.data);
@@ -60,7 +60,7 @@ var cam = {
   focusOverview() {
     if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') { return; }
     this.tLookAt.set(0, 0, 0);
-    this.tRadius = 220;
+    this.tRadius = 260;
     this.tPhi = 1.1;
     this.tTheta = 0.4;
     state.selectedBody = null;
