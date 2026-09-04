@@ -878,18 +878,23 @@ function toggleCockpitMode() {
 
 // Spécificité pour les systèmes visitables : positionnement sur l'orbite Terre / Mars ou astre sélectionné
 function ensureValidSolarShipPosition() {
-  const isOutOfBounds = ship.position.length() > 1500 || ship.position.length() < 1;
+  if (scene) scene.updateMatrixWorld(true);
 
-  // Cas 1 : Le joueur a ciblé / sélectionné un astre précis (Terre, Mars, Jupiter, etc.)
-  if (state.selectedBody && planetObjects[state.selectedBody]) {
+  const isTooCloseToSun = ship.position.length() < 22;
+  const isOutOfBounds = ship.position.length() > 1500 || isTooCloseToSun;
+
+  // Cas 1 : Le joueur a ciblé / sélectionné un astre précis AUTRE que le Soleil (Terre, Mars, Jupiter, etc.)
+  if (state.selectedBody && state.selectedBody !== 'sun' && planetObjects[state.selectedBody]) {
     const targetMesh = planetObjects[state.selectedBody].mesh;
     const targetPos = new THREE.Vector3();
     targetMesh.getWorldPosition(targetPos);
     const r = planetObjects[state.selectedBody].data.scaledRadius || 1;
 
-    // Si on vient de la galaxie ou si on est trop loin de l'astre sélectionné (> 40 u)
+    // Si on vient de la galaxie, si on est trop proche du soleil, ou si on est loin de l'astre sélectionné (> 40 u)
     if (isOutOfBounds || ship.position.distanceTo(targetPos) > 40) {
-      ship.position.copy(targetPos).add(new THREE.Vector3(0, r * 1.2, r * 3.8));
+      const toTargetDir = targetPos.clone().normalize();
+      const offsetDist = Math.max(r * 4, 3.5);
+      ship.position.copy(targetPos).add(toTargetDir.clone().multiplyScalar(offsetDist)).add(new THREE.Vector3(0, r * 1.2, 0));
       const m = new THREE.Matrix4().lookAt(ship.position, targetPos, new THREE.Vector3(0, 1, 0));
       ship.quaternion.setFromRotationMatrix(m);
       state.cockpitTarget = state.selectedBody;
@@ -897,31 +902,45 @@ function ensureValidSolarShipPosition() {
       state.shipRotation.copy(ship.quaternion);
       return;
     }
+    return;
   }
 
-  // Cas 2 : Coordonnées hors limites (ex: coordonnées galactiques de 260 000 u)
+  // Cas 2 : Aucune planète cible sélectionnée (ou Soleil sélectionné), ou coordonnées hors limites / trop proches du soleil (< 22 u)
   // Spawner au niveau de l'orbite de la Terre ou de Mars
-  if (isOutOfBounds) {
+  if (isOutOfBounds || state.selectedBody === 'sun' || !state.cockpitTarget || state.cockpitTarget === 'sun') {
     let spawnPos = null;
-    let targetLook = new THREE.Vector3(0, 0, 0); // Regarder vers le centre / Soleil
+    let targetLook = new THREE.Vector3(0, 0, 0);
 
+    // Spawner en priorité sur l'orbite de la Terre (1.0 AU = 23.5 u) ou Mars (1.52 AU = 32.9 u)
     if (planetObjects['earth']) {
       const earthPos = new THREE.Vector3();
       planetObjects['earth'].mesh.getWorldPosition(earthPos);
-      // Spawner directement au niveau de l'orbite terrestre à ~4 u de la Terre
-      spawnPos = earthPos.clone().add(new THREE.Vector3(2, 1.2, 4));
+      const earthDir = earthPos.clone().normalize();
+      // Positionnement sur l'orbite terrestre à ~3.5 u de la Terre vers l'extérieur (vers l'orbite de Mars)
+      spawnPos = earthPos.clone().add(earthDir.clone().multiplyScalar(3.5)).add(new THREE.Vector3(0, 1.2, 0));
       targetLook.copy(earthPos);
       state.cockpitTarget = 'earth';
     } else if (planetObjects['mars']) {
       const marsPos = new THREE.Vector3();
       planetObjects['mars'].mesh.getWorldPosition(marsPos);
-      spawnPos = marsPos.clone().add(new THREE.Vector3(2, 1.2, 4));
+      const marsDir = marsPos.clone().normalize();
+      spawnPos = marsPos.clone().add(marsDir.clone().multiplyScalar(3.5)).add(new THREE.Vector3(0, 1.2, 0));
       targetLook.copy(marsPos);
       state.cockpitTarget = 'mars';
     } else {
-      // Autre système stellaire visitable : position sécurisée vers 23.5 u du soleil
-      spawnPos = new THREE.Vector3(0, 3, 23.5);
-      state.cockpitTarget = planetObjects['sun'] ? 'sun' : null;
+      // Autre système stellaire visitable : position sécurisée vers 27 u
+      const firstBody = Object.keys(planetObjects).find(k => k !== 'sun' && planetObjects[k].mesh);
+      if (firstBody) {
+        const bodyPos = new THREE.Vector3();
+        planetObjects[firstBody].mesh.getWorldPosition(bodyPos);
+        spawnPos = bodyPos.clone().add(bodyPos.clone().normalize().multiplyScalar(4)).add(new THREE.Vector3(0, 1.2, 0));
+        targetLook.copy(bodyPos);
+        state.cockpitTarget = firstBody;
+      } else {
+        spawnPos = new THREE.Vector3(0, 3, 27);
+        targetLook.set(0, 0, 0);
+        state.cockpitTarget = null;
+      }
     }
 
     ship.position.copy(spawnPos);
@@ -977,7 +996,9 @@ function enterCockpitMode() {
     ship.freeLookYaw = 0; ship.freeLookPitch = 0;
     ship.coupledRoll = 0; ship.shakeAmt = 0;
 
-    state.cockpitTarget = state.scaleLevel === 'SOLAR' ? (state.selectedBody || state.cockpitTarget || 'earth') : state.selectedPOI;
+    state.cockpitTarget = state.scaleLevel === 'SOLAR'
+      ? ((state.selectedBody && state.selectedBody !== 'sun') ? state.selectedBody : (state.cockpitTarget && state.cockpitTarget !== 'sun' ? state.cockpitTarget : 'earth'))
+      : state.selectedPOI;
     state.cockpitAutoNav = false;
     state.cockpitAutoTimer = 0;
 

@@ -381,21 +381,37 @@ function performSceneSwitchToSystem(sysId) {
   ship.throttlePercent = 0;
   ship.speed = 0;
 
+  // Spécificité systèmes visitables : préparer le positionnement sur l'orbite de la Terre ou de Mars
+  if (scene) scene.updateMatrixWorld(true);
+  if (typeof planetObjects !== 'undefined' && planetObjects['earth']) {
+    const earthPos = new THREE.Vector3();
+    planetObjects['earth'].mesh.getWorldPosition(earthPos);
+    const earthDir = earthPos.clone().normalize();
+    ship.position.copy(earthPos).add(earthDir.clone().multiplyScalar(3.5)).add(new THREE.Vector3(0, 1.2, 0));
+    const m = new THREE.Matrix4().lookAt(ship.position, earthPos, new THREE.Vector3(0, 1, 0));
+    ship.quaternion.setFromRotationMatrix(m);
+    state.cockpitTarget = 'earth';
+  } else if (typeof planetObjects !== 'undefined' && planetObjects['mars']) {
+    const marsPos = new THREE.Vector3();
+    planetObjects['mars'].mesh.getWorldPosition(marsPos);
+    const marsDir = marsPos.clone().normalize();
+    ship.position.copy(marsPos).add(marsDir.clone().multiplyScalar(3.5)).add(new THREE.Vector3(0, 1.2, 0));
+    const m = new THREE.Matrix4().lookAt(ship.position, marsPos, new THREE.Vector3(0, 1, 0));
+    ship.quaternion.setFromRotationMatrix(m);
+    state.cockpitTarget = 'mars';
+  } else {
+    ship.position.set(0, 3, 27);
+  }
+  state.shipPosition.copy(ship.position);
+  state.shipRotation.copy(ship.quaternion);
+
   // If inside ship (cockpit or walk), update camera far plane
   const inShip = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK');
   if (inShip && shipRig) {
     if (shipRig.parent) shipRig.parent.remove(shipRig);
     scene.add(shipRig);
-    // Spécificité systèmes visitables : spawner sur l'orbite de la Terre ou Mars
-    if (typeof planetObjects !== 'undefined' && planetObjects['earth']) {
-      const earthPos = new THREE.Vector3();
-      planetObjects['earth'].mesh.getWorldPosition(earthPos);
-      ship.position.copy(earthPos).add(new THREE.Vector3(2, 1.2, 4));
-    } else {
-      ship.position.set(0, 3, 23.5);
-    }
-    state.shipPosition.copy(ship.position);
     shipRig.position.copy(ship.position);
+    shipRig.quaternion.copy(ship.quaternion);
     cockpitCamera.far = 100000;
     cockpitCamera.updateProjectionMatrix();
   }
