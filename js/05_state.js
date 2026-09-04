@@ -7,19 +7,19 @@ var mineableObjects = []; // Etape 2.4 : Minage Thermique
 // SPEED TIERS (SOLAR VS GALACTIC)
 // ============================================================
 var SPEED_TIERS_SOLAR = {
-  IMPULSE: 4,      // Manœuvres précises, minage astéroïdes, approche (4 u/s)
-  SUBLIGHT: 15,    // Croisière locale inter-lunes et planétaire (15 u/s)
-  WARP_1: 40,      // Transit interplanétaire intérieur (40 u/s)
-  WARP_5: 90,      // Transit vers les géantes gazeuses (90 u/s)
-  WARP_MAX: 180    // Vitesse maximale contrôlée sans perte du système (180 u/s)
+  IMPULSE: 1.2,    // Manœuvres précises, minage astéroïdes, approche (1.2 u/s)
+  SUBLIGHT: 4,     // Croisière locale inter-lunes et planétaire (4 u/s)
+  WARP_1: 10,      // Transit planétaire proche (10 u/s)
+  WARP_5: 20,      // Transit vers les géantes gazeuses (20 u/s)
+  WARP_MAX: 35     // Vitesse maximale interplanétaire (35 u/s)
 };
 
 var SPEED_TIERS_GALACTIC = {
-  IMPULSE: 100,
-  SUBLIGHT: 1000,
-  WARP_1: 5000,
-  WARP_5: 20000,
-  WARP_MAX: 50000
+  IMPULSE: 80,     // Approche et contemplation de systèmes (80 ly/s)
+  SUBLIGHT: 350,   // Croisière locale vers systèmes voisins (350 ly/s)
+  WARP_1: 1200,    // Transit de bras spiral (1 200 ly/s)
+  WARP_5: 2800,    // Croisière interstellaire longue distance (2 800 ly/s)
+  WARP_MAX: 5500   // Pleine puissance (~2 min pour traverser la galaxie) (5 500 ly/s)
 };
 
 var SPEED_TIERS = SPEED_TIERS_SOLAR;
@@ -245,7 +245,7 @@ var ship = {
   quaternion: new THREE.Quaternion(),
   speed: 0,
   maxSpeed: 8,            // solar: 8 units/s cruise
-  boostMultiplier: 3,
+  boostMultiplier: 2.0,
   throttlePercent: 0,     // 0-100 progressive
   thrust: 0,
   targetThrust: 0,

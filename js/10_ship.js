@@ -1508,7 +1508,7 @@ function updateShip(dt) {
   }
 
   const TURN_RATE = isFTL ? 0.6 : 1.5;
-  const STRAFE_MAX = isFTL ? 1200 : 3;
+  const STRAFE_MAX = isFTL ? 150 : 1.5;
 
   // ── Throttle (held keys: continuous adjust) ──
   if (cockpitKeys.throttleUp) {
