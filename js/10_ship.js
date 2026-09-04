@@ -577,30 +577,6 @@ function createShipInterior() {
   mapRoomLight.position.set(1.4, 0.8, 1.8);
   shipInterior.add(mapRoomLight);
 
-  // Central Astrometry Holotable Terminal (Deck 0, Z=1.8, X=1.4)
-  const holoBaseGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.35, 24);
-  const holoBaseMat = new THREE.MeshStandardMaterial({ color: 0x0c1018, metalness: 0.8, roughness: 0.3 });
-  const holoBase = new THREE.Mesh(holoBaseGeo, holoBaseMat);
-  holoBase.position.set(1.4, -0.55, 1.8);
-  shipInterior.add(holoBase);
-
-  // Glowing console rim
-  const rimGeo = new THREE.TorusGeometry(0.32, 0.018, 16, 32);
-  const rimMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00d8ff, emissiveIntensity: 2.2 });
-  const holoRim = new THREE.Mesh(rimGeo, rimMat);
-  holoRim.rotation.x = Math.PI / 2;
-  holoRim.position.set(1.4, -0.37, 1.8);
-  shipInterior.add(holoRim);
-
-  // Mini hologram galaxy disc above console
-  window.holoAstroHolo = new THREE.Mesh(
-    new THREE.RingGeometry(0.04, 0.22, 24),
-    new THREE.MeshBasicMaterial({ color: 0x00d8ff, transparent: true, opacity: 0.7, side: THREE.DoubleSide, wireframe: true })
-  );
-  window.holoAstroHolo.rotation.x = -Math.PI / 3;
-  window.holoAstroHolo.position.set(1.4, -0.20, 1.8);
-  shipInterior.add(window.holoAstroHolo);
-
   bx(0.3, 0.06, 0.01, doorLabelMat, -0.42, 1.1, 1.39); // OBSERVATORY LABEL
   bx(0.3, 0.06, 0.01, doorLabelMat, 0.42, 1.1, 1.39);  // GALAXY MAP LABEL
   bx(0.2, 0.06, 0.01, doorLabelMat, 0, 1.1, 0.61);     // BRIDGE LABEL
@@ -935,6 +911,10 @@ function initShipStateOnLoad() {
   const hud = document.getElementById('hud');
   if (hud) hud.style.display = 'none';
 
+  state.prevCameraMode = 'FREE';
+  const btnCockpit = document.getElementById('btn-cockpit');
+  if (btnCockpit) btnCockpit.textContent = '◎ MODE SPECTATEUR';
+
   if (state.cameraMode === 'WALK') {
     state.walkMode = true;
     const walkHud = document.getElementById('walk-hud');
@@ -989,8 +969,14 @@ function initShipStateOnLoad() {
 }
 
 function toggleCockpitMode() {
-  if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') exitCockpitMode();
-  else enterCockpitMode();
+  if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') {
+    if (state.cameraMode === 'ASTROMETRY' && typeof exitAstrometryMode === 'function') {
+      exitAstrometryMode();
+    }
+    exitCockpitMode();
+  } else {
+    enterCockpitMode();
+  }
 }
 
 // Spécificité pour les systèmes visitables : positionnement sur l'orbite Terre / Mars ou astre sélectionné
@@ -1108,9 +1094,9 @@ function ensureValidGalacticShipPosition() {
 }
 
 function enterCockpitMode() {
-  state.prevCameraMode = state.cameraMode;
+  state.prevCameraMode = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') ? 'FREE' : state.cameraMode;
   const ov = document.getElementById('cockpit-transition');
-  ov.classList.add('active');
+  if (ov) ov.classList.add('active');
 
   // Init audio on first cockpit entry (requires user gesture)
   initAudio();
@@ -1120,7 +1106,7 @@ function enterCockpitMode() {
     if (state.scaleLevel === 'GALACTIC') {
       if (shipRig.parent) shipRig.parent.remove(shipRig);
       galacticScene.add(shipRig);
-      cockpitCamera.far = 600000;
+      cockpitCamera.far = 20000000;
       cockpitCamera.updateProjectionMatrix();
       ensureValidGalacticShipPosition();
     } else {
@@ -1141,6 +1127,8 @@ function enterCockpitMode() {
     // Reset all dynamics
     ship.speed = 0; ship.thrust = 0; ship.targetThrust = 0;
     ship.throttlePercent = 0;
+    ship.reverseEngaged = false;
+    ship.reversePercent = 0;
     ship.boostActive = false; ship.boostHeat = 0;
     ship.boostCooldown = false; ship.boostCooldownTimer = 0;
     ship.strafeX = 0; ship.strafeY = 0;
@@ -1160,16 +1148,16 @@ function enterCockpitMode() {
     state.cockpitEnabled = true;
     buildShipCollision();
 
-    // Enter walk mode first (player can sit at pilot seat with E)
+    // Enter walk mode first (player can sit at pilot seat with F)
     enterWalkMode();
 
-    setTimeout(() => ov.classList.remove('active'), 300);
+    if (ov) setTimeout(() => ov.classList.remove('active'), 300);
   }, 300);
 }
 
 function exitCockpitMode() {
   const ov = document.getElementById('cockpit-transition');
-  ov.classList.add('active');
+  if (ov) ov.classList.add('active');
 
   setTimeout(() => {
     // Stop all walk movement  
@@ -1177,6 +1165,7 @@ function exitCockpitMode() {
     walkKeys.backward = false;
     walkKeys.left = false;
     walkKeys.right = false;
+    walkKeys.sprint = false;
 
     const pos = new THREE.Vector3();
     shipRig.getWorldPosition(pos);
@@ -1196,7 +1185,15 @@ function exitCockpitMode() {
     } else {
       galCam.lookAt.copy(pos);
       galCam.tLookAt.copy(pos);
+      galCam.radius = 5000;
       galCam.tRadius = 5000;
+      const sinPhi = Math.sin(galCam.phi);
+      galacticCamera.position.set(
+        pos.x + 5000 * sinPhi * Math.cos(galCam.theta),
+        pos.y + 5000 * Math.cos(galCam.phi),
+        pos.z + 5000 * sinPhi * Math.sin(galCam.theta)
+      );
+      galacticCamera.lookAt(pos);
     }
 
     // Move ship back to correct scene
@@ -1211,16 +1208,19 @@ function exitCockpitMode() {
         if (shipRig.parent) shipRig.parent.remove(shipRig);
         galacticScene.add(shipRig);
       }
-      cockpitCamera.far = 600000;
+      cockpitCamera.far = 20000000;
     }
     cockpitCamera.updateProjectionMatrix();
 
-    // cockpitGroup.visible = false; // Intentionally left visible for exterior view
-    // cockpitLight.visible = false;
-    state.cameraMode = state.prevCameraMode || 'FREE';
+    // Mode spectateur extérieur
+    state.cameraMode = (state.scaleLevel === 'SOLAR' && state.selectedBody) ? 'ORBIT' : 'FREE';
+    state.prevCameraMode = state.cameraMode;
     state.cockpitEnabled = false;
     state.cockpitAutoNav = false;
+    state.walkMode = false;
     ship.throttlePercent = 0;
+    ship.reverseEngaged = false;
+    ship.reversePercent = 0;
     ship.boostActive = false;
     ship.boostHeat = 0;
     ship.boostCooldown = false;
@@ -1229,12 +1229,25 @@ function exitCockpitMode() {
       if (typeof cockpitKeys[k] === 'boolean') cockpitKeys[k] = false;
     }
 
-    document.getElementById('walk-hud').classList.remove('active');
-    state.walkMode = false;
-    document.getElementById('cockpit-hud').classList.remove('active');
-    document.getElementById('hud').style.display = '';
+    const walkHud = document.getElementById('walk-hud');
+    if (walkHud) walkHud.classList.remove('active');
+    const cockpitHud = document.getElementById('cockpit-hud');
+    if (cockpitHud) cockpitHud.classList.remove('active');
+    const astroHud = document.getElementById('astrometry-hud');
+    if (astroHud) astroHud.classList.remove('active');
+    const hud = document.getElementById('hud');
+    if (hud) hud.style.display = '';
+    const labels = document.getElementById('labels');
+    if (labels) labels.style.display = '';
 
-    setTimeout(() => ov.classList.remove('active'), 300);
+    const btnCockpit = document.getElementById('btn-cockpit');
+    if (btnCockpit) btnCockpit.textContent = '🚀 ENTRER DANS LE VAISSEAU';
+
+    if (typeof showNotification === 'function') {
+      showNotification('◎ MODE SPECTATEUR ACTIVÉ ([V] POUR RÉINTÉGRER LE VAISSEAU)', 2200);
+    }
+
+    if (ov) setTimeout(() => ov.classList.remove('active'), 300);
   }, 300);
 }
 
@@ -1245,21 +1258,43 @@ function enterWalkMode() {
   if (window.laserLine) window.laserLine.visible = false;
 
   // Position walker at cockpit seat area and reset floor logic
-  walker.position.set(0, 0, 0.2);
+  if (!walker.position || typeof walker.position.x !== 'number') {
+    walker.position = new THREE.Vector3(0, 0, 0.2);
+  }
   walker.floor = 0;
   walker.targetFloor = 0;
   walker.baseY = 0.22;
   walker.yaw = Math.PI; // Face toward front of ship
   walker.pitch = 0;
 
-  // Show walk HUD, hide cockpit HUD
-  document.getElementById('walk-hud').classList.add('active');
-  document.getElementById('cockpit-hud').classList.remove('active');
-  document.getElementById('hud').style.display = 'none';
+  cockpitCamera.fov = 75;
+  cockpitCamera.position.set(walker.position.x, walker.baseY, walker.position.z);
+  cockpitCamera.rotation.set(0, 0, 0);
+  cockpitCamera.rotateY(walker.yaw);
+  cockpitCamera.rotateX(walker.pitch);
+  cockpitCamera.updateProjectionMatrix();
+
+  // Show walk HUD, hide cockpit HUD & spectator HUD
+  const walkHud = document.getElementById('walk-hud');
+  if (walkHud) walkHud.classList.add('active');
+  const cockpitHud = document.getElementById('cockpit-hud');
+  if (cockpitHud) cockpitHud.classList.remove('active');
+  const astroHud = document.getElementById('astrometry-hud');
+  if (astroHud) astroHud.classList.remove('active');
+  const hud = document.getElementById('hud');
+  if (hud) hud.style.display = 'none';
+  const labels = document.getElementById('labels');
+  if (labels) labels.style.display = 'none';
+  const btnCockpit = document.getElementById('btn-cockpit');
+  if (btnCockpit) btnCockpit.textContent = '◎ MODE SPECTATEUR';
 
   // Update room name
   state.currentRoom = detectCurrentRoom(walker.position.x, walker.position.z);
   updateRoomNameDisplay();
+
+  if (typeof showNotification === 'function') {
+    showNotification('🚶 INTÉRIEUR DU MANHATTAN ([V] POUR SORTIR EN SPECTATEUR)', 2200);
+  }
 }
 
 function exitWalkMode() {
@@ -1294,13 +1329,24 @@ function exitPilotToWalk() {
   if (window.laserLine) window.laserLine.visible = false;
 
   // Show walk HUD, hide cockpit HUD
-  document.getElementById('cockpit-hud').classList.remove('active');
-  document.getElementById('walk-hud').classList.add('active');
+  const cockpitHud = document.getElementById('cockpit-hud');
+  if (cockpitHud) cockpitHud.classList.remove('active');
+  const walkHud = document.getElementById('walk-hud');
+  if (walkHud) walkHud.classList.add('active');
 
   // Place walker near the pilot seat
   walker.position.set(0, 0, 0.2);
+  walker.floor = 0;
+  walker.baseY = 0.22;
   walker.yaw = Math.PI;
   walker.pitch = 0;
+
+  cockpitCamera.fov = 75;
+  cockpitCamera.position.set(walker.position.x, walker.baseY, walker.position.z);
+  cockpitCamera.rotation.set(0, 0, 0);
+  cockpitCamera.rotateY(walker.yaw);
+  cockpitCamera.rotateX(walker.pitch);
+  cockpitCamera.updateProjectionMatrix();
 
   state.currentRoom = 'cockpit';
   updateRoomNameDisplay();
@@ -1395,6 +1441,8 @@ function exitAstrometryMode() {
   }
 
   state.cameraMode = 'WALK';
+  state.walkMode = true;
+  state.prevCameraMode = 'FREE';
 
   // Masquer le HUD Astrométrie
   const astroHud = document.getElementById('astrometry-hud');
@@ -1407,6 +1455,9 @@ function exitAstrometryMode() {
   // Masquer les étiquettes en mode marche
   const labelsEl = document.getElementById('labels');
   if (labelsEl) labelsEl.style.display = 'none';
+
+  state.currentRoom = detectCurrentRoom(walker.position.x, walker.position.z);
+  updateRoomNameDisplay();
 
   if (typeof showNotification === 'function') {
     showNotification('RETOUR À BORD DU MANHATTAN', 1200);
@@ -1472,26 +1523,20 @@ function updateTelescopeRef(dt) {
   }
 }
 
-let roomDisplayTimeout = null;
-
 function updateRoomNameDisplay() {
   const names = {
     'cockpit': 'PONT DE COMMANDEMENT',
-    'corridor': 'COULOIR',
-    'observatory': 'OBSERVATOIRE',
-    'galaxymap': 'CARTE GALACTIQUE',
-    'quarters': 'SALLE DE REPOS',
-    'engineering': 'SALLE DES MACHINES',
-    'elevator': 'ASCENSEUR',
+    'corridor': 'COULOIR CENTRAL',
+    'observatory': 'OBSERVATOIRE STELLAIRE',
+    'galaxymap': 'CARTE GALACTIQUE (ARCHIVES 3D)',
+    'quarters': 'QUARTIERS D\'ÉQUIPAGE',
+    'engineering': 'SALLE DES MACHINES (RÉACTEUR WARP)',
+    'elevator': 'ASCENSEUR GRAVITATIONNEL',
   };
   const el = document.getElementById('walk-room-name');
   if (el) {
-    el.textContent = names[state.currentRoom] || 'VAISSEAU';
+    el.textContent = names[state.currentRoom] || 'VAISSEAU MANHATTAN';
     el.classList.add('visible');
-    if (roomDisplayTimeout) clearTimeout(roomDisplayTimeout);
-    roomDisplayTimeout = setTimeout(() => {
-      el.classList.remove('visible');
-    }, 2500);
   }
 }
 

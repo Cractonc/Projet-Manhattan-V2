@@ -67,9 +67,6 @@ function animate() {
       holoDeco.rotation.y += dt;
       holoDeco.rotation.x += dt * 0.5;
     }
-    if (typeof holoAstroHolo !== 'undefined' && holoAstroHolo) {
-      holoAstroHolo.rotation.z += dt * 0.8;
-    }
   }
 
   // Update 2D Galaxy Map Marker
@@ -640,6 +637,12 @@ function setupEvents() {
         e.preventDefault();
         return;
       }
+      if (code === 'KeyV') {
+        if (typeof exitAstrometryMode === 'function') exitAstrometryMode();
+        if (typeof exitCockpitMode === 'function') exitCockpitMode();
+        e.preventDefault();
+        return;
+      }
       return;
     }
 
@@ -672,8 +675,13 @@ function setupEvents() {
           }
           return;
         case 'KeyV':
-        case 'Escape':
           exitCockpitMode();
+          return;
+        case 'Escape':
+          if (state.observing) {
+            exitObservationMode();
+            return;
+          }
           return;
         case 'KeyP':
           document.getElementById('panel').classList.toggle('open');
@@ -771,11 +779,11 @@ function setupEvents() {
         case 'KeyF': // STAND UP
           if (!state.warp.active) exitPilotToWalk();
           break;
-        case 'KeyV': // Back to Orbit view
+        case 'KeyV': // Back to Orbit view (Spectator)
           if (!state.warp.active) exitCockpitMode();
           break;
-        case 'Escape':
-          if (!state.warp.active) exitCockpitMode();
+        case 'Escape': // Escape stands up to walk
+          if (!state.warp.active) exitPilotToWalk();
           break;
         case 'KeyP': // Panel toggle (in cockpit)
           document.getElementById('panel').classList.toggle('open');
@@ -877,8 +885,14 @@ function setupEvents() {
 
   // Overview
   document.getElementById('btn-overview').addEventListener('click', () => {
-    if (state.scaleLevel === 'GALACTIC') galCam.focusOverview();
-    else cam.focusOverview();
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') {
+      if (state.cameraMode === 'ASTROMETRY' && typeof exitAstrometryMode === 'function') exitAstrometryMode();
+      exitCockpitMode();
+    }
+    setTimeout(() => {
+      if (state.scaleLevel === 'GALACTIC') galCam.focusOverview();
+      else cam.focusOverview();
+    }, 350);
   });
 
   // Cockpit

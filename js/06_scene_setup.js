@@ -58,7 +58,7 @@ var cam = {
   },
 
   focusOverview() {
-    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') { return; }
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') { return; }
     this.tLookAt.set(0, 0, 0);
     this.tRadius = 260;
     this.tPhi = 1.1;
@@ -70,7 +70,7 @@ var cam = {
   },
 
   update(dt) {
-    if (state.cameraMode === 'COCKPIT') return;
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') return;
     const ease = Math.min(1, dt * 2.5);
     this.theta = lerp(this.theta, this.tTheta, ease);
     this.phi = lerp(this.phi, this.tPhi, ease);
@@ -116,6 +116,7 @@ var galCam = {
   },
 
   focusOverview() {
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK' || state.cameraMode === 'ASTROMETRY') { return; }
     this.tLookAt.set(0, 0, 0);
     this.tRadius = 1000000;
     this.tPhi = 0.75;
@@ -126,7 +127,7 @@ var galCam = {
   },
 
   update(dt) {
-    if (state.cameraMode === 'COCKPIT') return;
+    if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') return;
     const ease = Math.min(1, dt * 2.5);
     this.theta = lerp(this.theta, this.tTheta, ease);
     this.phi = lerp(this.phi, this.tPhi, ease);
