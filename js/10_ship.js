@@ -1735,8 +1735,8 @@ function updateShip(dt) {
 
   // ── Rotation ──
   const tYaw = ((cockpitKeys.yawLeft ? 1 : 0) - (cockpitKeys.yawRight ? 1 : 0)) * TURN_RATE;
-  const tPitch = ((cockpitKeys.pitchDown ? 1 : 0) - (cockpitKeys.pitchUp ? 1 : 0)) * TURN_RATE;
-  const tRoll = ((cockpitKeys.rollLeft ? 1 : 0) - (cockpitKeys.rollRight ? 1 : 0)) * TURN_RATE * 0.7;
+  const tPitch = ((cockpitKeys.pitchUp ? 1 : 0) - (cockpitKeys.pitchDown ? 1 : 0)) * TURN_RATE;
+  const tRoll = ((cockpitKeys.rollRight ? 1 : 0) - (cockpitKeys.rollLeft ? 1 : 0)) * TURN_RATE * 0.7;
   ship.yawRate = lerp(ship.yawRate, tYaw, dt * 5);
   ship.pitchRate = lerp(ship.pitchRate, tPitch, dt * 5);
   ship.rollRate = lerp(ship.rollRate, tRoll, dt * 5);
