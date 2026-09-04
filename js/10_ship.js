@@ -1392,6 +1392,10 @@ function enterAstrometryMode() {
   const promptEl = document.getElementById('walk-interact-prompt');
   if (promptEl) promptEl.classList.remove('visible');
 
+  // Masquer la pastille mission active en mode carte 3D
+  const questHud = document.getElementById('quest-hud');
+  if (questHud) questHud.style.display = 'none';
+
   // Afficher le HUD Astrométrie
   const astroHud = document.getElementById('astrometry-hud');
   if (astroHud) astroHud.classList.add('active');
@@ -1451,6 +1455,10 @@ function exitAstrometryMode() {
   // Rétablir le HUD de marche
   const walkHud = document.getElementById('walk-hud');
   if (walkHud) walkHud.classList.add('active');
+
+  // Rétablir la pastille mission active
+  const questHud = document.getElementById('quest-hud');
+  if (questHud) questHud.style.display = '';
 
   // Masquer les étiquettes en mode marche
   const labelsEl = document.getElementById('labels');
