@@ -964,6 +964,10 @@ canvas {
   background: linear-gradient(0deg, #ff8040, #ffcc60) !important;
 }
 
+.ckp-throttle-fill.reverse {
+  background: linear-gradient(0deg, #ffaa00, #ffd24d) !important;
+}
+
 .ckp-throttle-pct {
   font-size: 0.65rem;
   color: var(--text);
@@ -1092,6 +1096,15 @@ canvas {
 
 .ckp-vel-mode-label.ftl-mode {
   color: var(--warp);
+}
+
+.ckp-vel-mode-label.reverse {
+  color: #ffaa00;
+}
+
+.ckp-vel-mode-label.brake {
+  color: #ff3344;
+  animation: ckp-pulse 0.5s infinite;
 }
 
 .ckp-btn {
@@ -2254,7 +2267,557 @@ body.pure-view #panel,
 body.pure-view #labels,
 body.pure-view #cockpit-hud,
 body.pure-view #walk-hud,
+body.pure-view #telescope-hud,
+body.pure-view #astrometry-hud,
 body.pure-view #info-card {
   display: none !important;
 }
+
+/* ============================================================
+   LABORATOIRE D'ASTROMÉTRIE 3D — ARCHIVES DU MANHATTAN
+   ============================================================ */
+
+#astrometry-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+#astrometry-hud.active {
+  opacity: 1;
+}
+
+/* ── Barre Supérieure Astrométrie ── */
+.astro-topbar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  background: linear-gradient(180deg, rgba(3, 8, 20, 0.92) 0%, rgba(3, 8, 20, 0.65) 75%, transparent 100%);
+  border-bottom: 1px solid rgba(0, 216, 255, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.astro-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.astro-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 0 8px rgba(0, 216, 255, 0.6));
+}
+
+.astro-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.astro-title {
+  color: #00d8ff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 216, 255, 0.6);
+}
+
+.astro-subtitle {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 500;
+}
+
+.astro-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.astro-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 25, 55, 0.7);
+  border: 1px solid rgba(0, 216, 255, 0.35);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.astro-stat-lbl {
+  color: rgba(122, 184, 224, 0.8);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+}
+
+.astro-stat-val {
+  color: #00ffcc;
+  font-weight: 700;
+}
+
+.astro-exit-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 60, 80, 0.15);
+  border: 1px solid rgba(255, 60, 80, 0.45);
+  color: #ff99aa;
+  padding: 7px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+}
+
+.astro-exit-btn:hover {
+  background: rgba(255, 60, 80, 0.35);
+  border-color: rgba(255, 80, 100, 0.9);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 60, 80, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ── Zone Centrale de Travail ── */
+.astro-main-body {
+  pointer-events: none;
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 28px;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* ── Panneau Gauche : Catalogue des Secteurs ── */
+.astro-left-panel {
+  pointer-events: auto;
+  width: 300px;
+  max-height: calc(100vh - 160px);
+  background: rgba(4, 10, 22, 0.88);
+  border: 1px solid rgba(0, 216, 255, 0.25);
+  border-radius: 6px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.astro-panel-header {
+  padding: 12px 14px;
+  background: rgba(0, 20, 45, 0.5);
+  border-bottom: 1px solid rgba(0, 216, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.astro-panel-title {
+  color: #00d8ff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 6px rgba(0, 216, 255, 0.4);
+}
+
+.astro-filter-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.astro-filter-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 5px 8px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astro-filter-btn:hover {
+  background: rgba(0, 216, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(0, 216, 255, 0.3);
+}
+
+.astro-filter-btn.active {
+  background: rgba(0, 216, 255, 0.22);
+  border-color: #00d8ff;
+  color: #00ffff;
+  box-shadow: 0 0 8px rgba(0, 216, 255, 0.3);
+}
+
+.astro-poi-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.astro-poi-list::-webkit-scrollbar {
+  width: 4px;
+}
+.astro-poi-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 216, 255, 0.3);
+  border-radius: 2px;
+}
+
+.astro-poi-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.astro-poi-item:hover {
+  background: rgba(0, 216, 255, 0.08);
+  border-color: rgba(0, 216, 255, 0.35);
+  transform: translateX(2px);
+}
+
+.astro-poi-item.active {
+  background: rgba(0, 216, 255, 0.18);
+  border-color: #00d8ff;
+  box-shadow: 0 0 12px rgba(0, 216, 255, 0.35);
+}
+
+.astro-poi-item.locked {
+  border-color: rgba(255, 170, 0, 0.2);
+}
+
+.astro-poi-item.locked:hover {
+  background: rgba(255, 170, 0, 0.08);
+  border-color: rgba(255, 170, 0, 0.4);
+}
+
+.astro-poi-item.locked.active {
+  background: rgba(255, 170, 0, 0.16);
+  border-color: #ffaa00;
+  box-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
+}
+
+.astro-poi-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.astro-poi-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.astro-poi-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.astro-poi-sub {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Panneau Droit : Carte d'Inspection ── */
+.astro-inspect-card {
+  pointer-events: auto;
+  width: 380px;
+  max-height: calc(100vh - 160px);
+  background: rgba(4, 10, 22, 0.90);
+  border: 1px solid rgba(0, 216, 255, 0.3);
+  border-radius: 6px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 18px 20px;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.astro-inspect-card::-webkit-scrollbar {
+  width: 4px;
+}
+.astro-inspect-card::-webkit-scrollbar-thumb {
+  background: rgba(0, 216, 255, 0.3);
+  border-radius: 2px;
+}
+
+.astro-card-badge {
+  align-self: flex-start;
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.astro-card-badge.discovered {
+  background: rgba(0, 216, 255, 0.15);
+  border: 1px solid #00d8ff;
+  color: #00d8ff;
+  box-shadow: 0 0 8px rgba(0, 216, 255, 0.35);
+}
+
+.astro-card-badge.locked {
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px solid #ffaa00;
+  color: #ffaa00;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.35);
+}
+
+.astro-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.astro-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.astro-card-sub {
+  font-size: 11px;
+  color: #7ab8e0;
+  letter-spacing: 0.5px;
+}
+
+.astro-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(0, 20, 45, 0.45);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 216, 255, 0.15);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.astro-grid-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.astro-grid-cell {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.astro-grid-lbl {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: rgba(122, 184, 224, 0.7);
+  text-transform: uppercase;
+}
+
+.astro-grid-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.astro-desc {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Panneau Verrouillé */
+.astro-locked-panel {
+  background: rgba(255, 170, 0, 0.06);
+  border: 1px solid rgba(255, 170, 0, 0.28);
+  border-radius: 6px;
+  padding: 12px 14px;
+  color: rgba(255, 230, 180, 0.9);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.astro-locked-title {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #ffaa00;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.astro-locked-steps {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.astro-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffaa00;
+  color: #000;
+  font-size: 9px;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.astro-quest-hint {
+  background: rgba(0, 216, 255, 0.08);
+  border: 1px solid rgba(0, 216, 255, 0.25);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  color: #88ddff;
+}
+
+.astro-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.astro-btn-primary {
+  background: linear-gradient(135deg, rgba(0, 150, 255, 0.45), rgba(0, 216, 255, 0.25));
+  border: 1px solid #00d8ff;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.astro-btn-primary:hover {
+  background: linear-gradient(135deg, rgba(0, 180, 255, 0.65), rgba(0, 230, 255, 0.45));
+  box-shadow: 0 0 15px rgba(0, 216, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.astro-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 7px 12px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.astro-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+/* ── Barre Inférieure : Indications & Raccourcis ── */
+.astro-bottom-bar {
+  pointer-events: none;
+  padding: 10px 28px;
+  text-align: center;
+  background: linear-gradient(0deg, rgba(3, 8, 20, 0.9) 0%, transparent 100%);
+}
+
+.astro-controls-hint {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.astro-kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 216, 255, 0.4);
+  border-radius: 3px;
+  color: #00d8ff;
+  font-family: monospace;
+  font-size: 10px;
+  margin: 0 3px;
+}
+
+/* ── Étiquette HTML pour anomalie non cartographiée ── */
+.poi-label-anomaly {
+  color: #ffaa33 !important;
+  border-color: rgba(255, 170, 51, 0.6) !important;
+  background: rgba(25, 15, 5, 0.8) !important;
+  text-shadow: 0 0 8px rgba(255, 170, 51, 0.85) !important;
+  box-shadow: 0 0 6px rgba(255, 170, 51, 0.4) !important;
+}
+
 

@@ -156,6 +156,7 @@ function updateInfoCard(data) {
 }
 
 function updateGalacticInfoCard(data) {
+  if (state.cameraMode === 'ASTROMETRY') return;
   const card = document.getElementById('info-card');
   card.style.display = 'block';
   document.getElementById('info-name').textContent = data.name;
@@ -216,6 +217,15 @@ function updateHUD() {
 }
 
 function updateLabels() {
+  if (state.cameraMode === 'ASTROMETRY') {
+    document.getElementById('labels').style.display = '';
+    for (const id in planetObjects) {
+      if (planetObjects[id].label) planetObjects[id].label.style.opacity = '0';
+    }
+    for (const item of labelEls) { item.el.style.opacity = '0'; }
+    updateGalacticLabels();
+    return;
+  }
   if (!state.showLabels || state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
     document.getElementById('labels').style.display = 'none';
     return;
@@ -674,4 +684,296 @@ function setupCodexUI() {
   const questHud = document.getElementById('quest-hud');
   if (questHud) questHud.addEventListener('click', openCodex);
 }
+
+// ============================================================
+// ASTROMETRY 3D LAB & SURVEY SYSTEM
+// ============================================================
+var astroActiveFilter = 'all';
+
+function updateAstrometryPOIVisibility() {
+  const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
+    ? state.player.discoveredPOIs
+    : ['sol'];
+
+  for (const id in galacticPOIObjects) {
+    const obj = galacticPOIObjects[id];
+    const isDisc = discovered.includes(id);
+
+    // Activer ou masquer le modèle 3D haute fidélité
+    if (obj.detail) {
+      obj.detail.visible = isDisc;
+    }
+    // Activer ou masquer la balise anomalique pour les astres inconnus
+    if (obj.anomalyBeacon) {
+      obj.anomalyBeacon.visible = !isDisc;
+    }
+  }
+
+  // Adapter les étiquettes flottantes
+  if (typeof galacticLabelEls !== 'undefined') {
+    for (const item of galacticLabelEls) {
+      const isDisc = discovered.includes(item.data.id);
+      if (isDisc) {
+        item.el.textContent = item.data.name.toUpperCase();
+        item.el.classList.remove('poi-label-anomaly');
+      } else {
+        item.el.textContent = '[ ??? SIGNAL INCONNU ]';
+        item.el.classList.add('poi-label-anomaly');
+      }
+    }
+  }
+}
+
+function restoreGalacticPOIVisibility() {
+  for (const id in galacticPOIObjects) {
+    const obj = galacticPOIObjects[id];
+    if (obj.detail) {
+      obj.detail.visible = true;
+    }
+    if (obj.anomalyBeacon) {
+      obj.anomalyBeacon.visible = false;
+    }
+  }
+  if (typeof galacticLabelEls !== 'undefined') {
+    for (const item of galacticLabelEls) {
+      item.el.textContent = item.data.name.toUpperCase();
+      item.el.classList.remove('poi-label-anomaly');
+    }
+  }
+}
+
+function updateAstrometryHUD() {
+  if (typeof GALACTIC_POI === 'undefined') return;
+
+  const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
+    ? state.player.discoveredPOIs
+    : ['sol'];
+
+  const total = GALACTIC_POI.length;
+  const discCount = discovered.length;
+  const pct = Math.round((discCount / Math.max(1, total)) * 100);
+
+  const countEl = document.getElementById('astro-disc-count');
+  const totalEl = document.getElementById('astro-total-count');
+  const pctEl = document.getElementById('astro-disc-pct');
+
+  if (countEl) countEl.textContent = discCount;
+  if (totalEl) totalEl.textContent = total;
+  if (pctEl) pctEl.textContent = pct + '%';
+
+  renderAstrometryList();
+}
+
+function renderAstrometryList() {
+  const listEl = document.getElementById('astro-poi-list');
+  if (!listEl || typeof GALACTIC_POI === 'undefined') return;
+
+  const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
+    ? state.player.discoveredPOIs
+    : ['sol'];
+
+  listEl.innerHTML = '';
+
+  const filtered = GALACTIC_POI.filter(poi => {
+    const isDisc = discovered.includes(poi.id);
+    if (astroActiveFilter === 'discovered') return isDisc;
+    if (astroActiveFilter === 'locked') return !isDisc;
+    return true;
+  });
+
+  for (const poi of filtered) {
+    const isDisc = discovered.includes(poi.id);
+    const item = document.createElement('div');
+    item.className = 'astro-poi-item' + (isDisc ? '' : ' locked') + (state.selectedPOI === poi.id ? ' active' : '');
+    item.dataset.id = poi.id;
+
+    const dotColor = isDisc ? (poi.dotColor || '#00d8ff') : '#ffaa00';
+    const nameText = isDisc ? poi.name : '[ ??? ANOMALIE ]';
+    const subText = isDisc
+      ? (poi.type || 'Secteur stellaire')
+      : `Secteur [${Math.round(poi.pos[0]/1000)}k, ${Math.round(poi.pos[2]/1000)}k]`;
+
+    item.innerHTML = `
+      <div class="astro-poi-dot" style="background:${dotColor}; color:${dotColor};"></div>
+      <div class="astro-poi-info">
+        <div class="astro-poi-name">${nameText}</div>
+        <div class="astro-poi-sub">${subText}</div>
+      </div>
+    `;
+
+    item.addEventListener('click', () => {
+      selectAstrometryPOI(poi.id);
+    });
+
+    listEl.appendChild(item);
+  }
+}
+
+function selectAstrometryPOI(poiId) {
+  if (typeof galacticPOIObjects === 'undefined' || !galacticPOIObjects[poiId]) return;
+
+  state.selectedPOI = poiId;
+  const obj = galacticPOIObjects[poiId];
+  const poi = obj.data;
+  const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
+    ? state.player.discoveredPOIs
+    : ['sol'];
+  const isDisc = discovered.includes(poiId);
+
+  // Mettre à jour la caméra
+  if (typeof galCam !== 'undefined') {
+    if (isDisc) {
+      galCam.focusOn(poiId);
+    } else {
+      const pos = obj.group.position;
+      galCam.tLookAt.copy(pos);
+      galCam.tRadius = Math.max(poi.scale * 4.0, 7000);
+    }
+  }
+
+  // Mettre à jour l'élément actif dans la liste latérale
+  document.querySelectorAll('.astro-poi-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === poiId);
+  });
+
+  // Calcul de distance au Soleil
+  let distStr = '---';
+  if (poi.pos && typeof SUN_GAL !== 'undefined') {
+    const d = Math.round(new THREE.Vector3(poi.pos[0], poi.pos[1], poi.pos[2]).distanceTo(new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z)));
+    distStr = `${d.toLocaleString()} AL du Soleil`;
+  }
+
+  // Rendu de la carte d'inspection
+  const card = document.getElementById('astro-inspect-card');
+  if (!card) return;
+
+  if (isDisc) {
+    // ── ASTRE DÉCOUVERT : SIMULATION 3D ENTIÈREMENT DÉBLOQUÉE ──
+    let gridHtml = '';
+    if (poi.info) {
+      for (const k in poi.info) {
+        gridHtml += `
+          <div class="astro-grid-cell">
+            <div class="astro-grid-lbl">${k}</div>
+            <div class="astro-grid-val">${poi.info[k]}</div>
+          </div>
+        `;
+      }
+    }
+
+    const codex = (typeof CODEX_DATA !== 'undefined' && CODEX_DATA[poiId]) ? CODEX_DATA[poiId] : null;
+    const descText = codex ? codex.description : (poi.info && poi.info.Feature ? poi.info.Feature : 'Données télémétriques et simulation volumétrique 3D intégrales.');
+
+    card.innerHTML = `
+      <div class="astro-card-badge discovered">✅ ARCHIVE 3D DÉVERROUILLÉE</div>
+      <div class="astro-card-header">
+        <div class="astro-card-title">${poi.name.toUpperCase()}</div>
+        <div class="astro-card-sub">${poi.type || 'Secteur stellaire'}</div>
+      </div>
+      <div class="astro-card-meta">
+        <div><strong>Coordonnées :</strong> [X: ${Math.round(poi.pos[0])}, Y: ${Math.round(poi.pos[1])}, Z: ${Math.round(poi.pos[2])}]</div>
+        <div><strong>Distance relative :</strong> ${distStr}</div>
+      </div>
+      <div class="astro-grid-table">${gridHtml}</div>
+      <div class="astro-desc">${descText}</div>
+      <div class="astro-card-actions">
+        <button class="astro-btn-primary" id="btn-astro-set-flight">🎯 DÉFINIR COMME DESTINATION DE VOL</button>
+        <button class="astro-btn-secondary" id="btn-astro-recenter">🔍 RECENTRER LA VUE 3D</button>
+      </div>
+    `;
+  } else {
+    // ── ASTRE NON CARTOGRAPHIÉ : MODÈLE 3D VERROUILLÉ ──
+    const relatedQuest = (typeof QUESTS !== 'undefined')
+      ? QUESTS.find(q => q.targetPOI_ID === poiId)
+      : null;
+
+    const questHintHtml = relatedQuest
+      ? `<div class="astro-quest-hint">📋 Mission cartographique : <strong>${relatedQuest.title}</strong> (+${relatedQuest.reward} CR)</div>`
+      : '';
+
+    card.innerHTML = `
+      <div class="astro-card-badge locked">🔒 MODÈLE 3D VERROUILLÉ</div>
+      <div class="astro-card-header">
+        <div class="astro-card-title">[ ??? SIGNAL ANOMALIE ]</div>
+        <div class="astro-card-sub">Émission radiative / gravitationnelle non identifiée</div>
+      </div>
+      <div class="astro-card-meta">
+        <div><strong>Secteur galactique :</strong> [X: ${Math.round(poi.pos[0]/1000)}k, Z: ${Math.round(poi.pos[2]/1000)}k]</div>
+        <div><strong>Distance estimée :</strong> ~${distStr}</div>
+      </div>
+      <div class="astro-locked-panel">
+        <div class="astro-locked-title">⚠️ TÉLÉMÉTRIE INSUFFISANTE</div>
+        <p>Les capteurs passifs du Manhattan ont intercepté des signaux dans cette région, mais le vaisseau n'a encore enregistré aucun relevé topographique local.</p>
+        <div class="astro-locked-steps">
+          <div class="astro-step-item"><span class="step-num">1</span> Rejoignez ce secteur à bord du Manhattan en mode pilotage.</div>
+          <div class="astro-step-item"><span class="step-num">2</span> Entrez dans le rayon de détection locale pour calibrer les capteurs.</div>
+          <div class="astro-step-item"><span class="step-num">3</span> Le modèle 3D haute fidélité sera automatiquement synthétisé dans cette holotable.</div>
+        </div>
+      </div>
+      ${questHintHtml}
+      <div class="astro-card-actions">
+        <button class="astro-btn-primary" id="btn-astro-set-flight">🎯 TRACER LE CAP DE NAVIGATION</button>
+        <button class="astro-btn-secondary" id="btn-astro-recenter">🔍 CENTRER SUR L'ANOMALIE</button>
+      </div>
+    `;
+  }
+
+  // Câbler les boutons d'action
+  const btnSet = document.getElementById('btn-astro-set-flight');
+  if (btnSet) {
+    btnSet.addEventListener('click', () => {
+      setFlightTargetFromAstrometry(poiId);
+    });
+  }
+  const btnRecenter = document.getElementById('btn-astro-recenter');
+  if (btnRecenter) {
+    btnRecenter.addEventListener('click', () => {
+      if (isDisc) {
+        galCam.focusOn(poiId);
+      } else {
+        const pos = obj.group.position;
+        galCam.tLookAt.copy(pos);
+        galCam.tRadius = Math.max(poi.scale * 4.0, 7000);
+      }
+    });
+  }
+}
+
+function setFlightTargetFromAstrometry(poiId) {
+  if (typeof galacticPOIObjects === 'undefined' || !galacticPOIObjects[poiId]) return;
+
+  state.cockpitTarget = poiId;
+  const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
+    ? state.player.discoveredPOIs
+    : ['sol'];
+  const isDisc = discovered.includes(poiId);
+  const name = isDisc ? galacticPOIObjects[poiId].data.name : ('ANOMALIE ' + poiId.toUpperCase());
+
+  if (typeof setHUDTarget === 'function') {
+    setHUDTarget(name);
+  }
+  if (typeof showNotification === 'function') {
+    showNotification(`🧭 Cap verrouillé sur l'ordinateur de bord : ${name}`);
+  }
+}
+
+function setupAstrometryUI() {
+  const btnExit = document.getElementById('btn-exit-astrometry');
+  if (btnExit) {
+    btnExit.addEventListener('click', () => {
+      if (typeof exitAstrometryMode === 'function') exitAstrometryMode();
+    });
+  }
+
+  // Onglets de filtre du catalogue
+  document.querySelectorAll('.astro-filter-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.astro-filter-btn').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      astroActiveFilter = tab.dataset.filter || 'all';
+      renderAstrometryList();
+    });
+  });
+}
+
 

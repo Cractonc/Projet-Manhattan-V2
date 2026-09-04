@@ -29,8 +29,10 @@ function animate() {
     }
   }
 
-  // Update camera based on scale
-  if (state.scaleLevel === 'SOLAR') {
+  // Update camera based on scale / mode
+  if (state.cameraMode === 'ASTROMETRY') {
+    galCam.update(dt);
+  } else if (state.scaleLevel === 'SOLAR') {
     cam.update(dt);
   } else {
     galCam.update(dt);
@@ -64,6 +66,9 @@ function animate() {
     if (typeof holoDeco !== 'undefined' && holoDeco) {
       holoDeco.rotation.y += dt;
       holoDeco.rotation.x += dt * 0.5;
+    }
+    if (typeof holoAstroHolo !== 'undefined' && holoAstroHolo) {
+      holoAstroHolo.rotation.z += dt * 0.8;
     }
   }
 
@@ -167,7 +172,15 @@ function animate() {
   // pour le cockpit ! Le z-buffer logarithmique gère parfaitement la différence 
   // d'échelle entre le vaisseau (near: 0.05) et la galaxie (far: 20 millions).
 
-  if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
+  if (state.cameraMode === 'ASTROMETRY') {
+    // Rendu haute fidélité du simulateur d'astrométrie (vaisseau local masqué, galaxie 3D intégrale)
+    renderPass.scene = galacticScene;
+    renderPass.camera = galacticCamera;
+    galacticCamera.layers.set(0);
+    updateGalacticPOIs(dt, galacticCamera);
+    composer.render();
+
+  } else if (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK') {
     const activeCam = cockpitCamera;
     const activeScene = (state.scaleLevel === 'SOLAR') ? scene : galacticScene;
 
@@ -253,7 +266,7 @@ function onScanComplete() {
   showNotification('📡 Signal Triangulé : Coordonnées acquises !');
   if (targetPoi) {
     setTimeout(function() {
-      showNotification('Découverte enregistrée : ' + targetPoi.name);
+      showNotification('📡 ARCHIVES 3D MISES À JOUR : ' + targetPoi.name.toUpperCase());
     }, 1200);
   }
 
@@ -344,10 +357,13 @@ function checkQuestAndPOIDiscovery(dt) {
           state.player.credits = (state.player.credits || 0) + reward;
 
           // Notification: "Découverte : [Nom du POI]"
-          showNotification(`Découverte : ${targetPoi.name}`);
+          showNotification(`📡 CARTOGRAPHIE ACQUISE : ${targetPoi.name.toUpperCase()} !`);
           setTimeout(() => {
-            showNotification(`Mission accomplie : ${activeQuest.title} (+${reward} CR)`);
-          }, 900);
+            showNotification(`Modèle 3D déverrouillé dans l'holotable (+${reward} CR)`);
+          }, 800);
+          setTimeout(() => {
+            showNotification(`Mission accomplie : ${activeQuest.title}`);
+          }, 1800);
 
           // Passer à la quête suivante
           const nextQuest = QUESTS[questIdx + 1];
@@ -355,15 +371,17 @@ function checkQuestAndPOIDiscovery(dt) {
             state.player.activeQuestId = nextQuest.id;
             setTimeout(() => {
               showNotification(`Nouvelle mission : ${nextQuest.title}`);
-            }, 2200);
+            }, 3000);
           } else {
             state.player.activeQuestId = null;
             setTimeout(() => {
               showNotification(`Félicitations ! Toutes les quêtes sont accomplies !`);
-            }, 2200);
+            }, 3000);
           }
 
           if (typeof updateQuestHUD === 'function') updateQuestHUD();
+          if (typeof updateAstrometryPOIVisibility === 'function') updateAstrometryPOIVisibility();
+          if (typeof updateAstrometryHUD === 'function') updateAstrometryHUD();
           saveGame();
         }
       }
@@ -381,8 +399,13 @@ function checkQuestAndPOIDiscovery(dt) {
           state.player.discoveredPOIs.push(poi.id);
           const bonus = 100;
           state.player.credits = (state.player.credits || 0) + bonus;
-          showNotification(`Découverte : ${poi.name}`);
+          showNotification(`📡 TÉLÉMÉTRIE ACQUISE : ${poi.name.toUpperCase()} !`);
+          setTimeout(() => {
+            showNotification(`Modèle 3D déverrouillé dans les archives (+${bonus} CR)`);
+          }, 900);
           if (typeof updateQuestHUD === 'function') updateQuestHUD();
+          if (typeof updateAstrometryPOIVisibility === 'function') updateAstrometryPOIVisibility();
+          if (typeof updateAstrometryHUD === 'function') updateAstrometryHUD();
           saveGame();
         }
       }
@@ -423,6 +446,11 @@ function setupEvents() {
     const dy = e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY;
 
+    if (state.cameraMode === 'ASTROMETRY') {
+      galCam.tTheta -= dx * 0.004;
+      galCam.tPhi = clamp(galCam.tPhi + dy * 0.004, 0.1, Math.PI - 0.1);
+      return;
+    }
     if (state.cameraMode === 'WALK') {
       walkKeys.mouseDX += dx;
       walkKeys.mouseDY += dy;
@@ -452,9 +480,18 @@ function setupEvents() {
   // Scroll zoom
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
+    if (state.cameraMode === 'ASTROMETRY') {
+      const factor = e.deltaY > 0 ? 1.12 : 0.89;
+      galCam.tRadius = clamp(galCam.tRadius * factor, 200, 3500000);
+      return;
+    }
     if (state.cameraMode === 'WALK') return; // No scroll action in walk mode
     if (state.cameraMode === 'COCKPIT') {
       const delta = e.deltaY > 0 ? -5 : 5;
+      if (delta > 0 && ship.reverseEngaged) {
+        ship.reverseEngaged = false;
+        ship.reversePercent = 0;
+      }
       ship.throttlePercent = clamp(ship.throttlePercent + delta, 0, 100);
       return;
     }
@@ -463,7 +500,7 @@ function setupEvents() {
       galCam.tRadius = clamp(galCam.tRadius * factor, 200, 3500000);
     } else {
       cam.tRadius = clamp(cam.tRadius * factor, 1, 2000);
-      if (state.cameraMode === 'CINEMATIC') stopCinematic();
+      if (state.cameraMode !== 'CINEMATIC') stopCinematic();
     }
   }, { passive: false });
 
@@ -472,6 +509,18 @@ function setupEvents() {
     if (Math.abs(e.movementX) > 2 || Math.abs(e.movementY) > 2) return;
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    if (state.cameraMode === 'ASTROMETRY') {
+      raycaster.setFromCamera(mouse, galacticCamera);
+      const hits = raycaster.intersectObjects(galacticClickables);
+      if (hits.length) {
+        const id = hits[0].object.userData.poiId;
+        if (id && typeof selectAstrometryPOI === 'function') {
+          selectAstrometryPOI(id);
+        }
+      }
+      return;
+    }
 
     if (state.scaleLevel === 'GALACTIC' && state.cameraMode !== 'COCKPIT') {
       // Galactic click
@@ -516,7 +565,7 @@ function setupEvents() {
       const dx = e.touches[0].clientX - lastTX;
       const dy = e.touches[0].clientY - lastTY;
       lastTX = e.touches[0].clientX; lastTY = e.touches[0].clientY;
-      if (state.scaleLevel === 'GALACTIC') {
+      if (state.cameraMode === 'ASTROMETRY' || state.scaleLevel === 'GALACTIC') {
         galCam.tTheta -= dx * 0.006;
         galCam.tPhi = clamp(galCam.tPhi + dy * 0.006, 0.1, Math.PI - 0.1);
       } else {
@@ -529,7 +578,7 @@ function setupEvents() {
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const factor = lastTouchDist / dist;
-      if (state.scaleLevel === 'GALACTIC') {
+      if (state.cameraMode === 'ASTROMETRY' || state.scaleLevel === 'GALACTIC') {
         galCam.tRadius = clamp(galCam.tRadius * factor, 200, 3500000);
       } else {
         cam.tRadius = clamp(cam.tRadius * factor, 1, 2000);
@@ -584,6 +633,16 @@ function setupEvents() {
       return;
     }
 
+    // ── Astrometry mode controls ──
+    if (state.cameraMode === 'ASTROMETRY') {
+      if (code === 'KeyF' || code === 'Escape') {
+        if (typeof exitAstrometryMode === 'function') exitAstrometryMode();
+        e.preventDefault();
+        return;
+      }
+      return;
+    }
+
     // ── Walk mode controls ──
     if (state.cameraMode === 'WALK') {
       switch (code) {
@@ -591,6 +650,11 @@ function setupEvents() {
         case 'KeyS': walkKeys.backward = true; e.preventDefault(); return;
         case 'KeyA': walkKeys.left = true; e.preventDefault(); return;
         case 'KeyD': walkKeys.right = true; e.preventDefault(); return;
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          walkKeys.sprint = true;
+          e.preventDefault();
+          return;
         case 'KeyF':
           if (state.observing) {
             exitObservationMode();
@@ -600,6 +664,8 @@ function setupEvents() {
               enterPilotFromWalk();
             } else if (state.currentRoom === 'observatory' && walker.position.z > 0.5 && walker.position.z < 1.5 && Math.abs(walker.position.x) < 0.6) {
               enterObservationMode();
+            } else if (state.currentRoom === 'galaxymap' && walker.floor === 0) {
+              if (typeof enterAstrometryMode === 'function') enterAstrometryMode();
             } else {
               walkKeys.interact = true;
             }
@@ -618,6 +684,17 @@ function setupEvents() {
 
     // ── Cockpit mode controls ──
     if (state.cameraMode === 'COCKPIT') {
+      // Touche dédiée pour réaligner l'horizon ('é' ou '1')
+      if (e.key === 'é' || e.key === 'É' || e.key === '&' || code === 'Digit1' || code === 'Digit2') {
+        if (e.repeat) return;
+        ship.isAutoLeveling = true;
+        ship.rollRate = 0;
+        if (typeof showNotification === 'function') {
+          showNotification('🧭 HORIZON RÉALIGNÉ', 1200);
+        }
+        return;
+      }
+
       // Held keys (via cockpitCodeToHeld mapping)
       if (code in cockpitCodeToHeld) {
         e.preventDefault();
@@ -627,14 +704,38 @@ function setupEvents() {
       // Throttle (held for continuous adjust)
       if (code === 'KeyW' || code === 'KeyS') {
         e.preventDefault();
-        if (code === 'KeyW') cockpitKeys.throttleUp = true;
-        if (code === 'KeyS') cockpitKeys.throttleDown = true;
+        if (code === 'KeyW') {
+          cockpitKeys.throttleUp = true;
+          ship.emergencyBraking = false;
+          ship.reverseEngaged = false;
+          ship.reversePercent = 0;
+        }
+        if (code === 'KeyS') {
+          cockpitKeys.throttleDown = true;
+          // Se déclenche uniquement sur l'appui initial (ignore les répétitions clavier automatiques)
+          if (!e.repeat && !ship.reverseEngaged) {
+            if (ship.throttlePercent === 0 && Math.abs(ship.speed) < 0.5) {
+              ship.reverseEngaged = true;
+            } else {
+              ship.reverseEngaged = false;
+            }
+          }
+        }
         return;
       }
       // Instant actions
       switch (code) {
-        case 'KeyX': // Kill throttle
+        case 'KeyX': // Frein d'urgence / Arrêt complet
+          if (e.repeat) break;
           ship.throttlePercent = 0;
+          ship.reverseEngaged = false;
+          ship.reversePercent = 0;
+          if (!ship.emergencyBraking) {
+            ship.emergencyBraking = true;
+            if (typeof showNotification === 'function') {
+              showNotification('🛑 FREINAGE D\'URGENCE', 1200);
+            }
+          }
           break;
         case 'KeyL': // Free look toggle (moved from F)
           state.cockpitCameraFree = !state.cockpitCameraFree;
@@ -729,6 +830,7 @@ function setupEvents() {
     if (code === 'KeyS') walkKeys.backward = false;
     if (code === 'KeyA') walkKeys.left = false;
     if (code === 'KeyD') walkKeys.right = false;
+    if (code === 'ShiftLeft' || code === 'ShiftRight') walkKeys.sprint = false;
 
     // Release held cockpit keys
     if (code in cockpitCodeToHeld) {
@@ -736,7 +838,10 @@ function setupEvents() {
     }
     // Release throttle held keys
     if (code === 'KeyW') cockpitKeys.throttleUp = false;
-    if (code === 'KeyS') cockpitKeys.throttleDown = false;
+    if (code === 'KeyS') {
+      cockpitKeys.throttleDown = false;
+      ship.reverseEngaged = false;
+    }
     // Release scan key
     if (code === 'KeyR') cockpitKeys.scanHeld = false;
   });
@@ -990,6 +1095,7 @@ async function init() {
   setupSpeedSlider();
   setupEvents();
   setupCodexUI();
+  setupAstrometryUI();
   updateQuestHUD();
   initWarpFx();
 
@@ -1004,7 +1110,8 @@ async function init() {
   // Start animation
   animate();
 
-  // Si le joueur a rechargé la page alors qu'il était dans le vaisseau (WALK ou COCKPIT)
+  // Si le joueur a rechargé la page alors qu'il était dans le vaisseau (WALK ou COCKPIT ou ASTROMETRY)
+  if (state.cameraMode === 'ASTROMETRY') state.cameraMode = 'WALK';
   if (state.cameraMode === 'WALK' || state.cameraMode === 'COCKPIT') {
     initShipStateOnLoad();
   } else {

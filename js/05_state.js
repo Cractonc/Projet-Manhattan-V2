@@ -39,7 +39,7 @@ var state = {
   showOrbits: true,
   showLabels: true,
   showAsteroids: true,
-  cameraMode: 'FREE',    // 'FREE' | 'ORBIT' | 'CINEMATIC' | 'COCKPIT' | 'WALK'
+  cameraMode: 'FREE',    // 'FREE' | 'ORBIT' | 'CINEMATIC' | 'COCKPIT' | 'WALK' | 'ASTROMETRY'
   cinematicIndex: 0,
   cinematicTimer: 0,
   cinematicDuration: 7,
@@ -68,7 +68,7 @@ var state = {
     credits: 0,
     inventory: [],
     activeQuests: [],
-    discoveredPOIs: [],
+    discoveredPOIs: ['sol'],
     activeQuestId: (typeof QUESTS !== 'undefined' && QUESTS.length > 0) ? QUESTS[0].id : 'quest_orion'
   },
   // Ship coordinates (par défaut orbite Terre à ~24 u / Mars à ~33 u)
@@ -176,6 +176,9 @@ function loadGame() {
       if (!Array.isArray(state.player.discoveredPOIs)) {
         state.player.discoveredPOIs = [];
       }
+      if (!state.player.discoveredPOIs.includes('sol')) {
+        state.player.discoveredPOIs.push('sol');
+      }
       if (typeof state.player.credits !== 'number') {
         state.player.credits = 0;
       }
@@ -247,6 +250,10 @@ var ship = {
   maxSpeed: 8,            // solar: 8 units/s cruise
   boostMultiplier: 2.0,
   throttlePercent: 0,     // 0-100 progressive
+  reverseEngaged: false,
+  reversePercent: 0,
+  emergencyBraking: false,
+  isAutoLeveling: false,
   thrust: 0,
   targetThrust: 0,
   boostActive: false,
@@ -274,12 +281,13 @@ var walker = {
   baseY: 0.22,         // Eye height (Deck 1 floor is -0.68 + 0.9 = 0.22)
   speed: 1.5,          // Walk speed
   radius: 0.15,        // Collision radius
-  mouseSensitivity: 0.003,
+  mouseSensitivity: 0.004,
 };
 
 var walkKeys = {
   forward: false, backward: false,
   left: false, right: false,
+  sprint: false,
   interact: false,
   mouseDX: 0, mouseDY: 0,
 };

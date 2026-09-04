@@ -185,6 +185,65 @@
     <div class="walk-hint" style="bottom:20px; position:absolute; opacity:0.5;">F QUITTER L'OBSERVATION</div>
   </div>
 
+  <!-- Astrometry 3D Simulation Lab HUD -->
+  <div id="astrometry-hud">
+    <!-- Top Bar -->
+    <div class="astro-topbar">
+      <div class="astro-brand">
+        <span class="astro-icon">🛰️</span>
+        <div class="astro-titles">
+          <div class="astro-title">ARCHIVES ASTROMÉTRIQUES DU MANHATTAN</div>
+          <div class="astro-subtitle">LABORATOIRE DE SIMULATION 3D HAUTE FIDÉLITÉ</div>
+        </div>
+      </div>
+
+      <div class="astro-stats">
+        <div class="astro-stat-item">
+          <span class="astro-stat-lbl">SECTEURS CARTOGRAPHIÉS</span>
+          <span class="astro-stat-val"><strong id="astro-disc-count">1</strong> / <strong id="astro-total-count">0</strong> (<span id="astro-disc-pct">0%</span>)</span>
+        </div>
+      </div>
+
+      <button id="btn-exit-astrometry" class="astro-exit-btn" title="Retour au vaisseau (F / Échap)">
+        <span>RETOUR AU VAISSEAU</span>
+        <kbd class="astro-kbd">F</kbd>
+      </button>
+    </div>
+
+    <!-- Main Body Area -->
+    <div class="astro-main-body">
+      <!-- Left Panel: POI Directory -->
+      <div class="astro-left-panel">
+        <div class="astro-panel-header">
+          <span class="astro-panel-title">CATALOGUE DES SECTEURS</span>
+          <div class="astro-filter-tabs">
+            <button class="astro-filter-btn active" data-filter="all">TOUS</button>
+            <button class="astro-filter-btn" data-filter="discovered">VISITÉS</button>
+            <button class="astro-filter-btn" data-filter="locked">INCONNUS</button>
+          </div>
+        </div>
+        <div class="astro-poi-list" id="astro-poi-list">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Right Panel: Inspection Card -->
+      <div class="astro-inspect-card" id="astro-inspect-card">
+        <!-- Populated dynamically by JS on select -->
+      </div>
+    </div>
+
+    <!-- Bottom Bar Controls & Hints -->
+    <div class="astro-bottom-bar">
+      <div class="astro-controls-hint">
+        <span><kbd class="astro-kbd">Clic Gauche + Glisser</kbd> Orbiter</span>
+        <span><kbd class="astro-kbd">Molette</kbd> Zoomer</span>
+        <span><kbd class="astro-kbd">Clic sur un astre</kbd> Inspecter</span>
+        <span><kbd class="astro-kbd">F</kbd> ou <kbd class="astro-kbd">Échap</kbd> Quitter</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Warp overlay -->
   <div id="warp-overlay"></div>
   <canvas id="warp-fx"></canvas>
@@ -237,8 +296,8 @@
             <h4>🚀 Mode Pilotage (Cockpit)</h4>
 
             <div class="shortcut-subheading">⚡ Propulsion & Vitesse</div>
-            <div class="shortcut-row"><span class="key-badge">Z / S</span><span><strong>Gaz moteur</strong> (Throttle +/-)</span></div>
-            <div class="shortcut-row"><span class="key-badge">X</span><span><strong>Arrêt d'urgence</strong> des moteurs (0%)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Z / S</span><span><strong>Gaz moteur</strong> (Throttle +/-) / Ré-appuyer sur S à l'arrêt : <strong>Marche Arrière</strong></span></div>
+            <div class="shortcut-row"><span class="key-badge">X</span><span><strong>Frein d'urgence</strong> (Rétrofusées / Arrêt complet)</span></div>
             <div class="shortcut-row"><span class="key-badge">Shift</span><span><strong>Boost</strong> Hyperpropulsion (chaleur)</span></div>
             <div class="shortcut-row"><span class="key-badge">+ / -</span><span><strong>Paliers de vitesse</strong> (Gears 1 à 5)</span></div>
 
@@ -246,12 +305,13 @@
             <div class="shortcut-row"><span class="key-badge">← / →</span><span><strong>Lacet</strong> (Yaw gauche / droite)</span></div>
             <div class="shortcut-row"><span class="key-badge">↑ / ↓</span><span><strong>Tangage</strong> (Pitch haut / bas)</span></div>
             <div class="shortcut-row"><span class="key-badge">A / E</span><span><strong>Roulis</strong> (Roll inclinaison)</span></div>
+            <div class="shortcut-row"><span class="key-badge">é / 1</span><span><strong>Réaligner l'horizon</strong> (Assiette à plat automatique)</span></div>
             <div class="shortcut-row"><span class="key-badge">Q / D</span><span><strong>Strafe latéral</strong> (Translation G/D)</span></div>
             <div class="shortcut-row"><span class="key-badge">Espace / Ctrl</span><span><strong>Strafe vertical</strong> (Haut / Bas)</span></div>
             <div class="shortcut-row"><span class="key-badge">L</span><span><strong>Vue libre</strong> tête à la souris</span></div>
 
             <div class="shortcut-subheading">🎯 Navigation & Systèmes</div>
-            <div class="shortcut-row"><span class="key-badge">N</span><span><strong>Pilote Automatique</strong> (Auto-Nav On/Off)</span></div>
+            <div class="shortcut-row"><span class="key-badge">N</span><span><strong>Pilote Automatique</strong> (Gère vitesses & virages)</span></div>
             <div class="shortcut-row"><span class="key-badge">H</span><span><strong>Saut FTL Warp</strong> vers la cible (Galaxie)</span></div>
             <div class="shortcut-row"><span class="key-badge">T</span><span><strong>Cibler</strong> l'astre / POI le plus proche</span></div>
             <div class="shortcut-row"><span class="key-badge">Tab</span><span><strong>Faire défiler</strong> les cibles</span></div>
@@ -273,8 +333,9 @@
               <h4>🚶 Mode Vaisseau (Marche à pied)</h4>
               <div class="shortcut-subheading">🚶 Déplacement & Actions</div>
               <div class="shortcut-row"><span class="key-badge">Z / Q / S / D</span><span><strong>Se déplacer</strong> dans les pièces et couloirs</span></div>
+              <div class="shortcut-row"><span class="key-badge">Shift</span><span><strong>Courir / Sprinter</strong></span></div>
               <div class="shortcut-row"><span class="key-badge">Souris</span><span><strong>Regarder autour</strong> (Vue FPS)</span></div>
-              <div class="shortcut-row"><span class="key-badge">F</span><span><strong>TOUT FAIRE / INTERAGIR</strong> (Piloter, Télescope)</span></div>
+              <div class="shortcut-row"><span class="key-badge">F</span><span><strong>TOUT FAIRE / INTERAGIR</strong> (Piloter, Télescope, Carte 3D Archives)</span></div>
               <div class="shortcut-row"><span class="key-badge">V</span><span><strong>QUITTER LE VAISSEAU</strong> (Vue libre orbitale)</span></div>
               <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
               <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>

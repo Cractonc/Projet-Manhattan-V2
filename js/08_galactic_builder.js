@@ -489,13 +489,41 @@ function createGalacticPOIs() {
     // NIVEAU 2 SUPPRIMÉ : On ne cache plus complètement les petits astres lointains, 
     // le rendu de simples sprites est suffisamment léger et permet de garder la galaxie peuplée.
 
+    // ── Balise anomalique 3D (visible uniquement en mode Astrométrie pour les astres non cartographiés) ──
+    const beaconGroup = new THREE.Group();
+    const beaconGeo = new THREE.OctahedronGeometry(Math.max(s * 0.35, 120), 0);
+    const beaconMat = new THREE.MeshBasicMaterial({
+      color: 0xffaa22,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.85
+    });
+    const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconGroup.add(beaconMesh);
+
+    const beaconCore = new THREE.Mesh(
+      new THREE.SphereGeometry(Math.max(s * 0.1, 40), 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.9 })
+    );
+    beaconGroup.add(beaconCore);
+
+    const beaconRing = new THREE.Mesh(
+      new THREE.RingGeometry(Math.max(s * 0.45, 150), Math.max(s * 0.48, 165), 24),
+      new THREE.MeshBasicMaterial({ color: 0xffbb33, transparent: true, opacity: 0.7, side: THREE.DoubleSide })
+    );
+    beaconRing.rotation.x = Math.PI / 2;
+    beaconGroup.add(beaconRing);
+
+    beaconGroup.visible = false;
+    group.add(beaconGroup);
+
     // Label
     const labelCls = poi.vType === 'system' ? 'sun-marker-label' : 'poi-label';
     const label = makeLabel(poi.name, labelCls);
     galacticLabelEls.push({ el: label, group: group, data: poi });
 
     galacticScene.add(group);
-    galacticPOIObjects[poi.id] = { group, lod, sprite, dimmedSprite, clickMesh, label, data: poi, detail, extras };
+    galacticPOIObjects[poi.id] = { group, lod, sprite, dimmedSprite, clickMesh, label, data: poi, detail, extras, anomalyBeacon: beaconGroup };
   }
 }
 
@@ -887,7 +915,16 @@ function updateGalacticPOIs(dt, activeCam) {
       }
     }
 
+    // ── Animation balise anomalie (mode Astrométrie) ──
+    if (obj.anomalyBeacon && obj.anomalyBeacon.visible) {
+      obj.anomalyBeacon.rotation.y += dt * 1.5;
+      obj.anomalyBeacon.rotation.x += dt * 0.75;
+      const bp = 1.0 + Math.sin(now * 4.0 + (obj.data.pos[0] || 0) * 0.001) * 0.15;
+      obj.anomalyBeacon.scale.set(bp, bp, bp);
+    }
+
     if (!obj.extras) continue;
+    if (obj.detail && !obj.detail.visible) continue;
 
     // On anime les détails si le LOD actif est 0 (proche) ou s'il s'agit de Sagittarius A* (toujours en 3D)
     const isNear = (id === 'sgr-a') || (obj.lod.getCurrentLevel() === 0);

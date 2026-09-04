@@ -577,6 +577,30 @@ function createShipInterior() {
   mapRoomLight.position.set(1.4, 0.8, 1.8);
   shipInterior.add(mapRoomLight);
 
+  // Central Astrometry Holotable Terminal (Deck 0, Z=1.8, X=1.4)
+  const holoBaseGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.35, 24);
+  const holoBaseMat = new THREE.MeshStandardMaterial({ color: 0x0c1018, metalness: 0.8, roughness: 0.3 });
+  const holoBase = new THREE.Mesh(holoBaseGeo, holoBaseMat);
+  holoBase.position.set(1.4, -0.55, 1.8);
+  shipInterior.add(holoBase);
+
+  // Glowing console rim
+  const rimGeo = new THREE.TorusGeometry(0.32, 0.018, 16, 32);
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00d8ff, emissiveIntensity: 2.2 });
+  const holoRim = new THREE.Mesh(rimGeo, rimMat);
+  holoRim.rotation.x = Math.PI / 2;
+  holoRim.position.set(1.4, -0.37, 1.8);
+  shipInterior.add(holoRim);
+
+  // Mini hologram galaxy disc above console
+  window.holoAstroHolo = new THREE.Mesh(
+    new THREE.RingGeometry(0.04, 0.22, 24),
+    new THREE.MeshBasicMaterial({ color: 0x00d8ff, transparent: true, opacity: 0.7, side: THREE.DoubleSide, wireframe: true })
+  );
+  window.holoAstroHolo.rotation.x = -Math.PI / 3;
+  window.holoAstroHolo.position.set(1.4, -0.20, 1.8);
+  shipInterior.add(window.holoAstroHolo);
+
   bx(0.3, 0.06, 0.01, doorLabelMat, -0.42, 1.1, 1.39); // OBSERVATORY LABEL
   bx(0.3, 0.06, 0.01, doorLabelMat, 0.42, 1.1, 1.39);  // GALAXY MAP LABEL
   bx(0.2, 0.06, 0.01, doorLabelMat, 0, 1.1, 0.61);     // BRIDGE LABEL
@@ -1304,6 +1328,91 @@ function exitObservationMode() {
   cockpitCamera.updateProjectionMatrix();
 }
 
+function enterAstrometryMode() {
+  if (state.cameraMode !== 'WALK') return;
+  state.prevCameraMode = 'WALK';
+  state.cameraMode = 'ASTROMETRY';
+
+  // Effet de transition visuelle sci-fi
+  const ov = document.getElementById('cockpit-transition');
+  if (ov) {
+    ov.classList.add('active');
+    setTimeout(() => ov.classList.remove('active'), 250);
+  }
+
+  // Masquer le HUD de marche
+  const walkHud = document.getElementById('walk-hud');
+  if (walkHud) walkHud.classList.remove('active');
+  const promptEl = document.getElementById('walk-interact-prompt');
+  if (promptEl) promptEl.classList.remove('visible');
+
+  // Afficher le HUD Astrométrie
+  const astroHud = document.getElementById('astrometry-hud');
+  if (astroHud) astroHud.classList.add('active');
+
+  // Masquer l'info card spectateur si ouverte
+  if (typeof hideInfoCard === 'function') hideInfoCard();
+
+  // Afficher le conteneur des étiquettes
+  const labelsEl = document.getElementById('labels');
+  if (labelsEl) labelsEl.style.display = '';
+
+  // Appliquer le brouillard de guerre sur les modèles 3D (découverts vs inconnus)
+  if (typeof updateAstrometryPOIVisibility === 'function') {
+    updateAstrometryPOIVisibility();
+  }
+
+  // Initialiser / Rafraîchir l'interface HUD
+  if (typeof updateAstrometryHUD === 'function') {
+    updateAstrometryHUD();
+  }
+
+  // Centrer sur l'astre sélectionné ou sur Sol
+  const targetId = (state.selectedPOI && state.player && state.player.discoveredPOIs && state.player.discoveredPOIs.includes(state.selectedPOI))
+    ? state.selectedPOI
+    : 'sol';
+  if (typeof selectAstrometryPOI === 'function') {
+    selectAstrometryPOI(targetId);
+  }
+
+  if (typeof showNotification === 'function') {
+    showNotification('🛰️ ARCHIVES 3D DU MANHATTAN CONNECTÉES', 1800);
+  }
+}
+
+function exitAstrometryMode() {
+  if (state.cameraMode !== 'ASTROMETRY') return;
+
+  const ov = document.getElementById('cockpit-transition');
+  if (ov) {
+    ov.classList.add('active');
+    setTimeout(() => ov.classList.remove('active'), 250);
+  }
+
+  // Rétablir la visibilité normale des modèles pour le mode extérieur spectateur
+  if (typeof restoreGalacticPOIVisibility === 'function') {
+    restoreGalacticPOIVisibility();
+  }
+
+  state.cameraMode = 'WALK';
+
+  // Masquer le HUD Astrométrie
+  const astroHud = document.getElementById('astrometry-hud');
+  if (astroHud) astroHud.classList.remove('active');
+
+  // Rétablir le HUD de marche
+  const walkHud = document.getElementById('walk-hud');
+  if (walkHud) walkHud.classList.add('active');
+
+  // Masquer les étiquettes en mode marche
+  const labelsEl = document.getElementById('labels');
+  if (labelsEl) labelsEl.style.display = 'none';
+
+  if (typeof showNotification === 'function') {
+    showNotification('RETOUR À BORD DU MANHATTAN', 1200);
+  }
+}
+
 function updateTelescopeRef(dt) {
   if (!teleGroup || !tTubeGroup) return;
 
@@ -1406,7 +1515,8 @@ function updateWalkMode(dt) {
     if (walkKeys.left) moveDir.sub(right);
 
     if (moveDir.length() > 0) {
-      moveDir.normalize().multiplyScalar(walker.speed * dt);
+      const spd = walker.speed * (walkKeys.sprint ? 1.8 : 1.0);
+      moveDir.normalize().multiplyScalar(spd * dt);
       walker.position.add(moveDir);
     }
 
@@ -1467,6 +1577,7 @@ function updateWalkMode(dt) {
   const promptEl = document.getElementById('walk-interact-prompt');
   const nearPilotSeat = walker.position.z < 0.3 && Math.abs(walker.position.x) < 0.5 && state.currentRoom === 'cockpit';
   const nearTelescope = walker.position.z > 0.5 && walker.position.z < 1.5 && Math.abs(walker.position.x) < 0.6 && state.currentRoom === 'observatory';
+  const nearGalaxyMap = state.currentRoom === 'galaxymap' && walker.floor === 0;
 
   if (nearPilotSeat) {
     promptEl.classList.add('visible');
@@ -1474,6 +1585,9 @@ function updateWalkMode(dt) {
   } else if (nearTelescope) {
     promptEl.classList.add('visible');
     promptEl.textContent = 'APPUYEZ [F] POUR OBSERVER';
+  } else if (nearGalaxyMap) {
+    promptEl.classList.add('visible');
+    promptEl.textContent = 'APPUYEZ [F] POUR CONSULTER LES ARCHIVES 3D';
   } else if (inElevator) {
     promptEl.classList.add('visible');
     promptEl.textContent = 'APPUYEZ [F] POUR CHANGER D\'ÉTAGE';
@@ -1510,11 +1624,26 @@ function updateShip(dt) {
   const TURN_RATE = isFTL ? 0.6 : 1.5;
   const STRAFE_MAX = isFTL ? 150 : 1.5;
 
-  // ── Throttle (held keys: continuous adjust) ──
+  // ── Throttle & Reverse (held keys: continuous adjust) ──
   if (cockpitKeys.throttleUp) {
+    ship.emergencyBraking = false;
+    ship.reverseEngaged = false;
+    ship.reversePercent = 0;
     ship.throttlePercent = Math.min(ship.throttlePercent + 50 * dt, 100);
   } else if (cockpitKeys.throttleDown) {
-    ship.throttlePercent = Math.max(ship.throttlePercent - 50 * dt, 0);
+    if (ship.reverseEngaged) {
+      // Marche arrière engagée par ré-appui sur S à l'arrêt : monte progressivement jusqu'à 100%
+      ship.reversePercent = Math.min(ship.reversePercent + 50 * dt, 100);
+    } else {
+      // Freinage vers l'avant jusqu'à 0% (butée stricte à 0)
+      ship.throttlePercent = Math.max(ship.throttlePercent - 50 * dt, 0);
+    }
+  } else {
+    // Si la touche S n'est pas maintenue, la marche arrière retombe à 0
+    if (ship.reversePercent > 0) {
+      ship.reversePercent = Math.max(0, ship.reversePercent - 60 * dt);
+      if (ship.reversePercent === 0) ship.reverseEngaged = false;
+    }
   }
 
   // ── Boost management (5s to overheat, 3s cooldown) ──
@@ -1539,11 +1668,25 @@ function updateShip(dt) {
     ship.boostHeat = Math.max(0, ship.boostHeat - dt * 15);
   }
 
-  // ── Speed from throttle ──
+  // ── Speed from throttle or reverse ──
   const boostMult = ship.boostActive ? ship.boostMultiplier : 1;
-  const targetSpeed = (ship.throttlePercent / 100) * ship.maxSpeed * boostMult;
-  ship.speed = lerp(ship.speed, targetSpeed, dt * 3.5);
-  if (Math.abs(ship.speed) < 0.001 && ship.throttlePercent === 0) ship.speed = 0;
+  let targetSpeed = 0;
+  if (ship.reversePercent > 0) {
+    // La marche arrière s'aligne sur le palier de vitesse (Gear) actuel :
+    // En Gear 1 : jusqu'à -80 ly/s en galactique (-1.2 u/s en solaire), et monte avec les vitesses supérieures
+    targetSpeed = - (ship.reversePercent / 100) * ship.maxSpeed;
+  } else {
+    targetSpeed = (ship.throttlePercent / 100) * ship.maxSpeed * boostMult;
+  }
+
+  // Décélération : glisse naturelle plus douce dans l'espace (1.6), arrêt franc si frein d'urgence (8.0)
+  const isBraking = Math.abs(targetSpeed) < Math.abs(ship.speed);
+  const lerpRate = ship.emergencyBraking ? 8.0 : (isBraking ? 1.6 : 3.5);
+  ship.speed = lerp(ship.speed, targetSpeed, dt * lerpRate);
+  if (Math.abs(ship.speed) < 0.002 && ship.throttlePercent === 0 && ship.reversePercent === 0) {
+    ship.speed = 0;
+    ship.emergencyBraking = false;
+  }
 
   // ── Rotation ──
   const tYaw = ((cockpitKeys.yawLeft ? 1 : 0) - (cockpitKeys.yawRight ? 1 : 0)) * TURN_RATE;
@@ -1558,6 +1701,29 @@ function updateShip(dt) {
     ship.pitchRate -= cockpitKeys.mouseDY * 0.12;
     cockpitKeys.mouseDX = 0;
     cockpitKeys.mouseDY = 0;
+  }
+
+  // Réalignement d'horizon automatique (Touche 'é' / '1')
+  if (ship.isAutoLeveling) {
+    if (cockpitKeys.yawLeft || cockpitKeys.yawRight || cockpitKeys.rollLeft || cockpitKeys.rollRight || Math.abs(cockpitKeys.mouseDX) > 3) {
+      ship.isAutoLeveling = false;
+    } else {
+      const curFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
+      if (Math.abs(curFwd.y) < 0.95) {
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        const rightVec = new THREE.Vector3().crossVectors(curFwd, worldUp).normalize();
+        const upVec = new THREE.Vector3().crossVectors(rightVec, curFwd).normalize();
+        const m = new THREE.Matrix4().makeBasis(rightVec, upVec, curFwd.clone().negate());
+        const targetQ = new THREE.Quaternion().setFromRotationMatrix(m);
+        ship.quaternion.slerp(targetQ, clamp(dt * 6.0, 0, 0.25));
+        if (ship.quaternion.angleTo(targetQ) < 0.005) {
+          ship.quaternion.copy(targetQ);
+          ship.isAutoLeveling = false;
+        }
+      } else {
+        ship.isAutoLeveling = false;
+      }
+    }
   }
 
   // Auto-navigation
@@ -1737,11 +1903,36 @@ function updateAutoNav(dt) {
   destQ.setFromRotationMatrix(lm);
   ship.quaternion.slerp(destQ, clamp(dt * 0.9, 0, 0.05));
   const bR = planetObjects[state.cockpitTarget].data.scaledRadius || 1;
-  if (dist > bR * 8) {
-    ship.throttlePercent = clamp(Math.round(dist * 5), 50, 100);
+  const stopDist = bR * 4;
+  const remDist = Math.max(0, dist - stopDist);
+
+  // ── Gestion automatique des vitesses (Speed Tiers) ──
+  if (remDist > 120) {
+    state.currentSpeedTier = 'WARP_MAX';
+  } else if (remDist > 50) {
+    state.currentSpeedTier = 'WARP_5';
+  } else if (remDist > 20) {
+    state.currentSpeedTier = 'WARP_1';
+  } else if (remDist > 6) {
+    state.currentSpeedTier = 'SUBLIGHT';
   } else {
-    ship.throttlePercent = clamp(Math.round((dist - bR * 3) * 8), 0, 40);
-    if (dist < bR * 4) ship.throttlePercent = 0;
+    state.currentSpeedTier = 'IMPULSE';
+  }
+
+  // ── Réduction des gaz en virage pour tourner net sans glissade en crabe ──
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
+  const angle = fwd.angleTo(toT);
+  let turnFactor = 1.0;
+  if (angle > 0.35) { // > ~20°
+    turnFactor = Math.max(0.2, 1.0 - (angle / Math.PI) * 1.5);
+  }
+
+  if (remDist > 40) {
+    ship.throttlePercent = clamp(Math.round(100 * turnFactor), 25, 100);
+  } else if (remDist > 0) {
+    ship.throttlePercent = clamp(Math.round((remDist / 40 * 70 + 30) * turnFactor), 15, 100);
+  } else {
+    ship.throttlePercent = 0;
   }
   if (dist < bR * 5) {
     state.cockpitAutoTimer = (state.cockpitAutoTimer || 0) + dt;
@@ -1770,11 +1961,36 @@ function updateAutoNavGalactic(dt) {
   destQ.setFromRotationMatrix(lm);
   ship.quaternion.slerp(destQ, clamp(dt * 0.7, 0, 0.04));
   const poiScale = poi.data.scale || 300;
-  const stopDist = poiScale * 3;
-  if (dist > stopDist * 4) {
-    ship.throttlePercent = clamp(Math.round(dist / 200), 60, 100);
-  } else if (dist > stopDist) {
-    ship.throttlePercent = clamp(Math.round((dist - stopDist) / stopDist * 30), 5, 50);
+  const stopDist = Math.max(poiScale * 2.2, 1500);
+  const remDist = Math.max(0, dist - stopDist);
+
+  // ── Gestion automatique des vitesses (Speed Tiers) ──
+  // Reste en WARP_MAX (Gear 5 : 5500 ly/s) sur les grands trajets (ex: Sol vers Sgr A* 260 000 ly)
+  // La décélération ne commence que dans les derniers 25 000 ly
+  if (remDist > 25000) {
+    state.currentSpeedTier = 'WARP_MAX';
+  } else if (remDist > 10000) {
+    state.currentSpeedTier = 'WARP_5';
+  } else if (remDist > 4000) {
+    state.currentSpeedTier = 'WARP_1';
+  } else if (remDist > 1200) {
+    state.currentSpeedTier = 'SUBLIGHT';
+  } else {
+    state.currentSpeedTier = 'IMPULSE';
+  }
+
+  // ── Réduction des gaz en virage pour tourner net sans glissade en crabe ──
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
+  const angle = fwd.angleTo(toT);
+  let turnFactor = 1.0;
+  if (angle > 0.35) { // > ~20°
+    turnFactor = Math.max(0.2, 1.0 - (angle / Math.PI) * 1.5);
+  }
+
+  if (remDist > 12000) {
+    ship.throttlePercent = clamp(Math.round(100 * turnFactor), 25, 100);
+  } else if (remDist > 0) {
+    ship.throttlePercent = clamp(Math.round((remDist / 12000 * 75 + 25) * turnFactor), 15, 100);
   } else {
     ship.throttlePercent = 0;
   }
@@ -1827,9 +2043,15 @@ function updateCockpitHUD(dt) {
 
   // ── Throttle gauge ──
   const thrFill = document.getElementById('ckp-thr-fill');
-  thrFill.style.height = ship.throttlePercent + '%';
-  thrFill.className = 'ckp-throttle-fill' + (ship.boostActive ? ' boost' : '');
-  document.getElementById('ckp-thr-pct').textContent = Math.round(ship.throttlePercent) + '%';
+  if (ship.reversePercent > 0) {
+    thrFill.style.height = ship.reversePercent + '%';
+    thrFill.className = 'ckp-throttle-fill reverse';
+    document.getElementById('ckp-thr-pct').textContent = 'REV ' + Math.round(ship.reversePercent) + '%';
+  } else {
+    thrFill.style.height = ship.throttlePercent + '%';
+    thrFill.className = 'ckp-throttle-fill' + (ship.boostActive ? ' boost' : '');
+    document.getElementById('ckp-thr-pct').textContent = Math.round(ship.throttlePercent) + '%';
+  }
 
   // ── Boost heat gauge ──
   const heatPct = (ship.boostHeat / ship.boostMaxHeat) * 100;
@@ -1886,11 +2108,14 @@ function updateCockpitHUD(dt) {
   const velUnit = document.getElementById('ckp-vel-unit');
   const velMode = document.getElementById('ckp-vel-mode');
 
+  const isRev = (ship.reversePercent > 0 || ship.speed < -0.01);
+  const signPrefix = isRev ? '-' : '';
+
   if (isFTL) {
-    velBig.textContent = Math.abs(ship.speed).toFixed(0);
+    velBig.textContent = signPrefix + Math.abs(ship.speed).toFixed(0);
     velUnit.textContent = 'LY/S';
   } else {
-    velBig.textContent = Math.abs(ship.speed).toFixed(1);
+    velBig.textContent = signPrefix + Math.abs(ship.speed).toFixed(1);
     velUnit.textContent = 'U/S';
   }
 
@@ -1899,11 +2124,18 @@ function updateCockpitHUD(dt) {
   let modeClass = 'ckp-vel-mode-label';
   if (state.warp.active) { mode = 'FTL WARP'; modeClass += ' ftl-mode'; }
   else if (ship.boostActive) { mode = 'BOOST'; modeClass += ' boost-active'; }
+  else if (ship.emergencyBraking) { mode = 'FREIN URGENCE'; modeClass += ' brake'; }
+  else if (ship.reversePercent > 0 || ship.speed < -0.01) {
+    const gearNum = speedTierList.indexOf(state.currentSpeedTier) + 1;
+    const maxSpdLabel = isFTL ? (ship.maxSpeed >= 1000 ? (ship.maxSpeed / 1000) + 'k LY/S' : ship.maxSpeed + ' LY/S') : ship.maxSpeed + ' U/S';
+    mode = 'MARCHE ARR. [GEAR ' + gearNum + ' : -' + maxSpdLabel + ']';
+    modeClass += ' reverse';
+  }
   else if (state.cockpitAutoNav) { mode = 'AUTOPILOT'; modeClass += ' auto'; }
   else if (ship.throttlePercent > 0) { mode = isFTL ? 'FTL CRUISE' : 'CRUISE'; if (isFTL) modeClass += ' ftl-mode'; }
   else if (state.paused) { mode = 'STANDBY'; }
   
-  if (!state.cockpitAutoNav && !state.warp.active) {
+  if (!state.cockpitAutoNav && !state.warp.active && ship.reversePercent === 0 && !ship.emergencyBraking && ship.speed >= -0.01) {
     const gearNum = speedTierList.indexOf(state.currentSpeedTier) + 1;
     const maxSpdLabel = isFTL ? (ship.maxSpeed >= 1000 ? (ship.maxSpeed / 1000) + 'k LY/S' : ship.maxSpeed + ' LY/S') : ship.maxSpeed + ' U/S';
     mode += ' [GEAR ' + gearNum + ' : ' + maxSpdLabel + ']';
