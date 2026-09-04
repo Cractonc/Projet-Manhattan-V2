@@ -51,13 +51,6 @@
     <div class="panel-controls" id="solar-controls">
       <h2>SIMULATION</h2>
       <div class="ctrl-row">
-        <span class="ctrl-label">TIME SPEED</span>
-        <span class="speed-label" id="speed-display">1×</span>
-      </div>
-      <input type="range" id="speed-slider" min="0" max="100" value="30" step="1">
-
-      <div style="height:10px"></div>
-      <div class="ctrl-row">
         <button class="toggle-btn active" id="btn-orbits">ORBITS</button>
         <button class="toggle-btn active" id="btn-labels">LABELS</button>
         <button class="toggle-btn active" id="btn-asteroids">BELT</button>
@@ -77,9 +70,7 @@
 
   <!-- HUD -->
   <div id="hud">
-    <div class="hud-line">TARGET <span class="hud-val" id="hud-target">—</span></div>
-    <div class="hud-line">TIME SCALE <span class="hud-val" id="hud-timescale">1×</span></div>
-    <div class="hud-sector" id="hud-sector"></div>
+    <div class="hud-line" id="hud-line-target" style="display:none">TARGET <span class="hud-val" id="hud-target">—</span></div>
   </div>
 
   <!-- Active Quest HUD -->
@@ -140,7 +131,6 @@
       <div class="ckp-vel-big" id="ckp-vel-big">0</div>
       <div class="ckp-vel-unit" id="ckp-vel-unit">U/S</div>
       <div class="ckp-vel-mode-label" id="ckp-vel-mode">IDLE</div>
-      <div id="ckp-btn-stop-auto" class="ckp-btn">STOP AUTO</div>
     </div>
     <!-- Laser Heat gauge (Étape 2.4) -->
     <div class="ckp-heat" id="ckp-heat">
@@ -180,7 +170,6 @@
   <!-- Walk Mode HUD -->
   <div id="walk-hud">
     <div class="walk-room-name" id="walk-room-name">COCKPIT</div>
-    <div class="walk-crosshair"></div>
     <div class="walk-interact-prompt" id="walk-interact-prompt">APPUYEZ [F] POUR PILOTER</div>
   </div>
 
@@ -274,6 +263,7 @@
             <div class="shortcut-row"><span class="key-badge">V</span><span><strong>QUITTER LE VAISSEAU</strong> (Vue libre orbitale)</span></div>
             <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
             <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+            <div class="shortcut-row"><span class="key-badge">²</span><span><strong>Vue Pure / Sans HUD</strong> (Immersion totale)</span></div>
           </div>
 
           <!-- Colonne 2 : Marche à pied & Vue libre -->
@@ -287,6 +277,7 @@
               <div class="shortcut-row"><span class="key-badge">V</span><span><strong>QUITTER LE VAISSEAU</strong> (Vue libre orbitale)</span></div>
               <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
               <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+              <div class="shortcut-row"><span class="key-badge">²</span><span><strong>Vue Pure / Sans HUD</strong> (Immersion totale)</span></div>
             </div>
 
             <div class="shortcut-group" data-group="orbit">
@@ -298,7 +289,8 @@
               <div class="shortcut-row"><span class="key-badge">V</span><span><strong>ENTRER DANS LE VAISSEAU</strong> (Mode Vaisseau)</span></div>
               <div class="shortcut-row"><span class="key-badge">C</span><span><strong>Mode Cinématique</strong> (Système Solaire)</span></div>
               <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
-              <div class="shortcut-row"><span class="key-badge">P / ²</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+              <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+              <div class="shortcut-row"><span class="key-badge">²</span><span><strong>Vue Pure / Sans HUD</strong> (Mode contemplatif)</span></div>
               <div class="shortcut-row"><span class="key-badge">G</span><span><strong>Basculer échelle</strong> Galaxie / Système</span></div>
               <div class="shortcut-row"><span class="key-badge">Espace</span><span><strong>Mettre en pause</strong> la simulation</span></div>
             </div>

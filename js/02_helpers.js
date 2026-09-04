@@ -50,3 +50,16 @@ function formatDistance(ly) {
   return (ly / 1000).toFixed(1) + ' kly';
 }
 
+function setHUDTarget(name) {
+  const lineEl = document.getElementById('hud-line-target');
+  const targetEl = document.getElementById('hud-target');
+  if (!targetEl) return;
+  if (!name || name === '—') {
+    targetEl.textContent = '—';
+    if (lineEl) lineEl.style.display = 'none';
+  } else {
+    targetEl.textContent = name.toUpperCase();
+    if (lineEl) lineEl.style.display = '';
+  }
+}
+

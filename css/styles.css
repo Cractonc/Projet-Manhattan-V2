@@ -678,6 +678,13 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.ckp-heat.visible {
+  opacity: 1;
 }
 
 .ckp-heat-lbl {
@@ -1170,14 +1177,7 @@ canvas {
 }
 
 .walk-crosshair {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(122, 184, 224, 0.5);
+  display: none;
 }
 
 .walk-hint {
@@ -2245,3 +2245,16 @@ canvas {
   50%  { box-shadow: 0 0 12px rgba(74, 144, 196, 0.85); }
   100% { box-shadow: 0 0 4px rgba(74, 144, 196, 0.4); }
 }
+
+/* ── Mode Vue Pure (Sans HUD - Raccourci ²) ── */
+body.pure-view #hud,
+body.pure-view #quest-hud,
+body.pure-view #toggle-panel,
+body.pure-view #panel,
+body.pure-view #labels,
+body.pure-view #cockpit-hud,
+body.pure-view #walk-hud,
+body.pure-view #info-card {
+  display: none !important;
+}
+

@@ -357,15 +357,26 @@ function performSceneSwitchToGalactic() {
   ship.throttlePercent = 0;
   ship.speed = 0;
 
-  // If inside ship (cockpit or walk), update camera far plane
-  const inShip = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK');
-  if (inShip && shipRig) {
+  // Repositionner le vaisseau en bordure du système stellaire pour ne pas spawner dans le Soleil
+  if (shipRig) {
     if (shipRig.parent) shipRig.parent.remove(shipRig);
     galacticScene.add(shipRig);
-    ship.position.set(SUN_GAL.x, SUN_GAL.y + 500, SUN_GAL.z);
-    shipRig.position.copy(ship.position);
-    cockpitCamera.far = 10000000; // Deep space visibility
-    cockpitCamera.updateProjectionMatrix();
+    if (typeof ensureValidGalacticShipPosition === 'function') {
+      ensureValidGalacticShipPosition();
+    }
+    if (cockpitCamera) {
+      cockpitCamera.far = 10000000; // Deep space visibility
+      cockpitCamera.updateProjectionMatrix();
+    }
+  }
+
+  // Si on est en vue externe, cadrer le système stellaire à distance idéale d'observation
+  const inShip = (state.cameraMode === 'COCKPIT' || state.cameraMode === 'WALK');
+  if (!inShip && typeof galCam !== 'undefined') {
+    const sysId = state.currentSystem || 'sol';
+    galCam.focusOn(sysId);
+    galCam.lookAt.copy(galCam.tLookAt);
+    galCam.radius = galCam.tRadius;
   }
 
   // Switch tab
@@ -431,13 +442,15 @@ function updateScaleUI() {
     if (btnOrbits) btnOrbits.style.display = 'none';
     if (btnAsteroids) btnAsteroids.style.display = 'none';
     if (btnPause) btnPause.style.display = 'none';
-    document.getElementById('hud-sector').textContent = 'SECTOR: ORION-CYGNUS ARM';
+    const hudSector = document.getElementById('hud-sector');
+    if (hudSector) hudSector.textContent = '';
   } else {
     syncSpeedUI(state.solarSpeed);
     if (btnOrbits) btnOrbits.style.display = '';
     if (btnAsteroids) btnAsteroids.style.display = '';
     if (btnPause) btnPause.style.display = '';
-    document.getElementById('hud-sector').textContent = '';
+    const hudSector = document.getElementById('hud-sector');
+    if (hudSector) hudSector.textContent = '';
   }
 }
 

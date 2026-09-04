@@ -152,7 +152,7 @@ function updateInfoCard(data) {
     rows.appendChild(row);
   }
   document.getElementById('info-actions').innerHTML = '';
-  document.getElementById('hud-target').textContent = data.name.toUpperCase();
+  setHUDTarget(data.name);
 }
 
 function updateGalacticInfoCard(data) {
@@ -195,18 +195,23 @@ function updateGalacticInfoCard(data) {
     actions.appendChild(btn);
   }
 
-  document.getElementById('hud-target').textContent = data.name.toUpperCase();
+  setHUDTarget(data.name);
 }
 
 function hideInfoCard() {
   document.getElementById('info-card').style.display = 'none';
   document.getElementById('info-actions').innerHTML = '';
   document.querySelectorAll('.body-item').forEach(i => i.classList.remove('active'));
+  setHUDTarget(null);
 }
 
 function updateHUD() {
   if (state.selectedBody && planetObjects[state.selectedBody]) {
-    document.getElementById('hud-target').textContent = planetObjects[state.selectedBody].data.name.toUpperCase();
+    setHUDTarget(planetObjects[state.selectedBody].data.name);
+  } else if (state.selectedPOI && typeof galacticPOIObjects !== 'undefined' && galacticPOIObjects[state.selectedPOI]) {
+    setHUDTarget(galacticPOIObjects[state.selectedPOI].data.name);
+  } else {
+    setHUDTarget(null);
   }
 }
 
