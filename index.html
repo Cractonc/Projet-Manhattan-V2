@@ -83,7 +83,7 @@
   </div>
 
   <!-- Active Quest HUD -->
-  <div id="quest-hud" title="Cliquer pour ouvrir le Codex (Raccourci: J ou C)">
+  <div id="quest-hud" title="Cliquer pour ouvrir le Codex (Raccourci: J)">
     <div class="quest-hud-top">
       <span class="quest-hud-badge"><span class="quest-pulse-dot"></span>MISSION ACTIVE</span>
       <span class="quest-hud-credits" id="quest-hud-credits">0 CR</span>
@@ -233,39 +233,75 @@
           <button class="settings-btn-back" id="btn-back-settings">← Retour aux paramètres</button>
           <h3>Guide des commandes</h3>
         </div>
+
+        <div class="shortcuts-tabs-bar">
+          <button class="shortcuts-tab-btn active" data-tab="all">TOUT AFFICHER</button>
+          <button class="shortcuts-tab-btn" data-tab="cockpit">🚀 PILOTAGE (COCKPIT)</button>
+          <button class="shortcuts-tab-btn" data-tab="walk">🚶 INTÉRIEUR VAISSEAU</button>
+          <button class="shortcuts-tab-btn" data-tab="orbit">◎ VUE LIBRE ORBITALE</button>
+        </div>
+
         <div class="shortcuts-grid">
-          <div class="shortcut-group">
-            <h4>◎ Exploration Libre (Spectateur)</h4>
-            <div class="shortcut-row"><span class="key-badge">Clic G + Drag</span><span>Tourner la caméra</span></div>
-            <div class="shortcut-row"><span class="key-badge">Molette</span><span>Zoom / Dézoom</span></div>
-            <div class="shortcut-row"><span class="key-badge">Clic sur Astre</span><span>Cibler & Infos orbitales</span></div>
-            <div class="shortcut-row"><span class="key-badge">P</span><span>Afficher / Masquer le Panneau</span></div>
-            <div class="shortcut-row"><span class="key-badge">G</span><span>Basculer Système Solaire / Galaxie</span></div>
-            <div class="shortcut-row"><span class="key-badge">V</span><span>Entrer en Vue Cockpit</span></div>
-            <div class="shortcut-row"><span class="key-badge">J / C</span><span>Ouvrir le Codex & Quêtes</span></div>
+          <!-- Colonne 1 : Pilotage Cockpit -->
+          <div class="shortcut-group" data-group="cockpit">
+            <h4>🚀 Mode Pilotage (Cockpit)</h4>
+
+            <div class="shortcut-subheading">⚡ Propulsion & Vitesse</div>
+            <div class="shortcut-row"><span class="key-badge">Z / S</span><span><strong>Gaz moteur</strong> (Throttle +/-)</span></div>
+            <div class="shortcut-row"><span class="key-badge">X</span><span><strong>Arrêt d'urgence</strong> des moteurs (0%)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Shift</span><span><strong>Boost</strong> Hyperpropulsion (chaleur)</span></div>
+            <div class="shortcut-row"><span class="key-badge">+ / -</span><span><strong>Paliers de vitesse</strong> (Gears 1 à 5)</span></div>
+
+            <div class="shortcut-subheading">🔄 Direction & Manœuvres</div>
+            <div class="shortcut-row"><span class="key-badge">← / →</span><span><strong>Lacet</strong> (Yaw gauche / droite)</span></div>
+            <div class="shortcut-row"><span class="key-badge">↑ / ↓</span><span><strong>Tangage</strong> (Pitch haut / bas)</span></div>
+            <div class="shortcut-row"><span class="key-badge">A / E</span><span><strong>Roulis</strong> (Roll inclinaison)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Q / D</span><span><strong>Strafe latéral</strong> (Translation G/D)</span></div>
+            <div class="shortcut-row"><span class="key-badge">Espace / Ctrl</span><span><strong>Strafe vertical</strong> (Haut / Bas)</span></div>
+            <div class="shortcut-row"><span class="key-badge">L</span><span><strong>Vue libre</strong> tête à la souris</span></div>
+
+            <div class="shortcut-subheading">🎯 Navigation & Systèmes</div>
+            <div class="shortcut-row"><span class="key-badge">N</span><span><strong>Pilote Automatique</strong> (Auto-Nav On/Off)</span></div>
+            <div class="shortcut-row"><span class="key-badge">H</span><span><strong>Saut FTL Warp</strong> vers la cible (Galaxie)</span></div>
+            <div class="shortcut-row"><span class="key-badge">T</span><span><strong>Cibler</strong> l'astre / POI le plus proche</span></div>
+            <div class="shortcut-row"><span class="key-badge">Tab</span><span><strong>Faire défiler</strong> les cibles</span></div>
+            <div class="shortcut-row"><span class="key-badge">R</span><span><strong>Scanner radar</strong> (maintenir la touche)</span></div>
+            <div class="shortcut-row"><span class="key-badge">M / Clic G</span><span><strong>Laser de minage</strong> thermique</span></div>
+            <div class="shortcut-row"><span class="key-badge">G</span><span><strong>Basculer échelle</strong> Galaxie ↔ Système</span></div>
+
+            <div class="shortcut-subheading">🚪 Vie à Bord & Interface</div>
+            <div class="shortcut-row"><span class="key-badge">F</span><span><strong>SE LEVER DU SIÈGE</strong> (Mode marche)</span></div>
+            <div class="shortcut-row"><span class="key-badge">V</span><span><strong>QUITTER LE VAISSEAU</strong> (Vue libre orbitale)</span></div>
+            <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
+            <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
           </div>
-          <div class="shortcut-group">
-            <div class="shortcut-row"><span class="key-badge">Z / S</span><span>Puissance Moteur (Throttle +/-)</span></div>
-            <div class="shortcut-row"><span class="key-badge">+ / -</span><span>Paliers de vitesse (Gears 1 à 5)</span></div>
-            <div class="shortcut-row"><span class="key-badge">Q / D</span><span>Déplacement latéral (Strafe)</span></div>
-            <div class="shortcut-row"><span class="key-badge">← / →</span><span>Lacet (Yaw)</span></div>
-            <div class="shortcut-row"><span class="key-badge">↑ / ↓</span><span>Tangage (Pitch)</span></div>
-            <div class="shortcut-row"><span class="key-badge">A / E</span><span>Roulis (Roll)</span></div>
-            <div class="shortcut-row"><span class="key-badge">M / Clic G</span><span>Laser de Minage Thermique</span></div>
-            <div class="shortcut-row"><span class="key-badge">T</span><span>Cibler Astre / Soleil le plus proche</span></div>
-            <div class="shortcut-row"><span class="key-badge">C</span><span>Pilote Automatique (Auto-Nav)</span></div>
-            <div class="shortcut-row"><span class="key-badge">Shift</span><span>Hyperpropulsion Boost</span></div>
-            <div class="shortcut-row"><span class="key-badge">X</span><span>Arrêt immédiat (Stop)</span></div>
-            <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le siège (Mode Marche)</span></div>
-            <div class="shortcut-row"><span class="key-badge">J</span><span>Ouvrir le Codex & Quêtes</span></div>
-          </div>
-          <div class="shortcut-group">
-            <h4>🚶 Mode Vaisseau (Marche à pied)</h4>
-            <div class="shortcut-row"><span class="key-badge">W/A/S/D / Z/Q/S/D</span><span>Se déplacer</span></div>
-            <div class="shortcut-row"><span class="key-badge">Souris</span><span>Regarder autour (Free look)</span></div>
-            <div class="shortcut-row"><span class="key-badge">F</span><span>Interagir (Siège / Télescope)</span></div>
-            <div class="shortcut-row"><span class="key-badge">V</span><span>Quitter le vaisseau (Mode Libre)</span></div>
-            <div class="shortcut-row"><span class="key-badge">J</span><span>Ouvrir le Codex & Quêtes</span></div>
+
+          <!-- Colonne 2 : Marche à pied & Vue libre -->
+          <div class="shortcuts-column-secondary">
+            <div class="shortcut-group" data-group="walk">
+              <h4>🚶 Mode Vaisseau (Marche à pied)</h4>
+              <div class="shortcut-subheading">🚶 Déplacement & Actions</div>
+              <div class="shortcut-row"><span class="key-badge">Z / Q / S / D</span><span><strong>Se déplacer</strong> dans les pièces et couloirs</span></div>
+              <div class="shortcut-row"><span class="key-badge">Souris</span><span><strong>Regarder autour</strong> (Vue FPS)</span></div>
+              <div class="shortcut-row"><span class="key-badge">F</span><span><strong>TOUT FAIRE / INTERAGIR</strong> (Piloter, Télescope)</span></div>
+              <div class="shortcut-row"><span class="key-badge">V</span><span><strong>QUITTER LE VAISSEAU</strong> (Vue libre orbitale)</span></div>
+              <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
+              <div class="shortcut-row"><span class="key-badge">P</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+            </div>
+
+            <div class="shortcut-group" data-group="orbit">
+              <h4>◎ Exploration Libre (Spectateur)</h4>
+              <div class="shortcut-subheading">🔭 Caméra & Navigation</div>
+              <div class="shortcut-row"><span class="key-badge">Clic G + Glisser</span><span><strong>Tourner la caméra</strong> orbitale</span></div>
+              <div class="shortcut-row"><span class="key-badge">Molette</span><span><strong>Zoomer</strong> / Dézoomer</span></div>
+              <div class="shortcut-row"><span class="key-badge">Clic sur Astre</span><span><strong>Sélectionner</strong> & centrer la vue</span></div>
+              <div class="shortcut-row"><span class="key-badge">V</span><span><strong>ENTRER DANS LE VAISSEAU</strong> (Mode Vaisseau)</span></div>
+              <div class="shortcut-row"><span class="key-badge">C</span><span><strong>Mode Cinématique</strong> (Système Solaire)</span></div>
+              <div class="shortcut-row"><span class="key-badge">J</span><span><strong>Ouvrir le Codex</strong> & Quêtes</span></div>
+              <div class="shortcut-row"><span class="key-badge">P / ²</span><span><strong>Afficher / Masquer</strong> le Panneau latéral</span></div>
+              <div class="shortcut-row"><span class="key-badge">G</span><span><strong>Basculer échelle</strong> Galaxie / Système</span></div>
+              <div class="shortcut-row"><span class="key-badge">Espace</span><span><strong>Mettre en pause</strong> la simulation</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -283,7 +319,7 @@
             <span class="codex-stat-tag">CRÉDITS : <strong id="codex-stat-credits">0 CR</strong></span>
           </div>
         </div>
-        <button class="modal-close" id="btn-close-codex" title="Fermer (Échap / J / C)">✕</button>
+        <button class="modal-close" id="btn-close-codex" title="Fermer (Échap / J)">✕</button>
       </div>
 
       <div class="codex-container">

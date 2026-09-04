@@ -563,7 +563,7 @@ function setupEvents() {
     // ── Handle Codex Modal ──
     const codexOverlay = document.getElementById('codex-overlay');
     if (codexOverlay && codexOverlay.classList.contains('active')) {
-      if (code === 'Escape' || code === 'KeyC' || code === 'KeyJ') {
+      if (code === 'Escape' || code === 'KeyJ') {
         closeCodex();
         e.preventDefault();
         return;
@@ -586,8 +586,8 @@ function setupEvents() {
     const tag = document.activeElement?.tagName;
     if ((tag === 'INPUT' || tag === 'TEXTAREA') && code !== 'Escape') return;
 
-    // ── Global Codex Shortcut [J] or [C] ──
-    if (code === 'KeyJ' || code === 'KeyC') {
+    // ── Global Codex Shortcut [J] ──
+    if (code === 'KeyJ') {
       toggleCodex();
       e.preventDefault();
       return;
@@ -656,9 +656,12 @@ function setupEvents() {
           e.preventDefault();
           cockpitCycleTarget();
           break;
-        case 'KeyC': // Toggle auto-nav (solar + galactic)
+        case 'KeyN': // Toggle auto-nav (solar + galactic)
           state.cockpitAutoNav = !state.cockpitAutoNav;
           if (state.cockpitAutoNav && !state.cockpitTarget) cockpitLockTarget();
+          if (typeof showNotification === 'function') {
+            showNotification(state.cockpitAutoNav ? '🧭 PILOTE AUTOMATIQUE : ACTIVÉ' : '🧭 PILOTE AUTOMATIQUE : DÉSACTIVÉ', 1500);
+          }
           break;
         case 'KeyG': // Switch solar/galactic
           if (!state.warp.active) {
@@ -666,7 +669,7 @@ function setupEvents() {
             else initiateWarpToSystem(state.currentSystem || 'sol');
           }
           break;
-        case 'KeyJ': // FTL Warp to target (galactic only)
+        case 'KeyH': // FTL Warp to target (galactic only)
           if (state.scaleLevel === 'GALACTIC' && !state.warp.active) {
             if (state.cockpitTarget && galacticPOIObjects[state.cockpitTarget]) {
               initiateWarpToPOI(state.cockpitTarget);
@@ -708,7 +711,11 @@ function setupEvents() {
         else initiateWarpToSystem(state.currentSystem || 'sol');
         break;
       case 'c':
-        if (state.scaleLevel === 'SOLAR') startCinematic();
+        if (state.cameraMode === 'CINEMATIC') {
+          stopCinematic();
+        } else if (state.scaleLevel === 'SOLAR') {
+          startCinematic();
+        }
         break;
       case 'escape':
         if (state.warp.active) break;
@@ -818,6 +825,48 @@ function setupEvents() {
       }
     });
   }
+
+  // Shortcuts tabs filter
+  const shortcutTabBtns = document.querySelectorAll('.shortcuts-tab-btn');
+  const shortcutGrid = document.querySelector('.shortcuts-grid');
+  const secondaryCol = document.querySelector('.shortcuts-column-secondary');
+  const groupCockpit = document.querySelector('.shortcut-group[data-group="cockpit"]');
+  const groupWalk = document.querySelector('.shortcut-group[data-group="walk"]');
+  const groupOrbit = document.querySelector('.shortcut-group[data-group="orbit"]');
+
+  shortcutTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      shortcutTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.getAttribute('data-tab');
+
+      if (tab === 'all') {
+        if (groupCockpit) groupCockpit.style.display = '';
+        if (groupWalk) groupWalk.style.display = '';
+        if (groupOrbit) groupOrbit.style.display = '';
+        if (secondaryCol) secondaryCol.style.display = '';
+        if (shortcutGrid) shortcutGrid.classList.remove('single-column');
+      } else if (tab === 'cockpit') {
+        if (groupCockpit) groupCockpit.style.display = '';
+        if (groupWalk) groupWalk.style.display = 'none';
+        if (groupOrbit) groupOrbit.style.display = 'none';
+        if (secondaryCol) secondaryCol.style.display = 'none';
+        if (shortcutGrid) shortcutGrid.classList.add('single-column');
+      } else if (tab === 'walk') {
+        if (groupCockpit) groupCockpit.style.display = 'none';
+        if (groupWalk) groupWalk.style.display = '';
+        if (groupOrbit) groupOrbit.style.display = 'none';
+        if (secondaryCol) secondaryCol.style.display = '';
+        if (shortcutGrid) shortcutGrid.classList.add('single-column');
+      } else if (tab === 'orbit') {
+        if (groupCockpit) groupCockpit.style.display = 'none';
+        if (groupWalk) groupWalk.style.display = 'none';
+        if (groupOrbit) groupOrbit.style.display = '';
+        if (secondaryCol) secondaryCol.style.display = '';
+        if (shortcutGrid) shortcutGrid.classList.add('single-column');
+      }
+    });
+  });
 
   // Toggle orbits
   document.getElementById('btn-orbits').addEventListener('click', function () {
