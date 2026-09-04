@@ -4,6 +4,7 @@
 // ANIMATION LOOP
 // ============================================================
 var lastTime = performance.now();
+var _mapMarkerFwd = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
@@ -92,6 +93,15 @@ function animate() {
     const my = 0.35 + (gz / 550000) * 0.54;
 
     shipInterior.userData.mapMarker.position.set(mx, my, 1.036);
+
+    // Orientation de l'avant du vaisseau projetée sur le plan de la carte 2D
+    _mapMarkerFwd.set(0, 0, -1).applyQuaternion(ship.quaternion);
+    const hLenSq = _mapMarkerFwd.x * _mapMarkerFwd.x + _mapMarkerFwd.z * _mapMarkerFwd.z;
+    if (hLenSq > 0.0001) {
+      shipInterior.userData.mapMarker.rotation.x = 0;
+      shipInterior.userData.mapMarker.rotation.y = 0;
+      shipInterior.userData.mapMarker.rotation.z = Math.atan2(-_mapMarkerFwd.x, _mapMarkerFwd.z);
+    }
 
     // Smooth sci-fi breathing pulse (continuous gentle glow, never drops to black)
     const pulse = 0.5 + 0.5 * Math.sin(now * 0.003);
