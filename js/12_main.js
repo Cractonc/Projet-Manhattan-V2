@@ -67,19 +67,47 @@ function animate() {
   }
 
   // Update 2D Galaxy Map Marker
-  if ((state.cameraMode === 'WALK' || state.cameraMode === 'COCKPIT') && shipInterior && shipInterior.userData.mapMarker) {
+  if (shipInterior && shipInterior.userData.mapMarker) {
     let gx = 0, gz = 0;
-    if (state.scaleLevel === 'GALACTIC') {
+    if (state.scaleLevel === 'GALACTIC' && ship.position.length() >= 1000) {
       gx = ship.position.x;
       gz = ship.position.z;
-    } else if (state.currentSysId === 'sol') {
-      gx = 26000; gz = 0;
-    } else if (typeof GALACTIC_POI !== 'undefined') {
-      const pd = GALACTIC_POI.find(p => p.id === state.currentSysId);
-      if (pd) { gx = pd.pos[0]; gz = pd.pos[2]; }
+    } else {
+      let sysId = state.currentSystem || 'sol';
+      if (sysId === 'proxima' || sysId === 'proxima-centauri') sysId = 'alpha-centauri';
+      const pd = (typeof GALACTIC_POI !== 'undefined') ? GALACTIC_POI.find(p => p.id === sysId) : null;
+      if (pd && pd.pos) {
+        gx = pd.pos[0];
+        gz = pd.pos[2];
+      } else if (typeof SUN_GAL !== 'undefined') {
+        gx = SUN_GAL.x;
+        gz = SUN_GAL.z;
+      } else {
+        gx = 260000;
+        gz = 0;
+      }
     }
-    shipInterior.userData.mapMarker.position.set(1.335 + (gx / 550000) * 0.54, 0.35 - (gz / 550000) * 0.54, 1.035);
-    shipInterior.userData.mapMarker.material.emissiveIntensity = 2.0 + Math.sin(now * 0.01) * 3.0;
+
+    const mx = 1.335 + (gx / 550000) * 0.54;
+    const my = 0.35 + (gz / 550000) * 0.54;
+
+    shipInterior.userData.mapMarker.position.set(mx, my, 1.036);
+
+    // Smooth sci-fi breathing pulse (continuous gentle glow, never drops to black)
+    const pulse = 0.5 + 0.5 * Math.sin(now * 0.003);
+    shipInterior.userData.mapMarker.material.emissiveIntensity = 1.5 + pulse * 2.2;
+    const s = 1.0 + pulse * 0.2;
+    shipInterior.userData.mapMarker.scale.set(s, s, 0.2);
+
+    // Expanding sonar / radar ripple ring animation
+    if (shipInterior.userData.mapMarkerRing) {
+      const ring = shipInterior.userData.mapMarkerRing;
+      ring.position.set(mx, my, 1.034);
+      const pingCycle = (now * 0.0008) % 1.0;
+      const rScale = 0.5 + pingCycle * 1.8;
+      ring.scale.set(rScale, rScale, 1);
+      ring.material.opacity = Math.pow(1 - pingCycle, 1.5) * 0.75;
+    }
   }
 
   // Engine Room Warp Core Logic
@@ -388,7 +416,9 @@ function setupEvents() {
   canvas.addEventListener('mousedown', e => {
     if (e.button === 0) { 
       isDragging = true; lastX = e.clientX; lastY = e.clientY; 
-      cockpitKeys.fireLaser = true; // Étape 2.4
+      if (state.cameraMode === 'COCKPIT') {
+        cockpitKeys.fireLaser = true; // Étape 2.4 : Minage thermique uniquement en mode pilotage
+      }
     }
     if (state.cameraMode === 'CINEMATIC') stopCinematic();
   });
@@ -917,13 +947,18 @@ async function init() {
   // Start animation
   animate();
 
-  // Galaxy intro: switch panel + gentle camera drift
-  setTimeout(() => {
-    switchPanelTab('galaxy');
-    galCam.tDist = 95000;
-    galCam.tPhi = 0.85;
-    galCam.tTheta = -0.2;
-  }, 100);
+  // Si le joueur a rechargé la page alors qu'il était dans le vaisseau (WALK ou COCKPIT)
+  if (state.cameraMode === 'WALK' || state.cameraMode === 'COCKPIT') {
+    initShipStateOnLoad();
+  } else {
+    // Galaxy intro: switch panel + gentle camera drift
+    setTimeout(() => {
+      switchPanelTab('galaxy');
+      galCam.tDist = 95000;
+      galCam.tPhi = 0.85;
+      galCam.tTheta = -0.2;
+    }, 100);
+  }
 
   // Auto-save every 60 seconds
   setInterval(() => {

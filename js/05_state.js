@@ -52,6 +52,7 @@ var state = {
   // Walk mode state
   walkMode: false,          // true = FPS walk, false = piloting
   currentRoom: 'cockpit',   // 'cockpit' | 'corridor' | 'observatory' | 'galaxymap'
+  walkerPos: null,
   prevCameraMode: 'FREE',
   observing: false,         // Telescope mode
   observingTarget: null,
@@ -123,6 +124,16 @@ function mergeState(target, source) {
 
 function saveGame() {
   try {
+    if (typeof walker !== 'undefined' && walker.position) {
+      state.walkerPos = {
+        x: walker.position.x,
+        y: walker.baseY,
+        z: walker.position.z,
+        floor: walker.floor,
+        yaw: walker.yaw,
+        pitch: walker.pitch
+      };
+    }
     localStorage.setItem('milkyWaySave', JSON.stringify(state));
     console.log('Game saved automatically.');
   } catch (e) {
@@ -145,6 +156,16 @@ function loadGame() {
         }
         ship.position.copy(state.shipPosition);
         ship.quaternion.copy(state.shipRotation);
+      }
+
+      // Sync walker state if it exists
+      if (typeof walker !== 'undefined' && state.walkerPos) {
+        walker.position.set(state.walkerPos.x || 0, 0, state.walkerPos.z !== undefined ? state.walkerPos.z : 0.2);
+        walker.floor = state.walkerPos.floor || 0;
+        walker.targetFloor = walker.floor;
+        walker.baseY = state.walkerPos.y !== undefined ? state.walkerPos.y : (walker.floor === 0 ? 0.22 : (walker.floor === 1 ? 3.40 : -2.91));
+        walker.yaw = state.walkerPos.yaw !== undefined ? state.walkerPos.yaw : Math.PI;
+        walker.pitch = state.walkerPos.pitch || 0;
       }
 
       // Ensure quest and codex state are valid

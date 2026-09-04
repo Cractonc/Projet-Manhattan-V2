@@ -552,12 +552,20 @@ function createShipInterior() {
 
   // Dynamic "You are Here" marker (Mini Spaceship!)
   const shipMarkerGeo = new THREE.ConeGeometry(0.016, 0.04, 3);
-  const shipMarkerMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x00ffff, emissiveIntensity: 4.0 });
+  const shipMarkerMat = new THREE.MeshStandardMaterial({ color: 0x00d8ff, emissive: 0x00ffff, emissiveIntensity: 2.5, roughness: 0.3 });
   const mapMarker = new THREE.Mesh(shipMarkerGeo, shipMarkerMat);
   mapMarker.scale.z = 0.2; // flatten into a 2D triangle pointing UP against the wall
-  mapMarker.position.set(1.335, 0.35, 1.035);
+  mapMarker.position.set(1.335, 0.35, 1.036);
   shipInterior.add(mapMarker);
   shipInterior.userData.mapMarker = mapMarker;
+
+  // Radar ping ring around marker
+  const ringGeo = new THREE.RingGeometry(0.02, 0.024, 24);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+  const mapMarkerRing = new THREE.Mesh(ringGeo, ringMat);
+  mapMarkerRing.position.set(1.335, 0.35, 1.034);
+  shipInterior.add(mapMarkerRing);
+  shipInterior.userData.mapMarkerRing = mapMarkerRing;
 
   // Ceiling projector module housing
   bx(0.6, 0.1, 0.6, trimMat, 1.2, 1.18, 2.0); // Base ring
@@ -867,8 +875,93 @@ function createCockpit() {
   cockpitLight.layers.set(1);
   cockpitCamera.layers.enableAll();
 
+  // Toujours générer les collisions du vaisseau dès la création de l'intérieur
+  buildShipCollision();
+
   // ship.position is already loaded from save, just sync the rig
   shipRig.position.copy(ship.position);
+}
+
+// Restauration complète du vaisseau et du mode marche au rechargement de page
+function initShipStateOnLoad() {
+  buildShipCollision();
+
+  cockpitGroup.visible = true;
+  cockpitLight.visible = true;
+  state.cockpitEnabled = true;
+
+  if (state.scaleLevel === 'GALACTIC') {
+    if (shipRig.parent) shipRig.parent.remove(shipRig);
+    if (typeof galacticScene !== 'undefined') galacticScene.add(shipRig);
+    cockpitCamera.far = 20000000;
+  } else {
+    if (shipRig.parent !== scene) {
+      if (shipRig.parent) shipRig.parent.remove(shipRig);
+      scene.add(shipRig);
+    }
+    cockpitCamera.far = 100000;
+    ensureValidSolarShipPosition();
+  }
+  cockpitCamera.updateProjectionMatrix();
+
+  shipRig.position.copy(ship.position);
+  shipRig.quaternion.copy(ship.quaternion);
+
+  // Masquer le HUD spectateur standard
+  const hud = document.getElementById('hud');
+  if (hud) hud.style.display = 'none';
+
+  if (state.cameraMode === 'WALK') {
+    state.walkMode = true;
+    const walkHud = document.getElementById('walk-hud');
+    const cockpitHud = document.getElementById('cockpit-hud');
+    if (walkHud) walkHud.classList.add('active');
+    if (cockpitHud) cockpitHud.classList.remove('active');
+
+    // Restaurer ou initialiser le marcheur à sa position exacte
+    if (typeof state.walkerPos === 'object' && state.walkerPos) {
+      walker.position.set(state.walkerPos.x || 0, 0, state.walkerPos.z !== undefined ? state.walkerPos.z : 0.2);
+      walker.floor = state.walkerPos.floor || 0;
+      walker.targetFloor = walker.floor;
+      walker.baseY = state.walkerPos.y !== undefined ? state.walkerPos.y : (walker.floor === 0 ? 0.22 : (walker.floor === 1 ? 3.40 : -2.91));
+      walker.yaw = state.walkerPos.yaw !== undefined ? state.walkerPos.yaw : Math.PI;
+      walker.pitch = state.walkerPos.pitch || 0;
+    } else {
+      walker.position.set(0, 0, 0.2);
+      walker.floor = 0;
+      walker.targetFloor = 0;
+      walker.baseY = 0.22;
+      walker.yaw = Math.PI;
+      walker.pitch = 0;
+    }
+
+    if (typeof elevatorPad !== 'undefined' && elevatorPad) {
+      const targetElevatorY = walker.floor === 0 ? -0.68 : (walker.floor === 1 ? 2.45 : -3.81);
+      elevatorPad.position.y = targetElevatorY;
+    }
+
+    state.currentRoom = detectCurrentRoom(walker.position.x, walker.position.z);
+    updateRoomNameDisplay();
+
+    // Aligner immédiatement la caméra sur les yeux du marcheur
+    cockpitCamera.position.set(walker.position.x, walker.baseY, walker.position.z);
+    cockpitCamera.rotation.set(0, 0, 0);
+    cockpitCamera.rotateY(walker.yaw);
+    cockpitCamera.rotateX(walker.pitch);
+  } else {
+    // Mode COCKPIT
+    state.walkMode = false;
+    const cockpitHud = document.getElementById('cockpit-hud');
+    const walkHud = document.getElementById('walk-hud');
+    if (cockpitHud) cockpitHud.classList.add('active');
+    if (walkHud) walkHud.classList.remove('active');
+
+    cockpitCamera.position.set(0, 0.08, -0.5);
+    cockpitCamera.rotation.set(0, 0, 0);
+  }
+
+  switchPanelTab(state.scaleLevel === 'GALACTIC' ? 'galaxy' : 'system');
+  updateScaleUI();
 }
 
 function toggleCockpitMode() {
@@ -1089,6 +1182,8 @@ function exitCockpitMode() {
 function enterWalkMode() {
   state.walkMode = true;
   state.cameraMode = 'WALK';
+  cockpitKeys.fireLaser = false;
+  if (window.laserLine) window.laserLine.visible = false;
 
   // Position walker at cockpit seat area and reset floor logic
   walker.position.set(0, 0, 0.2);
@@ -1136,6 +1231,8 @@ function enterPilotFromWalk() {
 function exitPilotToWalk() {
   state.cameraMode = 'WALK';
   state.walkMode = true;
+  cockpitKeys.fireLaser = false;
+  if (window.laserLine) window.laserLine.visible = false;
 
   // Show walk HUD, hide cockpit HUD
   document.getElementById('cockpit-hud').classList.remove('active');
@@ -1489,7 +1586,7 @@ function updateShip(dt) {
     scene.add(window.laserLine);
   }
 
-  if (cockpitKeys.fireLaser && state.laserCooldown <= 0) {
+  if (state.cameraMode === 'COCKPIT' && cockpitKeys.fireLaser && state.laserCooldown <= 0) {
     state.shipHeat += dt * 35; // ~3 seconds to overheat
     if (state.shipHeat >= 100) {
       state.shipHeat = 100;
