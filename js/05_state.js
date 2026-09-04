@@ -31,9 +31,9 @@ var speedTierList = ['IMPULSE', 'SUBLIGHT', 'WARP_1', 'WARP_5', 'WARP_MAX'];
 var state = {
   time: 0,
   currentSpeedTier: 'IMPULSE',
-  timeScale: 0.8,
-  solarSpeed: 0.1,
-  galacticSpeed: 5.0,
+  timeScale: 0.2,
+  solarSpeed: 0.2,
+  galacticSpeed: 2.0,
   paused: false,
   selectedBody: null,
   showOrbits: true,
@@ -51,7 +51,7 @@ var state = {
   cockpitAutoTimer: 0,
   // Walk mode state
   walkMode: false,          // true = FPS walk, false = piloting
-  currentRoom: 'cockpit',   // 'cockpit' | 'corridor' | 'observatory' | 'galaxymap'
+  currentRoom: 'cockpit',   // 'cockpit' | 'corridor' | 'observatory' | 'galaxymap' | 'quarters' | 'engineering' | 'elevator'
   walkerPos: null,
   prevCameraMode: 'FREE',
   observing: false,         // Telescope mode

@@ -394,26 +394,10 @@ function checkQuestAndPOIDiscovery(dt) {
 // SPEED SLIDER
 // ============================================================
 function syncSpeedUI(speed) {
-  const slider = document.getElementById('speed-slider');
-  const display = document.getElementById('speed-display');
-  const hudTs = document.getElementById('hud-timescale');
-  const v = speed < 0.01 ? 0 : Math.pow(speed / 60, 1 / 2.5) * 100;
-  slider.value = v;
-  let label = speed < 0.1 ? '0×' : speed < 2 ? speed.toFixed(1) + '×' : Math.round(speed) + '×';
-  display.textContent = label;
-  if (hudTs) hudTs.textContent = label;
   state.timeScale = speed;
 }
 
 function setupSpeedSlider() {
-  const slider = document.getElementById('speed-slider');
-  slider.addEventListener('input', () => {
-    const v = slider.value / 100;
-    const speed = v < 0.01 ? 0 : Math.pow(v, 2.5) * 60;
-    syncSpeedUI(speed);
-    if (state.scaleLevel === 'GALACTIC') state.galacticSpeed = speed;
-    else state.solarSpeed = speed;
-  });
   syncSpeedUI(state.scaleLevel === 'GALACTIC' ? state.galacticSpeed : state.solarSpeed);
 }
 

@@ -1045,6 +1045,44 @@ function ensureValidSolarShipPosition() {
   }
 }
 
+// Spécificité galactique : s'assurer qu'on spawne à côté du système stellaire et non dans l'étoile
+function ensureValidGalacticShipPosition() {
+  const sysId = state.currentSystem || 'sol';
+  let center = new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z);
+  let scale = 4000;
+  if (typeof galacticPOIObjects !== 'undefined' && galacticPOIObjects[sysId]) {
+    center.copy(galacticPOIObjects[sysId].group.position);
+    scale = galacticPOIObjects[sysId].data.scale || 4000;
+  } else if (typeof POI_DATA !== 'undefined') {
+    const pData = POI_DATA.find(p => p.id === sysId);
+    if (pData) {
+      if (pData.pos) center.set(pData.pos[0], pData.pos[1], pData.pos[2]);
+      if (pData.scale) scale = pData.scale;
+    }
+  }
+
+  const distToStar = ship.position.distanceTo(center);
+
+  // Si le vaisseau est trop proche du centre de l'étoile (<= rayon d'orbite) ou proche de l'origine
+  if (distToStar < scale * 1.2 || ship.position.length() < 1000) {
+    const offset = new THREE.Vector3(scale * 1.5, scale * 0.3, scale * 0.85);
+    ship.position.copy(center).add(offset);
+
+    // Orientation vers le cœur galactique (Sgr A*)
+    const targetLook = new THREE.Vector3(0, 0, 0);
+    const m = new THREE.Matrix4().lookAt(ship.position, targetLook, new THREE.Vector3(0, 1, 0));
+    ship.quaternion.setFromRotationMatrix(m);
+
+    state.shipPosition.copy(ship.position);
+    state.shipRotation.copy(ship.quaternion);
+  }
+
+  if (shipRig) {
+    shipRig.position.copy(ship.position);
+    shipRig.quaternion.copy(ship.quaternion);
+  }
+}
+
 function enterCockpitMode() {
   state.prevCameraMode = state.cameraMode;
   const ov = document.getElementById('cockpit-transition');
@@ -1060,10 +1098,7 @@ function enterCockpitMode() {
       galacticScene.add(shipRig);
       cockpitCamera.far = 600000;
       cockpitCamera.updateProjectionMatrix();
-      if (ship.position.length() < 1000) {
-        ship.position.set(SUN_GAL.x, SUN_GAL.y + 500, SUN_GAL.z);
-        state.shipPosition.copy(ship.position);
-      }
+      ensureValidGalacticShipPosition();
     } else {
       if (shipRig.parent !== scene) {
         if (shipRig.parent) shipRig.parent.remove(shipRig);
@@ -1336,6 +1371,9 @@ function updateRoomNameDisplay() {
     'corridor': 'COULOIR',
     'observatory': 'OBSERVATOIRE',
     'galaxymap': 'CARTE GALACTIQUE',
+    'quarters': 'SALLE DE REPOS',
+    'engineering': 'SALLE DES MACHINES',
+    'elevator': 'ASCENSEUR',
   };
   const el = document.getElementById('walk-room-name');
   if (el) {
@@ -1344,7 +1382,7 @@ function updateRoomNameDisplay() {
     if (roomDisplayTimeout) clearTimeout(roomDisplayTimeout);
     roomDisplayTimeout = setTimeout(() => {
       el.classList.remove('visible');
-    }, 2000);
+    }, 2500);
   }
 }
 
@@ -1396,6 +1434,8 @@ function updateWalkMode(dt) {
       'elevator': { color: 0x224466, intensity: 0.3 },
       'observatory': { color: 0x0a1830, intensity: 0.15 },
       'galaxymap': { color: 0x1a1040, intensity: 0.35 },
+      'quarters': { color: 0x3a2518, intensity: 0.4 },
+      'engineering': { color: 0x153555, intensity: 0.45 },
     };
     const roomCfg = roomColors[state.currentRoom] || roomColors['cockpit'];
     // Smooth transition
@@ -1403,7 +1443,7 @@ function updateWalkMode(dt) {
     cockpitLight.color.lerp(targetColor, dt * 3);
     cockpitLight.intensity += (roomCfg.intensity - cockpitLight.intensity) * dt * 3;
     // Move light to follow player
-    cockpitLight.position.set(walker.position.x, walker.floor === 1 ? 3.0 : 0.5, walker.position.z);
+    cockpitLight.position.set(walker.position.x, walker.floor === 1 ? 3.0 : (walker.floor === -1 ? -2.8 : 0.5), walker.position.z);
   }
 
   // ── Elevator Logic ──
