@@ -1691,8 +1691,6 @@ function exitCockpitMode() {
     if (walkHud) walkHud.classList.remove('active');
     const cockpitHud = document.getElementById('cockpit-hud');
     if (cockpitHud) cockpitHud.classList.remove('active');
-    const wp = document.getElementById('ckp-waypoint');
-    if (wp) wp.classList.remove('visible');
     const astroHud = document.getElementById('astrometry-hud');
     if (astroHud) astroHud.classList.remove('active');
     const hud = document.getElementById('hud');
@@ -1791,8 +1789,6 @@ function exitPilotToWalk() {
   // Show walk HUD, hide cockpit HUD
   const cockpitHud = document.getElementById('cockpit-hud');
   if (cockpitHud) cockpitHud.classList.remove('active');
-  const wp = document.getElementById('ckp-waypoint');
-  if (wp) wp.classList.remove('visible');
   const walkHud = document.getElementById('walk-hud');
   if (walkHud) walkHud.classList.add('active');
 
@@ -2512,16 +2508,13 @@ function updateAutoNavGalactic(dt) {
 }
 
 function updateCockpitHUD(dt) {
-  if (state.cameraMode !== 'COCKPIT' || state.walkMode) {
-    const wp = document.getElementById('ckp-waypoint');
-    if (wp) wp.classList.remove('visible');
-    return;
-  }
+  if (state.cameraMode !== 'COCKPIT' || state.walkMode) return;
   const isFTL = state.scaleLevel === 'GALACTIC';
 
   const nameEl = document.getElementById('ckp-tgt-name');
   const distEl = document.getElementById('ckp-tgt-dist');
   const proxEl = document.getElementById('ckp-prox');
+  const statusEl = document.getElementById('ckp-tgt-status');
 
   let targetWorldPos = null;
   let targetName = '—';
@@ -2575,55 +2568,26 @@ function updateCockpitHUD(dt) {
     }
   }
 
-  // ── 3D Windshield Waypoint Projection ──
-  const wpEl = document.getElementById('ckp-waypoint');
-  if (wpEl) {
-    if (targetWorldPos && cockpitCamera) {
-      const camPos = new THREE.Vector3();
-      cockpitCamera.getWorldPosition(camPos);
-      const camFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cockpitCamera.getWorldQuaternion(new THREE.Quaternion()));
-      const toTarget = new THREE.Vector3().subVectors(targetWorldPos, camPos);
-      const dot = camFwd.dot(toTarget);
+  // ── Flight Heading & Alignment Status (Top Dashboard) ──
+  if (statusEl) {
+    if (targetWorldPos && (state.cockpitTarget || state.selectedPOI)) {
+      statusEl.classList.add('active');
+      const shipFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion);
+      const toTarget = new THREE.Vector3().subVectors(targetWorldPos, ship.position).normalize();
+      const alignDot = shipFwd.dot(toTarget); // 1.0 when facing directly towards target
 
-      if (dot > 0) {
-        const proj = targetWorldPos.clone().project(cockpitCamera);
-        if (proj.z < 1.0) {
-          const sx = (proj.x * 0.5 + 0.5) * window.innerWidth;
-          const sy = (-proj.y * 0.5 + 0.5) * window.innerHeight;
+      const isAligned = alignDot > 0.985; // within ~10 degrees
 
-          if (sx >= -50 && sx <= window.innerWidth + 50 && sy >= -50 && sy <= window.innerHeight + 50) {
-            wpEl.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%)`;
-            wpEl.classList.add('visible');
-
-            const wpName = document.getElementById('ckp-wp-name');
-            const wpDist = document.getElementById('ckp-wp-dist');
-            const wpStatus = document.getElementById('ckp-wp-status');
-            if (wpName) wpName.textContent = targetName;
-            if (wpDist) wpDist.textContent = targetDistStr;
-
-            const scx = window.innerWidth / 2;
-            const scy = window.innerHeight / 2;
-            const distFromCenter = Math.hypot(sx - scx, sy - scy);
-            const isAligned = distFromCenter < 65;
-
-            if (isAligned) {
-              wpEl.classList.add('aligned');
-              if (wpStatus) wpStatus.textContent = state.cockpitAutoNav ? 'CAP VERROUILLÉ [AUTOPILOT ACTIF]' : 'ALIGNÉ [N = AUTOPILOT]';
-            } else {
-              wpEl.classList.remove('aligned');
-              if (wpStatus) wpStatus.textContent = state.cockpitAutoNav ? 'ALIGNEMENT EN COURS...' : 'ALIGNER CAP [N = AUTOPILOT]';
-            }
-          } else {
-            wpEl.classList.remove('visible');
-          }
-        } else {
-          wpEl.classList.remove('visible');
-        }
+      if (isAligned) {
+        statusEl.classList.add('aligned');
+        statusEl.textContent = state.cockpitAutoNav ? 'CAP VERROUILLÉ [AUTOPILOT ACTIF]' : 'ALIGNÉ [N = AUTOPILOT]';
       } else {
-        wpEl.classList.remove('visible');
+        statusEl.classList.remove('aligned');
+        statusEl.textContent = state.cockpitAutoNav ? 'ALIGNEMENT EN COURS...' : 'ALIGNER AU CAP';
       }
     } else {
-      wpEl.classList.remove('visible');
+      statusEl.classList.remove('active', 'aligned');
+      statusEl.textContent = '';
     }
   }
 
@@ -2942,24 +2906,24 @@ function drawRadar(dt) {
       py = cy + Math.sin(ang) * (maxR - 7);
       radarCtx.save();
       radarCtx.fillStyle = obj.color;
-      radarCtx.globalAlpha = 0.25;
+      radarCtx.globalAlpha = 0.18;
       radarCtx.beginPath();
-      radarCtx.arc(px, py, 1.4, 0, Math.PI * 2);
+      radarCtx.arc(px, py, 1.2, 0, Math.PI * 2);
       radarCtx.fill();
       radarCtx.restore();
     } else {
       // Crisp subtle dot
       radarCtx.save();
       radarCtx.fillStyle = obj.color;
-      radarCtx.globalAlpha = 0.55;
+      radarCtx.globalAlpha = 0.42;
       radarCtx.beginPath();
-      radarCtx.arc(px, py, 2.0, 0, Math.PI * 2);
+      radarCtx.arc(px, py, 1.8, 0, Math.PI * 2);
       radarCtx.fill();
       radarCtx.restore();
     }
   }
 
-  // ── PASS 2: Active Navigation Target (High-Priority Overlay) ──
+  // ── PASS 2: Active Navigation Target (Clean Visual Cues Only, No Text) ──
   if (targetObj) {
     const rel = new THREE.Vector3().subVectors(targetObj.pos, ship.position);
     const rx = rel.dot(shipRight);
@@ -2968,34 +2932,32 @@ function drawRadar(dt) {
     let py = cy + ry * sf;
     const dc = Math.hypot(px - cx, py - cy);
     const isOutside = dc > (maxR - 8);
-    const dLen = rel.length();
-    const distStr = isFTL ? formatDistance(dLen) : (dLen / AU).toFixed(1) + ' AU';
     const nowSec = performance.now() * 0.001;
 
     if (!isOutside) {
-      // 1. Expanding sonar radar ping wave
+      // 1. Soft expanding sonar ping ripple (non-neon ice blue)
       const pingProg = (nowSec * 0.75) % 1.0;
-      const pingR = 5 + pingProg * 22;
+      const pingR = 5 + pingProg * 18;
       radarCtx.save();
-      radarCtx.strokeStyle = 'rgba(0, 229, 255, ' + ((1 - pingProg) * 0.75) + ')';
-      radarCtx.lineWidth = 1.4;
+      radarCtx.strokeStyle = 'rgba(142, 197, 252, ' + ((1 - pingProg) * 0.45) + ')';
+      radarCtx.lineWidth = 1.0;
       radarCtx.beginPath();
       radarCtx.arc(px, py, pingR, 0, Math.PI * 2);
       radarCtx.stroke();
       radarCtx.restore();
 
-      // 2. High-contrast pulsing target diamond and brackets
-      const pulseSz = 6.5 + Math.sin(nowSec * 7) * 1.5;
+      // 2. Soft pulsing target diamond & fine brackets
+      const pulseSz = 5.2 + Math.sin(nowSec * 5.5) * 0.8;
       radarCtx.save();
       radarCtx.translate(px, py);
-      radarCtx.shadowColor = '#00ffff';
-      radarCtx.shadowBlur = 10;
+      radarCtx.shadowColor = 'rgba(142, 197, 252, 0.35)';
+      radarCtx.shadowBlur = 4;
       
-      // Glowing brackets
-      radarCtx.strokeStyle = '#00ffff';
-      radarCtx.lineWidth = 1.6;
-      const bD = pulseSz + 4;
-      const bA = 4;
+      // Discrete brackets
+      radarCtx.strokeStyle = '#8ec5fc';
+      radarCtx.lineWidth = 1.2;
+      const bD = pulseSz + 3;
+      const bA = 3;
       radarCtx.beginPath();
       radarCtx.moveTo(-bD, -bD + bA); radarCtx.lineTo(-bD, -bD); radarCtx.lineTo(-bD + bA, -bD);
       radarCtx.moveTo(bD - bA, -bD); radarCtx.lineTo(bD, -bD); radarCtx.lineTo(bD, -bD + bA);
@@ -3003,40 +2965,10 @@ function drawRadar(dt) {
       radarCtx.moveTo(bD - bA, bD); radarCtx.lineTo(bD, bD); radarCtx.lineTo(bD, bD - bA);
       radarCtx.stroke();
 
-      // Center gold diamond
+      // Center soft gold diamond
       radarCtx.rotate(Math.PI / 4);
-      radarCtx.fillStyle = '#ffd700';
+      radarCtx.fillStyle = '#dfba6a';
       radarCtx.fillRect(-pulseSz / 2, -pulseSz / 2, pulseSz, pulseSz);
-      radarCtx.restore();
-
-      // 3. Prominent, unclipped label badge
-      const labelText = targetObj.name.toUpperCase() + ' • ' + distStr;
-      radarCtx.save();
-      radarCtx.font = 'bold 8.5px "Courier New", monospace';
-      const m = radarCtx.measureText(labelText);
-      const pillW = m.width + 12;
-      const pillH = 16;
-      let lx = px + 14;
-      let ly = py - pillH / 2;
-      if (lx + pillW > w - 10) lx = px - pillW - 14;
-      if (ly < 8) ly = 8;
-      if (ly + pillH > h - 8) ly = h - pillH - 8;
-
-      radarCtx.fillStyle = 'rgba(4, 14, 28, 0.92)';
-      radarCtx.strokeStyle = '#00ffff';
-      radarCtx.lineWidth = 1;
-      radarCtx.beginPath();
-      if (radarCtx.roundRect) {
-        radarCtx.roundRect(lx, ly, pillW, pillH, 3);
-      } else {
-        radarCtx.rect(lx, ly, pillW, pillH);
-      }
-      radarCtx.fill();
-      radarCtx.stroke();
-
-      radarCtx.fillStyle = '#ffffff';
-      radarCtx.textBaseline = 'middle';
-      radarCtx.fillText(labelText, lx + 6, ly + pillH / 2);
       radarCtx.restore();
 
     } else {
@@ -3046,70 +2978,41 @@ function drawRadar(dt) {
       px = cx + Math.cos(ang) * edgeR;
       py = cy + Math.sin(ang) * edgeR;
 
-      // Glowing radar rim arc pointing toward target
+      // Soft radar rim arc pointing toward target
       radarCtx.save();
-      radarCtx.strokeStyle = 'rgba(255, 215, 0, 0.65)';
-      radarCtx.lineWidth = 3.5;
+      radarCtx.strokeStyle = 'rgba(223, 186, 106, 0.45)';
+      radarCtx.lineWidth = 2.2;
       radarCtx.beginPath();
-      radarCtx.arc(cx, cy, maxR - 1, ang - 0.22, ang + 0.22);
+      radarCtx.arc(cx, cy, maxR - 1, ang - 0.2, ang + 0.2);
       radarCtx.stroke();
       radarCtx.restore();
 
-      // Prominent Nav Chevron
+      // Soft Nav Chevron
       radarCtx.save();
       radarCtx.translate(px, py);
       radarCtx.rotate(ang);
-      radarCtx.shadowColor = '#ffd700';
-      radarCtx.shadowBlur = 10;
-      radarCtx.fillStyle = '#ffd700';
+      radarCtx.shadowColor = 'rgba(223, 186, 106, 0.35)';
+      radarCtx.shadowBlur = 4;
+      radarCtx.fillStyle = '#dfba6a';
 
       radarCtx.beginPath();
-      radarCtx.moveTo(7, 0);
-      radarCtx.lineTo(-5, -5.5);
-      radarCtx.lineTo(-2.5, 0);
-      radarCtx.lineTo(-5, 5.5);
+      radarCtx.moveTo(6, 0);
+      radarCtx.lineTo(-4, -4.5);
+      radarCtx.lineTo(-2, 0);
+      radarCtx.lineTo(-4, 4.5);
       radarCtx.closePath();
       radarCtx.fill();
 
       // Pulsing secondary chevron
-      const pChev = (nowSec * 2.2) % 1.0;
-      radarCtx.globalAlpha = 1 - pChev;
+      const pChev = (nowSec * 2.0) % 1.0;
+      radarCtx.globalAlpha = 0.55 * (1 - pChev);
       radarCtx.beginPath();
-      radarCtx.moveTo(7 + pChev * 5, 0);
-      radarCtx.lineTo(-5 + pChev * 5, -5.5);
-      radarCtx.lineTo(-2.5 + pChev * 5, 0);
-      radarCtx.lineTo(-5 + pChev * 5, 5.5);
+      radarCtx.moveTo(6 + pChev * 4.5, 0);
+      radarCtx.lineTo(-4 + pChev * 4.5, -4.5);
+      radarCtx.lineTo(-2 + pChev * 4.5, 0);
+      radarCtx.lineTo(-4 + pChev * 4.5, 4.5);
       radarCtx.closePath();
       radarCtx.fill();
-      radarCtx.restore();
-
-      // Edge tag pill
-      const edgeText = 'CAP: ' + targetObj.name.toUpperCase() + ' (' + distStr + ')';
-      radarCtx.save();
-      radarCtx.font = 'bold 8px "Courier New", monospace';
-      const em = radarCtx.measureText(edgeText);
-      const epW = em.width + 10;
-      const epH = 15;
-      let ex = px - Math.cos(ang) * 24 - epW / 2;
-      let ey = py - Math.sin(ang) * 24 - epH / 2;
-      ex = Math.max(12, Math.min(w - epW - 12, ex));
-      ey = Math.max(12, Math.min(h - epH - 12, ey));
-
-      radarCtx.fillStyle = 'rgba(5, 14, 28, 0.92)';
-      radarCtx.strokeStyle = '#ffd700';
-      radarCtx.lineWidth = 1;
-      radarCtx.beginPath();
-      if (radarCtx.roundRect) {
-        radarCtx.roundRect(ex, ey, epW, epH, 3);
-      } else {
-        radarCtx.rect(ex, ey, epW, epH);
-      }
-      radarCtx.fill();
-      radarCtx.stroke();
-
-      radarCtx.fillStyle = '#ffd700';
-      radarCtx.textBaseline = 'middle';
-      radarCtx.fillText(edgeText, ex + 5, ey + epH / 2);
       radarCtx.restore();
     }
   }
