@@ -2352,6 +2352,11 @@ function updateShip(dt) {
     ship.stateUpdateTimer = 0;
   }
 
+  // Vérification de proximité des vortex de trous de ver (Étape 3.1)
+  if (typeof checkWormholeProximity === 'function') {
+    checkWormholeProximity(dt);
+  }
+
   updateCockpitCamera(dt);
 }
 

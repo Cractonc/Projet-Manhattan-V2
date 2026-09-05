@@ -534,6 +534,21 @@ canvas {
   z-index: 65 !important;
 }
 
+.label-3d.wormhole-marker-label {
+  color: #00ffff !important;
+  font-size: 0.58rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.16em !important;
+  border: 1px solid rgba(0, 255, 255, 0.45) !important;
+  background: rgba(2, 16, 28, 0.85) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.8) !important;
+  padding: 2px 7px !important;
+  border-radius: 3px !important;
+  z-index: 60 !important;
+}
+
+
 
 
 /* ── Cinematic mode indicator ── */

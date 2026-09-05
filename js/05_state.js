@@ -63,6 +63,7 @@ var state = {
   shipHeat: 0,              // Étape 2.4: Minage thermique (0-100)
   laserCooldown: 0,         // Étape 2.4: Cooldown en secondes (si > 0, tir impossible)
   laserHideTimer: 0,        // Décompte de 5s pour masquer la jauge une fois rechargée
+  wormholeCooldown: 0,      // Étape 3.1: Cooldown de téléportation par trou de ver (en secondes)
   // Player state
   player: {
     credits: 0,

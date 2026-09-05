@@ -836,3 +836,82 @@ function getCodexEntry(poiId) {
   };
 }
 
+// ============================================================
+// WORMHOLE NETWORK DATA (Étape 3.1)
+// 4 paires réversibles (8 vortex de saut instantané)
+// ============================================================
+var WORMHOLES = [
+  // ── Paire 1 : Orion / Bras local <-> Cœur de la Galaxie (Sagittarius A*) ──
+  {
+    id: "wh_orion_core",
+    name: "Passage d'Orion vers le Noyau",
+    pos: { x: 235000, y: 800, z: -30000 },
+    targetPos: { x: 25000, y: -500, z: 15000 },
+    targetName: "Secteur Sagittarius A*",
+    color: 0x00ffff
+  },
+  {
+    id: "wh_core_orion",
+    name: "Passage du Noyau vers Orion",
+    pos: { x: 25000, y: -500, z: 15000 },
+    targetPos: { x: 235000, y: 800, z: -30000 },
+    targetName: "Secteur Bras d'Orion",
+    color: 0x00ffff
+  },
+
+  // ── Paire 2 : Bras du Cygne <-> Bras de la Carène ──
+  {
+    id: "wh_cygnus_carina",
+    name: "Passage du Cygne vers la Carène",
+    pos: { x: -220000, y: 1500, z: -150000 },
+    targetPos: { x: 110000, y: -800, z: 130000 },
+    targetName: "Secteur de la Carène",
+    color: 0xcc44ff
+  },
+  {
+    id: "wh_carina_cygnus",
+    name: "Passage de la Carène vers le Cygne",
+    pos: { x: 110000, y: -800, z: 130000 },
+    targetPos: { x: -220000, y: 1500, z: -150000 },
+    targetName: "Secteur Bras du Cygne",
+    color: 0xcc44ff
+  },
+
+  // ── Paire 3 : Périmètre Persée Nord <-> Sagittaire B2 Intérieur ──
+  {
+    id: "wh_perseus_sgr",
+    name: "Passage de Persée vers Sagittaire",
+    pos: { x: -280000, y: -1200, z: 180000 },
+    targetPos: { x: 40000, y: 800, z: -120000 },
+    targetName: "Secteur Sagittaire Profond",
+    color: 0x00ffaa
+  },
+  {
+    id: "wh_sgr_perseus",
+    name: "Passage de Sagittaire vers Persée",
+    pos: { x: 40000, y: 800, z: -120000 },
+    targetPos: { x: -280000, y: -1200, z: 180000 },
+    targetName: "Périmètre Bras de Persée",
+    color: 0x00ffaa
+  },
+
+  // ── Paire 4 : Bordure Australe Éloignée <-> Amas d'Hercule ──
+  {
+    id: "wh_austral_hercules",
+    name: "Passage Austral vers Hercule",
+    pos: { x: 180000, y: -2000, z: 280000 },
+    targetPos: { x: -160000, y: 2200, z: -260000 },
+    targetName: "Secteur de l'Amas d'Hercule",
+    color: 0xffaa22
+  },
+  {
+    id: "wh_hercules_austral",
+    name: "Passage d'Hercule vers la Bordure Australe",
+    pos: { x: -160000, y: 2200, z: -260000 },
+    targetPos: { x: 180000, y: -2000, z: 280000 },
+    targetName: "Bordure Australe Galactique",
+    color: 0xffaa22
+  }
+];
+
+

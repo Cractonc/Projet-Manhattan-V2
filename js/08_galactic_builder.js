@@ -19,6 +19,9 @@ function createGalacticScene() {
   // POIs
   createGalacticPOIs();
 
+  // Wormholes (Étape 3.1)
+  createWormholes();
+
   // Vessel Manhattan Map Representation
   createVesselMapModel();
 }
@@ -549,6 +552,216 @@ function getParticleTexture() {
   return _particleTex;
 }
 
+// ============================================================
+// WORMHOLES BUILDER & ANIMATOR (Étape 3.1)
+// Optimisé pour Intel UHD 620 : tore biseauté, contre-rotation
+// gyroscopique, disque additif et bascule LOD Sprite > 80 000
+// ============================================================
+window.wormholeMeshes = [];
+
+function createWormholes() {
+  if (window.wormholeMeshes && window.wormholeMeshes.length > 0) return;
+  window.wormholeMeshes = [];
+  if (typeof WORMHOLES === 'undefined' || !Array.isArray(WORMHOLES)) return;
+
+  const ptex = getParticleTexture();
+
+  for (let i = 0; i < WORMHOLES.length; i++) {
+    const wh = WORMHOLES[i];
+    const group = new THREE.Group();
+    group.position.set(wh.pos.x, wh.pos.y, wh.pos.z);
+    group.name = 'wormhole_' + wh.id;
+
+    const lod = new THREE.LOD();
+    group.add(lod);
+    if (typeof galacticLODs !== 'undefined') {
+      galacticLODs.push(lod);
+    }
+
+    // ── NIVEAU 0 : Géométrie 3D détaillée (Distance <= 80 000) ──
+    const level0 = new THREE.Group();
+
+    // 1. Tore principal fin (châssis gravitationnel externe)
+    const outerGeo = new THREE.TorusGeometry(1200, 26, 8, 48);
+    const outerMat = new THREE.MeshBasicMaterial({
+      color: wh.color,
+      transparent: true,
+      opacity: 0.88,
+      wireframe: false
+    });
+    const outerMesh = new THREE.Mesh(outerGeo, outerMat);
+    level0.add(outerMesh);
+
+    // 2. Tore intérieur incliné en contre-rotation
+    const innerGeo = new THREE.TorusGeometry(820, 16, 8, 36);
+    const innerMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.85
+    });
+    const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+    innerMesh.rotation.x = Math.PI * 0.35;
+    level0.add(innerMesh);
+
+    // 3. Disque de vortex semi-transparent (mélange additif)
+    const discGeo = new THREE.RingGeometry(60, 800, 36);
+    const discMat = new THREE.MeshBasicMaterial({
+      color: wh.color,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const discMesh = new THREE.Mesh(discGeo, discMat);
+    level0.add(discMesh);
+
+    // 4. Cœur singulier lumineux
+    const coreGeo = new THREE.SphereGeometry(180, 16, 16);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    level0.add(coreMesh);
+
+    // 5. Halo lumineux de proximité
+    const haloMat = new THREE.SpriteMaterial({
+      map: ptex,
+      color: wh.color,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const glowSprite = new THREE.Sprite(haloMat);
+    glowSprite.scale.set(3200, 3200, 1);
+    level0.add(glowSprite);
+
+    lod.addLevel(level0, 0);
+
+    // ── NIVEAU 1 : Sprite 2D lointain (Distance > 80 000 unités) ──
+    const farMat = new THREE.SpriteMaterial({
+      map: ptex,
+      color: wh.color,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const farSprite = new THREE.Sprite(farMat);
+    farSprite.scale.set(7000, 7000, 1);
+    lod.addLevel(farSprite, 80000);
+
+    // Sphère invisible de clic pour raycaster et sélection
+    const clickGeo = new THREE.SphereGeometry(1600, 8, 8);
+    const clickMat = new THREE.MeshBasicMaterial({ visible: false });
+    const clickMesh = new THREE.Mesh(clickGeo, clickMat);
+    clickMesh.userData = { poiId: wh.id, isWormhole: true, wormholeData: wh };
+    group.add(clickMesh);
+    if (typeof galacticClickables !== 'undefined') {
+      galacticClickables.push(clickMesh);
+    }
+
+    // Label 3D HTML
+    let labelEl = null;
+    if (typeof makeLabel === 'function') {
+      labelEl = makeLabel(wh.name, 'poi-label wormhole-marker-label');
+      if (typeof galacticLabelEls !== 'undefined') {
+        galacticLabelEls.push({
+          el: labelEl,
+          group: group,
+          data: {
+            id: wh.id,
+            name: wh.name,
+            scale: 2500,
+            tier: 2
+          }
+        });
+      }
+    }
+
+    galacticScene.add(group);
+
+    const whMeshObj = {
+      id: wh.id,
+      group: group,
+      lod: lod,
+      outerMesh: outerMesh,
+      innerMesh: innerMesh,
+      discMesh: discMesh,
+      coreMesh: coreMesh,
+      glowSprite: glowSprite,
+      farSprite: farSprite,
+      clickMesh: clickMesh,
+      label: labelEl,
+      data: wh
+    };
+    window.wormholeMeshes.push(whMeshObj);
+
+    // Intégration transparente avec le catalogue POI galactique
+    if (typeof galacticPOIObjects !== 'undefined') {
+      galacticPOIObjects[wh.id] = {
+        group: group,
+        lod: lod,
+        sprite: farSprite,
+        dimmedSprite: null,
+        clickMesh: clickMesh,
+        label: labelEl,
+        data: {
+          id: wh.id,
+          name: wh.name,
+          type: "Trou de Ver (Wormhole)",
+          scale: 2500,
+          tier: 2,
+          pos: [wh.pos.x, wh.pos.y, wh.pos.z],
+          dotColor: '#' + new THREE.Color(wh.color).getHexString(),
+          info: {
+            'Type': "Pont d'Einstein-Rosen",
+            'Destination': wh.targetName,
+            'Statut': "Vortex Actif",
+            'Déclenchement': "Approche < 1 400 AL"
+          }
+        },
+        detail: level0,
+        extras: null
+      };
+    }
+  }
+}
+
+function updateWormholes(dt, now) {
+  if (!window.wormholeMeshes || window.wormholeMeshes.length === 0) return;
+
+  for (let i = 0; i < window.wormholeMeshes.length; i++) {
+    const wm = window.wormholeMeshes[i];
+    if (!wm || !wm.lod) continue;
+
+    const curLevel = wm.lod.getCurrentLevel();
+    if (curLevel === 0) {
+      // Rotation lente du tore externe
+      wm.outerMesh.rotation.z += dt * 0.45;
+      wm.outerMesh.rotation.y += dt * 0.25;
+
+      // Contre-rotation du tore gyroscopique intérieur
+      wm.innerMesh.rotation.z -= dt * 0.70;
+      wm.innerMesh.rotation.x += dt * 0.35;
+
+      // Rotation et pulsation du disque vortex et du cœur
+      wm.discMesh.rotation.z += dt * 0.90;
+      const pulse = 1.0 + Math.sin(now * 3.5 + i * 1.5) * 0.12;
+      wm.discMesh.scale.set(pulse, pulse, 1);
+      wm.coreMesh.scale.set(pulse, pulse, pulse);
+    } else {
+      // Scintillement du sprite de loin
+      const farPulse = 1.0 + Math.sin(now * 2.5 + i * 1.2) * 0.10;
+      wm.farSprite.scale.set(7000 * farPulse, 7000 * farPulse, 1);
+    }
+  }
+}
+
 // ── Black Hole extras ──
 function createBlackHoleExtras(s, parent, poiId) {
   const isSgrA = (poiId === 'sgr-a');
@@ -999,7 +1212,10 @@ function updateGalacticPOIs(dt, activeCam) {
     }
   }
 
-  // 3. Mise à jour de la représentation cartographique du Manhattan
+  // 3. Mise à jour des vortex / trous de ver (Étape 3.1)
+  updateWormholes(dt, now);
+
+  // 4. Mise à jour de la représentation cartographique du Manhattan
   updateVesselMap(dt, now);
 }
 

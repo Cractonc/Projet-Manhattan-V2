@@ -17,6 +17,11 @@ function animate() {
   // Update warp
   if (state.warp.active) updateWarp(dt);
 
+  // Décrémentation du cooldown des trous de ver à chaque frame (Étape 3.1)
+  if (state.wormholeCooldown > 0) {
+    state.wormholeCooldown = Math.max(0, state.wormholeCooldown - dt);
+  }
+
   // Quest & POI discovery check
   checkQuestAndPOIDiscovery(dt);
 
@@ -329,6 +334,12 @@ function checkQuestAndPOIDiscovery(dt) {
 
   // Les vérifications de distance galactique s'appliquent en échelle galactique
   if (state.scaleLevel !== 'GALACTIC') return;
+
+  // Détection de proximité des trous de ver galactiques (Étape 3.1)
+  if (typeof checkWormholeProximity === 'function') {
+    checkWormholeProximity(dt);
+  }
+
   if (!state.player) return;
   if (!Array.isArray(state.player.discoveredPOIs)) state.player.discoveredPOIs = [];
 
@@ -1101,6 +1112,10 @@ async function init() {
   await nextFrame();
   createGalacticScene();
   createBackgroundGalaxies();
+
+  setLoadProgress(78, 'BUILDING WORMHOLE NETWORK');
+  await nextFrame();
+  createWormholes();
 
   setLoadProgress(85, 'MAPPING GALACTIC OBJECTS');
   await nextFrame();
