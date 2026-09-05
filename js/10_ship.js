@@ -195,6 +195,268 @@ function initRadar() {
   if (c) radarCtx = c.getContext('2d');
 }
 
+// ── 2D Galaxy Wall Map State & Renderers ──
+var _wallMapCanvas = null;
+var _wallMapBaseCanvas = null;
+var _wallMapTex = null;
+
+function drawMapLabelPill(ctx, text, x, y, options) {
+  options = options || {};
+  ctx.save();
+  ctx.font = options.font || 'bold 11px "Courier New", monospace';
+  const metrics = ctx.measureText(text);
+  const padX = options.padX || 8;
+  const w = metrics.width + padX * 2;
+  const h = 18;
+  const clampX = Math.max(10, Math.min(1024 - w - 10, x));
+  const clampY = Math.max(16, Math.min(1024 - 16, y));
+
+  ctx.fillStyle = options.bg || 'rgba(5, 15, 28, 0.85)';
+  ctx.strokeStyle = options.border || 'rgba(0, 200, 255, 0.5)';
+  ctx.lineWidth = options.borderWidth || 1;
+
+  const r = 4;
+  ctx.beginPath();
+  ctx.moveTo(clampX + r, clampY - h / 2);
+  ctx.lineTo(clampX + w - r, clampY - h / 2);
+  ctx.quadraticCurveTo(clampX + w, clampY - h / 2, clampX + w, clampY - h / 2 + r);
+  ctx.lineTo(clampX + w, clampY + h / 2 - r);
+  ctx.quadraticCurveTo(clampX + w, clampY + h / 2, clampX + w - r, clampY + h / 2);
+  ctx.lineTo(clampX + r, clampY + h / 2);
+  ctx.quadraticCurveTo(clampX, clampY + h / 2, clampX, clampY + h / 2 - r);
+  ctx.lineTo(clampX, clampY - h / 2 + r);
+  ctx.quadraticCurveTo(clampX, clampY - h / 2, clampX + r, clampY - h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = options.color || '#ffffff';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, clampX + padX, clampY);
+  ctx.restore();
+}
+
+function drawTargetBrackets(ctx, x, y, size, color) {
+  size = size || 11;
+  color = color || '#00ffff';
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  const d = size;
+  const arm = 4;
+
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(x - d, y - d + arm);
+  ctx.lineTo(x - d, y - d);
+  ctx.lineTo(x - d + arm, y - d);
+  ctx.stroke();
+
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(x + d - arm, y - d);
+  ctx.lineTo(x + d, y - d);
+  ctx.lineTo(x + d, y - d + arm);
+  ctx.stroke();
+
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(x - d, y + d - arm);
+  ctx.lineTo(x - d, y + d);
+  ctx.lineTo(x - d + arm, y + d);
+  ctx.stroke();
+
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(x + d - arm, y + d);
+  ctx.lineTo(x + d, y + d);
+  ctx.lineTo(x + d, y + d - arm);
+  ctx.stroke();
+
+  // Center pip
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function render2DGalaxyMap(targetPoiId) {
+  if (!_wallMapCanvas || !_wallMapBaseCanvas || !_wallMapTex) return;
+  const ctx = _wallMapCanvas.getContext('2d');
+  if (!ctx) return;
+
+  // Restore base background with spiral arms and grid
+  ctx.clearRect(0, 0, 1024, 1024);
+  ctx.drawImage(_wallMapBaseCanvas, 0, 0);
+
+  if (typeof GALACTIC_POI === 'undefined') {
+    _wallMapTex.needsUpdate = true;
+    return;
+  }
+
+  // 1. Draw standard POIs as elegant glowing LED pips (NO overlapping text!)
+  for (const poi of GALACTIC_POI) {
+    if (poi.id === 'sol' || poi.id === 'sgr-a' || poi.id === targetPoiId) continue;
+    const px = 512 + (poi.pos[0] / 550000) * 512;
+    const py = 512 - (poi.pos[2] / 550000) * 512;
+    const color = poi.dotColor || '#4080ff';
+
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(px, py, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 2. Draw Target Flight Vector & Highlight (if target exists)
+  let targetPoi = null;
+  if (targetPoiId) {
+    targetPoi = GALACTIC_POI.find(p => p.id === targetPoiId);
+  }
+
+  if (targetPoi) {
+    const tpx = 512 + (targetPoi.pos[0] / 550000) * 512;
+    const tpy = 512 - (targetPoi.pos[2] / 550000) * 512;
+
+    // Player position on canvas
+    let playerGx = 260000, playerGz = 0;
+    if (typeof state !== 'undefined' && typeof ship !== 'undefined') {
+      if (state.scaleLevel === 'GALACTIC' && ship.position.length() >= 1000) {
+        playerGx = ship.position.x;
+        playerGz = ship.position.z;
+      } else {
+        let sysId = state.currentSystem || 'sol';
+        if (sysId === 'proxima' || sysId === 'proxima-centauri') sysId = 'alpha-centauri';
+        const pd = GALACTIC_POI.find(p => p.id === sysId);
+        if (pd && pd.pos) {
+          playerGx = pd.pos[0];
+          playerGz = pd.pos[2];
+        }
+      }
+    }
+    const spx = 512 + (playerGx / 550000) * 512;
+    const spy = 512 - (playerGz / 550000) * 512;
+
+    // Tactical flight vector line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+    ctx.shadowBlur = 8;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(spx, spy);
+    ctx.lineTo(tpx, tpy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Target reticle
+    drawTargetBrackets(ctx, tpx, tpy, 12, '#00ffff');
+
+    // Target label pill
+    if (targetPoi.id !== 'sol' && targetPoi.id !== 'sgr-a') {
+      drawMapLabelPill(ctx, `🎯 ${targetPoi.name.toUpperCase()} [CAP]`, tpx + 16, tpy, {
+        color: '#00ffff',
+        border: 'rgba(0, 255, 255, 0.85)',
+        bg: 'rgba(2, 18, 32, 0.92)',
+        font: 'bold 11px "Courier New", monospace'
+      });
+    }
+  }
+
+  // 3. Permanent Landmark 1: SOL / SYSTÈME SOLAIRE
+  const solPoi = GALACTIC_POI.find(p => p.id === 'sol');
+  if (solPoi) {
+    const solPx = 512 + (solPoi.pos[0] / 550000) * 512;
+    const solPy = 512 - (solPoi.pos[2] / 550000) * 512;
+
+    ctx.save();
+    ctx.shadowColor = '#ffbb00';
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = 'rgba(255, 187, 0, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(solPx, solPy, 6.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(solPx, solPy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffaa00';
+    ctx.beginPath();
+    ctx.arc(solPx, solPy, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    drawMapLabelPill(ctx, 'SOL (TERRE)', solPx + 12, solPy - 6, {
+      color: '#ffcc33',
+      border: 'rgba(255, 170, 0, 0.7)',
+      bg: 'rgba(16, 12, 4, 0.90)',
+      font: 'bold 11px "Courier New", monospace'
+    });
+
+    if (targetPoi && targetPoi.id === 'sol') {
+      drawTargetBrackets(ctx, solPx, solPy, 14, '#ffcc00');
+    }
+  }
+
+  // 4. Permanent Landmark 2: SAGITTARIUS A* (Galactic Center)
+  const sgrPoi = GALACTIC_POI.find(p => p.id === 'sgr-a');
+  if (sgrPoi) {
+    const sgrPx = 512 + (sgrPoi.pos[0] / 550000) * 512;
+    const sgrPy = 512 - (sgrPoi.pos[2] / 550000) * 512;
+
+    ctx.save();
+    ctx.shadowColor = '#c080ff';
+    ctx.shadowBlur = 14;
+    ctx.strokeStyle = 'rgba(190, 120, 255, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(sgrPx, sgrPy, 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#100520';
+    ctx.beginPath();
+    ctx.arc(sgrPx, sgrPy, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sgrPx, sgrPy, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    drawMapLabelPill(ctx, 'SAGITTARIUS A* (CENTRE)', sgrPx + 14, sgrPy - 6, {
+      color: '#d8b0ff',
+      border: 'rgba(180, 120, 255, 0.7)',
+      bg: 'rgba(18, 6, 28, 0.90)',
+      font: 'bold 11px "Courier New", monospace'
+    });
+
+    if (targetPoi && targetPoi.id === 'sgr-a') {
+      drawTargetBrackets(ctx, sgrPx, sgrPy, 15, '#c080ff');
+    }
+  }
+
+  _wallMapTex.needsUpdate = true;
+}
+window.render2DGalaxyMap = render2DGalaxyMap;
+
 function createShipInterior() {
   shipInterior = new THREE.Group();
   cockpitGroup.add(shipInterior);
@@ -500,51 +762,70 @@ function createShipInterior() {
   bx(1.1, 1.1, 0.02, mapPanelMat, 1.335, 0.35, 1.02); // Dark backing panel
   bx(1.14, 1.14, 0.01, trimMat, 1.335, 0.35, 1.01); // White glowing frame
 
-  // Beautiful Canvas Texture for the Galaxy
-  const cmapCanvas = document.createElement('canvas');
-  cmapCanvas.width = 1024; cmapCanvas.height = 1024;
-  const cctx = cmapCanvas.getContext('2d');
-  // bg and grid
-  cctx.fillStyle = '#010306'; cctx.fillRect(0, 0, 1024, 1024);
-  cctx.strokeStyle = '#051020'; cctx.lineWidth = 2;
+  // ── 2D Galaxy Map Canvas Architecture ──
+  // Pre-render Galaxy Background & Spiral Arms to Base Canvas once
+  const baseMapCanvas = document.createElement('canvas');
+  baseMapCanvas.width = 1024;
+  baseMapCanvas.height = 1024;
+  const bctx = baseMapCanvas.getContext('2d');
+
+  // Background and sci-fi tactical grid
+  bctx.fillStyle = '#010307';
+  bctx.fillRect(0, 0, 1024, 1024);
+
+  // Outer coordinate boundary ring
+  bctx.strokeStyle = 'rgba(15, 45, 80, 0.4)';
+  bctx.lineWidth = 1.5;
+  bctx.beginPath();
+  bctx.arc(512, 512, 490, 0, Math.PI * 2);
+  bctx.stroke();
+
+  // Grid lines
+  bctx.strokeStyle = '#051020';
+  bctx.lineWidth = 1.5;
   for (let i = 0; i <= 10; i++) {
-    cctx.beginPath(); cctx.moveTo(i * 102.4, 0); cctx.lineTo(i * 102.4, 1024); cctx.stroke();
-    cctx.beginPath(); cctx.moveTo(0, i * 102.4); cctx.lineTo(1024, i * 102.4); cctx.stroke();
+    bctx.beginPath(); bctx.moveTo(i * 102.4, 0); bctx.lineTo(i * 102.4, 1024); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(0, i * 102.4); bctx.lineTo(1024, i * 102.4); bctx.stroke();
   }
 
-  // procedural spiral arms
-  cctx.globalCompositeOperation = 'lighter';
-  for (let a = 0; a < 20000; a++) {
+  // Central Galactic Core Glow (Radial gradient)
+  const coreGrad = bctx.createRadialGradient(512, 512, 0, 512, 512, 160);
+  coreGrad.addColorStop(0, 'rgba(255, 235, 200, 0.22)');
+  coreGrad.addColorStop(0.3, 'rgba(180, 210, 255, 0.12)');
+  coreGrad.addColorStop(0.7, 'rgba(60, 120, 220, 0.05)');
+  coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  bctx.fillStyle = coreGrad;
+  bctx.beginPath();
+  bctx.arc(512, 512, 160, 0, Math.PI * 2);
+  bctx.fill();
+
+  // Procedural spiral arms (25 000 stars)
+  bctx.globalCompositeOperation = 'lighter';
+  for (let a = 0; a < 25000; a++) {
     const arm = Math.floor(Math.random() * 4);
-    const r = Math.random() * 450;
+    const r = Math.random() * 455;
     const theta = (r * 0.012) + (arm * Math.PI / 2) + ((Math.random() - 0.5) * 0.5);
     const px = 512 + Math.cos(theta) * r;
     const py = 512 + Math.sin(theta) * r;
-    cctx.fillStyle = (Math.random() > 0.5) ? 'rgba(70, 130, 255, 0.3)' : 'rgba(200, 220, 255, 0.4)';
-    cctx.fillRect(px, py, 2, 2);
+    bctx.fillStyle = (Math.random() > 0.6) ? 'rgba(70, 140, 255, 0.28)' : 'rgba(210, 230, 255, 0.38)';
+    bctx.fillRect(px, py, 2, 2);
   }
+  bctx.globalCompositeOperation = 'source-over';
 
-  // plot POIs with names!
-  if (typeof GALACTIC_POI !== 'undefined') {
-    cctx.globalCompositeOperation = 'source-over';
-    for (const poi of GALACTIC_POI) {
-      const isSol = (poi.id === 'sol');
-      const px = 512 + (poi.pos[0] / 550000) * 512;
-      const py = 512 - (poi.pos[2] / 550000) * 512;
-      const color = isSol ? '#ffaa00' : (poi.dotColor || '#4080ff');
-      cctx.shadowColor = color; cctx.shadowBlur = 10;
-      cctx.fillStyle = '#ffffff';
-      cctx.beginPath(); cctx.arc(px, py, isSol ? 5 : 3, 0, Math.PI * 2); cctx.fill();
+  _wallMapBaseCanvas = baseMapCanvas;
 
-      cctx.shadowBlur = 0;
-      cctx.font = 'bold 18px "Courier New"';
-      cctx.fillStyle = color;
-      cctx.fillText(poi.name.toUpperCase(), px + 12, py + 6);
-    }
-  }
+  // Active display canvas
+  const cmapCanvas = document.createElement('canvas');
+  cmapCanvas.width = 1024;
+  cmapCanvas.height = 1024;
+  _wallMapCanvas = cmapCanvas;
 
   const wallTex = new THREE.CanvasTexture(cmapCanvas);
   wallTex.anisotropy = 4;
+  _wallMapTex = wallTex;
+
+  // Initial render
+  render2DGalaxyMap(typeof state !== 'undefined' ? (state.cockpitTarget || state.selectedPOI || null) : null);
   const wallTexMat = new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.DoubleSide });
   const wallMapMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.08, 1.08), wallTexMat);
   wallMapMesh.position.set(1.335, 0.35, 1.031);
@@ -559,13 +840,6 @@ function createShipInterior() {
   shipInterior.add(mapMarker);
   shipInterior.userData.mapMarker = mapMarker;
 
-  // Radar ping ring around marker
-  const ringGeo = new THREE.RingGeometry(0.02, 0.024, 24);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
-  const mapMarkerRing = new THREE.Mesh(ringGeo, ringMat);
-  mapMarkerRing.position.set(1.335, 0.35, 1.034);
-  shipInterior.add(mapMarkerRing);
-  shipInterior.userData.mapMarkerRing = mapMarkerRing;
 
   // Ceiling projector module housing
   bx(0.6, 0.1, 0.6, trimMat, 1.2, 1.18, 2.0); // Base ring

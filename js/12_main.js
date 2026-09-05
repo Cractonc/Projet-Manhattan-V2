@@ -111,14 +111,18 @@ function animate() {
     const s = 1.0 + pulse * 0.2;
     shipInterior.userData.mapMarker.scale.set(s, s, 0.2);
 
-    // Expanding sonar / radar ripple ring animation
-    if (shipInterior.userData.mapMarkerRing) {
-      const ring = shipInterior.userData.mapMarkerRing;
-      ring.position.set(mx, my, 1.034);
-      const pingCycle = (now * 0.0008) % 1.0;
-      const rScale = 0.5 + pingCycle * 1.8;
-      ring.scale.set(rScale, rScale, 1);
-      ring.material.opacity = Math.pow(1 - pingCycle, 1.5) * 0.75;
+    // Dynamic 2D Galaxy Map Target Refresh
+    const curMapTarget = (typeof state !== 'undefined') ? (state.cockpitTarget || state.selectedPOI || null) : null;
+    if (shipInterior.userData.lastMapTarget !== curMapTarget) {
+      shipInterior.userData.lastMapTarget = curMapTarget;
+      if (typeof render2DGalaxyMap === 'function') {
+        render2DGalaxyMap(curMapTarget);
+      }
+    } else if (curMapTarget && (now - (shipInterior.userData.lastMapVecTime || 0)) > 2.0) {
+      shipInterior.userData.lastMapVecTime = now;
+      if (typeof render2DGalaxyMap === 'function') {
+        render2DGalaxyMap(curMapTarget);
+      }
     }
   }
 
