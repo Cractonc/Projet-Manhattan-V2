@@ -712,6 +712,12 @@ function updateAstrometryPOIVisibility() {
   // Adapter les étiquettes flottantes
   if (typeof galacticLabelEls !== 'undefined') {
     for (const item of galacticLabelEls) {
+      if (item.data.id === 'vessel-manhattan') {
+        item.el.textContent = 'VAISSEAU MANHATTAN';
+        item.el.classList.remove('poi-label-anomaly');
+        item.el.classList.add('vessel-marker-label');
+        continue;
+      }
       const isDisc = discovered.includes(item.data.id);
       if (isDisc) {
         item.el.textContent = item.data.name.toUpperCase();
@@ -736,6 +742,12 @@ function restoreGalacticPOIVisibility() {
   }
   if (typeof galacticLabelEls !== 'undefined') {
     for (const item of galacticLabelEls) {
+      if (item.data.id === 'vessel-manhattan') {
+        item.el.textContent = 'VAISSEAU MANHATTAN';
+        item.el.classList.remove('poi-label-anomaly');
+        item.el.classList.add('vessel-marker-label');
+        continue;
+      }
       item.el.textContent = item.data.name.toUpperCase();
       item.el.classList.remove('poi-label-anomaly');
     }
@@ -781,6 +793,40 @@ function renderAstrometryList() {
     return true;
   });
 
+  const refPos = (typeof ship !== 'undefined' && ship && ship.position && state.scaleLevel === 'GALACTIC')
+    ? ship.position
+    : (typeof SUN_GAL !== 'undefined' ? new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z) : new THREE.Vector3(260000, 0, 0));
+
+  // Pinned entry for Manhattan vessel
+  if (astroActiveFilter === 'all' || astroActiveFilter === 'discovered') {
+    const isVesselSelected = (state.selectedPOI === 'vessel-manhattan');
+    const vesselItem = document.createElement('div');
+    vesselItem.className = 'astro-poi-item vessel-pinned' + (isVesselSelected ? ' active' : '');
+    vesselItem.dataset.id = 'vessel-manhattan';
+
+    let currentDestStr = 'Aucun cap';
+    if (state.cockpitTarget && typeof galacticPOIObjects !== 'undefined' && galacticPOIObjects[state.cockpitTarget]) {
+      currentDestStr = `Cap : ${galacticPOIObjects[state.cockpitTarget].data.name}`;
+    }
+
+    vesselItem.innerHTML = `
+      <div class="astro-poi-dot" style="background:#68d391; color:#68d391; box-shadow:0 0 8px #68d391;"></div>
+      <div class="astro-poi-info" style="display:flex; flex-direction:column; flex:1;">
+        <div style="display:flex; align-items:center;">
+          <span class="astro-poi-name" style="color:#68d391; font-weight:700;">VAISSEAU MANHATTAN</span>
+          <span class="astro-vessel-tag">VOUS</span>
+        </div>
+        <div class="astro-poi-sub">${currentDestStr} • Votre position</div>
+      </div>
+    `;
+
+    vesselItem.addEventListener('click', () => {
+      selectAstrometryPOI('vessel-manhattan');
+    });
+
+    listEl.appendChild(vesselItem);
+  }
+
   for (const poi of filtered) {
     const isDisc = discovered.includes(poi.id);
     const isTarget = (state.cockpitTarget === poi.id);
@@ -788,13 +834,20 @@ function renderAstrometryList() {
     item.className = 'astro-poi-item' + (isDisc ? '' : ' locked') + (state.selectedPOI === poi.id ? ' active' : '');
     item.dataset.id = poi.id;
 
-    const dotColor = isDisc ? (poi.dotColor || '#00d8ff') : '#ffaa00';
+    let distFormatted = '';
+    if (poi.pos) {
+      const pVec = new THREE.Vector3(poi.pos[0], poi.pos[1], poi.pos[2]);
+      const distVal = pVec.distanceTo(refPos);
+      distFormatted = (typeof formatDistance === 'function') ? formatDistance(distVal) : `${Math.round(distVal)} AL`;
+    }
+
+    const dotColor = isDisc ? (poi.dotColor || '#8ec5fc') : '#dfba6a';
     const nameText = isDisc ? poi.name : '[ ??? ANOMALIE ]';
     const subText = isDisc
-      ? (poi.type || 'Secteur stellaire')
-      : `Secteur [${Math.round(poi.pos[0]/1000)}k, ${Math.round(poi.pos[2]/1000)}k]`;
+      ? (poi.type ? `${poi.type} • ${distFormatted}` : distFormatted)
+      : (distFormatted ? `Distance estimée : ~${distFormatted}` : 'Signal distant');
     const targetTagHtml = isTarget
-      ? `<span style="margin-left:auto; font-size:9px; color:#00ffc8; font-weight:700; border:1px solid rgba(0,255,200,0.5); border-radius:3px; padding:1px 5px; text-shadow:0 0 5px rgba(0,255,200,0.5);">🎯 CAP</span>`
+      ? `<span style="margin-left:auto; font-size:9px; color:#68d391; font-weight:700; border:1px solid rgba(104,211,145,0.4); border-radius:3px; padding:1px 5px; text-shadow:0 0 5px rgba(104,211,145,0.3);">🎯 CAP</span>`
       : '';
 
     item.innerHTML = `
@@ -817,6 +870,153 @@ function renderAstrometryList() {
 }
 
 function selectAstrometryPOI(poiId) {
+  if (poiId === 'vessel-manhattan') {
+    state.selectedPOI = poiId;
+
+    if (typeof vesselMapObject !== 'undefined' && vesselMapObject && typeof galCam !== 'undefined') {
+      galCam.tLookAt.copy(vesselMapObject.group.position);
+      galCam.tRadius = 3200;
+    }
+
+    // Mettre à jour l'élément actif dans la liste latérale
+    document.querySelectorAll('.astro-poi-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === poiId);
+    });
+
+    // Rendu de la carte d'inspection spécifique au vaisseau
+    const card = document.getElementById('astro-inspect-card');
+    if (!card) return;
+
+    let vPos = (typeof vesselMapObject !== 'undefined' && vesselMapObject && vesselMapObject.group)
+      ? vesselMapObject.group.position
+      : new THREE.Vector3(260000, 250, 0);
+
+    let speedStr = '0 AL/s (Stationnaire)';
+    let propulsionStr = 'Moteurs arrêtés';
+    const isFTL = (state.scaleLevel === 'GALACTIC');
+
+    if (typeof ship !== 'undefined' && ship) {
+      if (state.warp && state.warp.active) {
+        propulsionStr = 'Distorsion FTL active';
+        speedStr = `${Math.abs(ship.speed).toFixed(0)} AL/s`;
+      } else if (state.cockpitAutoNav) {
+        propulsionStr = 'Pilote automatique';
+        speedStr = isFTL ? `${Math.abs(ship.speed).toFixed(0)} AL/s` : `${Math.abs(ship.speed).toFixed(1)} u/s`;
+      } else if (ship.reversePercent > 0 || ship.speed < -0.01) {
+        propulsionStr = 'Rétro-fusées (Marche arr.)';
+        speedStr = isFTL ? `-${Math.abs(ship.speed).toFixed(0)} AL/s` : `-${Math.abs(ship.speed).toFixed(1)} u/s`;
+      } else if (Math.abs(ship.speed) > 0.05) {
+        propulsionStr = isFTL ? `Croisière FTL (${ship.throttlePercent || 0}%)` : `Croisière sous-lumière (${ship.throttlePercent || 0}%)`;
+        speedStr = isFTL ? `${Math.abs(ship.speed).toFixed(0)} AL/s` : `${Math.abs(ship.speed).toFixed(1)} u/s`;
+      } else {
+        propulsionStr = 'Stationnaire (0%)';
+        speedStr = isFTL ? '0 AL/s' : '0 u/s';
+      }
+    }
+
+    let targetNameStr = 'Aucun cap verrouillé';
+    let targetDistRemaining = '—';
+    if (state.cockpitTarget && typeof galacticPOIObjects !== 'undefined' && galacticPOIObjects[state.cockpitTarget]) {
+      const tgtObj = galacticPOIObjects[state.cockpitTarget];
+      const tgtDist = vPos.distanceTo(tgtObj.group.position);
+      targetNameStr = tgtObj.data.name;
+      targetDistRemaining = formatDistance(tgtDist);
+    }
+
+    let distSolStr = '---';
+    if (typeof SUN_GAL !== 'undefined') {
+      const dSol = vPos.distanceTo(new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z));
+      distSolStr = formatDistance(dSol);
+    }
+    const dCore = vPos.distanceTo(new THREE.Vector3(0, 0, 0));
+    const distCoreStr = formatDistance(dCore);
+
+    const altY = Math.round(vPos.y);
+    const altStr = `${altY >= 0 ? '+' : ''}${altY.toLocaleString()} AL du plan médian`;
+
+    const discovered = (state.player && Array.isArray(state.player.discoveredPOIs)) ? state.player.discoveredPOIs : ['sol'];
+    const totalPOI = (typeof GALACTIC_POI !== 'undefined') ? GALACTIC_POI.length : 0;
+    const discCount = discovered.length;
+    const discPct = totalPOI > 0 ? Math.round((discCount / totalPOI) * 100) : 0;
+    const creditsStr = `${(state.player && typeof state.player.credits === 'number' ? state.player.credits : 0).toLocaleString()} CR`;
+
+    let questHtml = '';
+    const activeQuest = (typeof QUESTS !== 'undefined' && state.player && state.player.activeQuestId)
+      ? QUESTS.find(q => q.id === state.player.activeQuestId)
+      : null;
+
+    if (activeQuest) {
+      questHtml = `
+        <div class="astro-quest-hint" style="margin-top:2px;">
+          📋 <strong>Mission active :</strong> ${activeQuest.title}<br>
+          <span style="opacity:0.85; font-size:10px;">Récompense : +${activeQuest.reward} CR</span>
+        </div>
+      `;
+    } else {
+      questHtml = `
+        <div class="astro-quest-hint" style="margin-top:2px; color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.15);">
+          📋 <strong>Missions cartographiques :</strong> Toutes accomplies
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="astro-card-badge discovered" style="background:rgba(104,211,145,0.15); border-color:#68d391; color:#68d391;">
+        📍 TÉLÉMÉTRIE EN DIRECT DU VAISSEAU
+      </div>
+      <div class="astro-card-header">
+        <div class="astro-card-title">VAISSEAU MANHATTAN</div>
+        <div class="astro-card-sub">Échelle active : ${state.scaleLevel === 'GALACTIC' ? 'Galaxie (Voie Lactée)' : 'Système Solaire'}</div>
+      </div>
+      <div class="astro-card-meta">
+        <div><strong>Coordonnées galactiques :</strong> [X: ${Math.round(vPos.x).toLocaleString()}, Y: ${Math.round(vPos.y).toLocaleString()}, Z: ${Math.round(vPos.z).toLocaleString()}] AL</div>
+        <div><strong>Distance au Soleil / Terre :</strong> ${distSolStr}</div>
+        <div><strong>Distance au Centre Galactique :</strong> ${distCoreStr}</div>
+      </div>
+      <div class="astro-grid-table">
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Régime Moteur</div>
+          <div class="astro-grid-val" style="color:#68d391;">${propulsionStr}</div>
+        </div>
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Vitesse Réelle</div>
+          <div class="astro-grid-val">${speedStr}</div>
+        </div>
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Cap Actif</div>
+          <div class="astro-grid-val" style="color:#8ec5fc;">${targetNameStr}</div>
+        </div>
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Distance Cible</div>
+          <div class="astro-grid-val" style="color:#dfba6a;">${targetDistRemaining}</div>
+        </div>
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Cartographie</div>
+          <div class="astro-grid-val">${discCount} / ${totalPOI} (${discPct}%)</div>
+        </div>
+        <div class="astro-grid-cell">
+          <div class="astro-grid-lbl">Fonds de Bord</div>
+          <div class="astro-grid-val" style="color:#dfba6a;">${creditsStr}</div>
+        </div>
+      </div>
+      ${questHtml}
+      <div class="astro-card-actions">
+        <button class="astro-btn-primary" id="btn-astro-recenter-vessel">🔍 RECENTRER LA VUE SUR LE VAISSEAU</button>
+      </div>
+    `;
+
+    const btnRecenter = document.getElementById('btn-astro-recenter-vessel');
+    if (btnRecenter) {
+      btnRecenter.addEventListener('click', () => {
+        if (typeof galCam !== 'undefined' && typeof vesselMapObject !== 'undefined' && vesselMapObject) {
+          galCam.tLookAt.copy(vesselMapObject.group.position);
+          galCam.tRadius = 3200;
+        }
+      });
+    }
+    return;
+  }
+
   if (typeof galacticPOIObjects === 'undefined' || !galacticPOIObjects[poiId]) return;
 
   state.selectedPOI = poiId;
@@ -843,11 +1043,15 @@ function selectAstrometryPOI(poiId) {
     el.classList.toggle('active', el.dataset.id === poiId);
   });
 
-  // Calcul de distance au Soleil
+  // Calcul de distance
   let distStr = '---';
-  if (poi.pos && typeof SUN_GAL !== 'undefined') {
-    const d = Math.round(new THREE.Vector3(poi.pos[0], poi.pos[1], poi.pos[2]).distanceTo(new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z)));
-    distStr = `${d.toLocaleString()} AL du Soleil`;
+  const refPos = (typeof ship !== 'undefined' && ship && ship.position && state.scaleLevel === 'GALACTIC')
+    ? ship.position
+    : (typeof SUN_GAL !== 'undefined' ? new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z) : new THREE.Vector3(260000, 0, 0));
+  if (poi.pos) {
+    const pVec = new THREE.Vector3(poi.pos[0], poi.pos[1], poi.pos[2]);
+    const d = pVec.distanceTo(refPos);
+    distStr = (typeof formatDistance === 'function') ? formatDistance(d) : `${Math.round(d)} AL`;
   }
 
   // Rendu de la carte d'inspection
@@ -884,8 +1088,7 @@ function selectAstrometryPOI(poiId) {
         <div class="astro-card-sub">${poi.type || 'Secteur stellaire'}</div>
       </div>
       <div class="astro-card-meta">
-        <div><strong>Coordonnées :</strong> [X: ${Math.round(poi.pos[0])}, Y: ${Math.round(poi.pos[1])}, Z: ${Math.round(poi.pos[2])}]</div>
-        <div><strong>Distance relative :</strong> ${distStr}</div>
+        <div><strong>Distance estimée :</strong> ${distStr}</div>
       </div>
       <div class="astro-grid-table">${gridHtml}</div>
       <div class="astro-desc">${descText}</div>
@@ -911,7 +1114,6 @@ function selectAstrometryPOI(poiId) {
         <div class="astro-card-sub">Émission radiative / gravitationnelle non identifiée</div>
       </div>
       <div class="astro-card-meta">
-        <div><strong>Secteur galactique :</strong> [X: ${Math.round(poi.pos[0]/1000)}k, Z: ${Math.round(poi.pos[2]/1000)}k]</div>
         <div><strong>Distance estimée :</strong> ~${distStr}</div>
       </div>
       <div class="astro-locked-panel">

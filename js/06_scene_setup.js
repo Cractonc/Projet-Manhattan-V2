@@ -105,6 +105,12 @@ var galCam = {
   tLookAt: new THREE.Vector3(0, 0, 0),
 
   focusOn(poiId) {
+    if (poiId === 'vessel-manhattan' && typeof vesselMapObject !== 'undefined' && vesselMapObject && vesselMapObject.group) {
+      this.tLookAt.copy(vesselMapObject.group.position);
+      this.tRadius = 3200;
+      state.selectedPOI = poiId;
+      return;
+    }
     const obj = galacticPOIObjects[poiId];
     if (!obj) return;
     const pos = obj.group.position;

@@ -18,6 +18,9 @@ function createGalacticScene() {
 
   // POIs
   createGalacticPOIs();
+
+  // Vessel Manhattan Map Representation
+  createVesselMapModel();
 }
 
 function createGalacticBackground() {
@@ -993,6 +996,339 @@ function updateGalacticPOIs(dt, activeCam) {
       for (const p of ex.planets) {
         p.pivot.rotation.z -= dt * p.speed * state.timeScale * 0.05;
       }
+    }
+  }
+
+  // 3. Mise à jour de la représentation cartographique du Manhattan
+  updateVesselMap(dt, now);
+}
+
+// ============================================================
+// MANHATTAN VESSEL 3D MAP REPRESENTATION
+// ============================================================
+var vesselMapObject = null;
+
+function createVesselMapModel() {
+  if (vesselMapObject) return vesselMapObject;
+
+  const vesselGroup = new THREE.Group();
+  vesselGroup.name = 'vessel-manhattan-map-group';
+
+  // Éclairages omnidirectionnels dédiés pour révéler tous les détails et biseaux du vaisseau sous tout angle
+  const shipKeyLight = new THREE.PointLight(0xffffff, 2.2, 14000);
+  shipKeyLight.position.set(800, 1400, -1000);
+  vesselGroup.add(shipKeyLight);
+
+  const shipFillLight = new THREE.PointLight(0x8ec5fc, 1.5, 12000);
+  shipFillLight.position.set(-1000, -600, 1000);
+  vesselGroup.add(shipFillLight);
+
+  const shipBottomLight = new THREE.PointLight(0x557799, 0.8, 8000);
+  shipBottomLight.position.set(0, -1200, 0);
+  vesselGroup.add(shipBottomLight);
+
+  // Groupe modèle (applique le cap et l'orientation du vaisseau)
+  const modelGroup = new THREE.Group();
+  vesselGroup.add(modelGroup);
+
+  // Matériaux physiques clairs et soignés (titane ardoise / blanc aérospatial avec reflets nets)
+  const hullDark = new THREE.MeshStandardMaterial({
+    color: 0x324355,
+    roughness: 0.38,
+    metalness: 0.55
+  });
+  const hullLight = new THREE.MeshStandardMaterial({
+    color: 0xdde7f2,
+    roughness: 0.25,
+    metalness: 0.65
+  });
+  const hullAccent = new THREE.MeshStandardMaterial({
+    color: 0x485e75,
+    roughness: 0.35,
+    metalness: 0.5
+  });
+  const visorMat = new THREE.MeshStandardMaterial({
+    color: 0x0f2032,
+    roughness: 0.08,
+    metalness: 0.95
+  });
+  const domeGlassMat = new THREE.MeshStandardMaterial({
+    color: 0x8ec5fc,
+    transparent: true,
+    opacity: 0.6,
+    roughness: 0.03,
+    metalness: 0.85,
+    emissive: 0x1a3350,
+    emissiveIntensity: 0.35,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const domeFloorMat = new THREE.MeshStandardMaterial({
+    color: 0x162230,
+    roughness: 0.6,
+    metalness: 0.3
+  });
+  const domeCoreMat = new THREE.MeshBasicMaterial({
+    color: 0x68d391,
+    transparent: true,
+    opacity: 0.9
+  });
+  const thrusterCoreMat = new THREE.MeshBasicMaterial({
+    color: 0x60b8ff
+  });
+  const thrusterPlumeMat = new THREE.MeshBasicMaterial({
+    color: 0x3898ec,
+    transparent: true,
+    opacity: 0.45,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  // 1. Fuselage Central
+  const midFuselage = new THREE.Mesh(new THREE.BoxGeometry(260, 100, 460), hullDark);
+  midFuselage.position.set(0, 5, -20);
+  modelGroup.add(midFuselage);
+
+  const upperSpine = new THREE.Mesh(new THREE.BoxGeometry(190, 24, 520), hullLight);
+  upperSpine.position.set(0, 62, -20);
+  modelGroup.add(upperSpine);
+
+  const lowerKeel = new THREE.Mesh(new THREE.BoxGeometry(200, 30, 480), hullAccent);
+  lowerKeel.position.set(0, -55, -20);
+  modelGroup.add(lowerKeel);
+
+  // 2. Proue Aérodynamique & Verrière Cockpit Avant (Alignement 100% axial)
+  // Section avant principale (prolongement direct du fuselage central de Z=-250 à Z=-390)
+  const noseMid = new THREE.Mesh(new THREE.BoxGeometry(220, 80, 140), hullDark);
+  noseMid.position.set(0, 5, -320);
+  modelGroup.add(noseMid);
+
+  // Pointe avant biseautée (de Z=-390 à Z=-490)
+  const noseTip = new THREE.Mesh(new THREE.BoxGeometry(150, 54, 100), hullDark);
+  noseTip.position.set(0, 5, -440);
+  modelGroup.add(noseTip);
+
+  // Étrave profilée extrême (de Z=-490 à Z=-550)
+  const noseCone = new THREE.Mesh(new THREE.BoxGeometry(80, 30, 60), hullDark);
+  noseCone.position.set(0, 5, -520);
+  modelGroup.add(noseCone);
+
+  // Plaques biseautées latérales avant (chine plates symétriques gauche/droite)
+  const leftChine = new THREE.Mesh(new THREE.BoxGeometry(20, 60, 220), hullAccent);
+  leftChine.position.set(-105, 5, -360);
+  leftChine.rotation.y = 0.22;
+  modelGroup.add(leftChine);
+
+  const rightChine = new THREE.Mesh(new THREE.BoxGeometry(20, 60, 220), hullAccent);
+  rightChine.position.set(105, 5, -360);
+  rightChine.rotation.y = -0.22;
+  modelGroup.add(rightChine);
+
+  // Plaque d'armure dorsale claire de proue (assure la transition fluide avec le fuselage supérieur)
+  const noseDorsal = new THREE.Mesh(new THREE.BoxGeometry(140, 14, 240), hullLight);
+  noseDorsal.position.set(0, 48, -350);
+  modelGroup.add(noseDorsal);
+
+  // Verrière avant du cockpit (profilée, centrée sur l'axe)
+  const cockpitVisor = new THREE.Mesh(new THREE.BoxGeometry(94, 28, 140), visorMat);
+  cockpitVisor.rotation.x = -0.18;
+  cockpitVisor.position.set(0, 52, -340);
+  modelGroup.add(cockpitVisor);
+
+  // 3. Poupe / Bloc Moteur Arrière
+  const sternBlock = new THREE.Mesh(new THREE.BoxGeometry(240, 115, 200), hullDark);
+  sternBlock.position.set(0, 10, 290);
+  modelGroup.add(sternBlock);
+
+  // 4. OBSERVATOIRE PANORAMIQUE SUPÉRIEUR (Verrière vitrée au-dessus)
+  const obsGroup = new THREE.Group();
+  obsGroup.position.set(0, 74, -70);
+
+  const obsCollar = new THREE.Mesh(new THREE.CylinderGeometry(84, 94, 12, 28), hullDark);
+  obsGroup.add(obsCollar);
+
+  const obsFloor = new THREE.Mesh(new THREE.CylinderGeometry(76, 76, 3, 24), domeFloorMat);
+  obsFloor.position.y = 6;
+  obsGroup.add(obsFloor);
+
+  const holoPedestal = new THREE.Mesh(new THREE.CylinderGeometry(14, 18, 12, 16), hullDark);
+  holoPedestal.position.y = 12;
+  obsGroup.add(holoPedestal);
+
+  const holoCore = new THREE.Mesh(new THREE.SphereGeometry(10, 16, 16), domeCoreMat);
+  holoCore.position.y = 22;
+  obsGroup.add(holoCore);
+
+  const domeLight = new THREE.PointLight(0x68d391, 1.6, 500);
+  domeLight.position.y = 24;
+  obsGroup.add(domeLight);
+
+  const obsGlass = new THREE.Mesh(
+    new THREE.SphereGeometry(80, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.5),
+    domeGlassMat
+  );
+  obsGlass.position.y = 6;
+  obsGroup.add(obsGlass);
+
+  const ribLong = new THREE.Mesh(new THREE.TorusGeometry(80, 2.5, 6, 28, Math.PI), hullDark);
+  ribLong.rotation.y = Math.PI / 2;
+  ribLong.position.y = 6;
+  obsGroup.add(ribLong);
+
+  const ribTrans = new THREE.Mesh(new THREE.TorusGeometry(80, 2.5, 6, 28, Math.PI), hullDark);
+  ribTrans.position.y = 6;
+  obsGroup.add(ribTrans);
+
+  modelGroup.add(obsGroup);
+
+  // 5. Ailes Profilées & Nacelles FTL Latérales
+  const leftWing = new THREE.Mesh(new THREE.BoxGeometry(220, 18, 340), hullLight);
+  leftWing.position.set(-230, -5, 60);
+  leftWing.rotation.y = 0.15;
+  leftWing.rotation.z = -0.05;
+  modelGroup.add(leftWing);
+
+  const rightWing = new THREE.Mesh(new THREE.BoxGeometry(220, 18, 340), hullLight);
+  rightWing.position.set(230, -5, 60);
+  rightWing.rotation.y = -0.15;
+  rightWing.rotation.z = 0.05;
+  modelGroup.add(rightWing);
+
+  const leftFin = new THREE.Mesh(new THREE.BoxGeometry(14, 85, 200), hullDark);
+  leftFin.position.set(-345, 30, 90);
+  leftFin.rotation.z = 0.12;
+  modelGroup.add(leftFin);
+
+  const rightFin = new THREE.Mesh(new THREE.BoxGeometry(14, 85, 200), hullDark);
+  rightFin.position.set(345, 30, 90);
+  rightFin.rotation.z = -0.12;
+  modelGroup.add(rightFin);
+
+  const nacelleGeo = new THREE.CylinderGeometry(32, 38, 320, 18);
+  const leftNacelle = new THREE.Mesh(nacelleGeo, hullAccent);
+  leftNacelle.rotation.x = Math.PI / 2;
+  leftNacelle.position.set(-210, 12, 110);
+  modelGroup.add(leftNacelle);
+
+  const rightNacelle = new THREE.Mesh(nacelleGeo, hullAccent);
+  rightNacelle.rotation.x = Math.PI / 2;
+  rightNacelle.position.set(210, 12, 110);
+  modelGroup.add(rightNacelle);
+
+  // 6. Tuyères de Propulsion Arrière
+  const plumes = [];
+  const engineExhaustGeo = new THREE.CylinderGeometry(36, 44, 75, 18);
+  const engineNozzleGeo = new THREE.CylinderGeometry(0, 30, 45, 18);
+  const plumeGeo = new THREE.ConeGeometry(28, 140, 16);
+
+  [-80, 80].forEach(xOffset => {
+    const housing = new THREE.Mesh(engineExhaustGeo, hullDark);
+    housing.rotation.x = Math.PI / 2;
+    housing.position.set(xOffset, 12, 400);
+    modelGroup.add(housing);
+
+    const nozzle = new THREE.Mesh(engineNozzleGeo, thrusterCoreMat);
+    nozzle.rotation.x = Math.PI / 2;
+    nozzle.position.set(xOffset, 12, 430);
+    modelGroup.add(nozzle);
+
+    const plume = new THREE.Mesh(plumeGeo, thrusterPlumeMat);
+    plume.rotation.x = -Math.PI / 2;
+    plume.position.set(xOffset, 12, 510);
+    modelGroup.add(plume);
+    plumes.push(plume);
+  });
+
+  // 7. Volume de clic pour le raycast
+  const clickGeo = new THREE.SphereGeometry(750, 10, 10);
+  const clickMat = new THREE.MeshBasicMaterial({ visible: false });
+  const clickMesh = new THREE.Mesh(clickGeo, clickMat);
+  clickMesh.userData = { poiId: 'vessel-manhattan' };
+  vesselGroup.add(clickMesh);
+  if (typeof galacticClickables !== 'undefined') {
+    galacticClickables.push(clickMesh);
+  }
+
+  // 8. Étiquette 3D HTML
+  let labelEl = null;
+  if (typeof makeLabel === 'function') {
+    labelEl = makeLabel('VAISSEAU MANHATTAN', 'poi-label vessel-marker-label');
+    if (typeof galacticLabelEls !== 'undefined') {
+      galacticLabelEls.push({
+        el: labelEl,
+        group: vesselGroup,
+        data: {
+          id: 'vessel-manhattan',
+          name: 'VAISSEAU MANHATTAN',
+          scale: 4500,
+          tier: 1
+        }
+      });
+    }
+  }
+
+  galacticScene.add(vesselGroup);
+
+  vesselMapObject = {
+    group: vesselGroup,
+    modelGroup: modelGroup,
+    clickMesh: clickMesh,
+    plumes: plumes,
+    label: labelEl,
+    data: {
+      id: 'vessel-manhattan',
+      name: 'VAISSEAU MANHATTAN',
+      type: 'Vaisseau d\'exploration interstellaire',
+      scale: 3500
+    }
+  };
+
+  return vesselMapObject;
+}
+
+function updateVesselMap(dt, now) {
+  if (!vesselMapObject || !vesselMapObject.group) return;
+
+  const isAstro = (state.cameraMode === 'ASTROMETRY');
+  const isSpectatorGalactic = (state.scaleLevel === 'GALACTIC' && state.cameraMode === 'FREE');
+  const shouldBeVisible = isAstro || isSpectatorGalactic;
+
+  vesselMapObject.group.visible = shouldBeVisible;
+  if (vesselMapObject.label) {
+    if (!shouldBeVisible) vesselMapObject.label.style.opacity = '0';
+  }
+  if (!shouldBeVisible) return;
+
+  let vPos = null;
+  let vRot = null;
+
+  if (state.scaleLevel === 'GALACTIC') {
+    if (typeof ship !== 'undefined' && ship && ship.position) {
+      vPos = ship.position;
+      vRot = ship.quaternion;
+    } else if (state.shipPosition) {
+      vPos = state.shipPosition;
+    }
+  } else {
+    if (typeof SUN_GAL !== 'undefined') {
+      vPos = new THREE.Vector3(SUN_GAL.x, SUN_GAL.y, SUN_GAL.z);
+    } else {
+      vPos = new THREE.Vector3(260000, 250, 0);
+    }
+  }
+
+  if (vPos) {
+    vesselMapObject.group.position.copy(vPos);
+  }
+
+  if (vRot && vesselMapObject.modelGroup) {
+    vesselMapObject.modelGroup.quaternion.copy(vRot);
+  }
+
+  if (vesselMapObject.plumes && vesselMapObject.plumes.length > 0) {
+    const pulse = 1.0 + Math.sin(now * 8.0) * 0.14;
+    for (const pl of vesselMapObject.plumes) {
+      pl.scale.set(1, pulse, 1);
     }
   }
 }

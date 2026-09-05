@@ -1875,12 +1875,9 @@ function enterAstrometryMode() {
     updateAstrometryHUD();
   }
 
-  // Centrer sur l'astre sélectionné ou sur Sol
-  const targetId = (state.selectedPOI && state.player && state.player.discoveredPOIs && state.player.discoveredPOIs.includes(state.selectedPOI))
-    ? state.selectedPOI
-    : 'sol';
+  // Centrer sur le vaisseau par défaut à l'ouverture de la carte
   if (typeof selectAstrometryPOI === 'function') {
-    selectAstrometryPOI(targetId);
+    selectAstrometryPOI('vessel-manhattan');
   }
 
   if (typeof showNotification === 'function') {

@@ -520,6 +520,20 @@ canvas {
   letter-spacing: 0.25em;
 }
 
+.label-3d.vessel-marker-label {
+  color: #68d391 !important;
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.18em !important;
+  border: 1px solid rgba(104, 211, 145, 0.6) !important;
+  background: rgba(4, 18, 12, 0.9) !important;
+  box-shadow: 0 0 12px rgba(104, 211, 145, 0.35) !important;
+  text-shadow: 0 0 8px rgba(104, 211, 145, 0.7) !important;
+  padding: 3px 8px !important;
+  border-radius: 3px !important;
+  z-index: 65 !important;
+}
+
 
 
 /* ── Cinematic mode indicator ── */
@@ -2330,8 +2344,8 @@ body.pure-view #info-card {
   align-items: center;
   justify-content: space-between;
   padding: 12px 28px;
-  background: linear-gradient(180deg, rgba(3, 8, 20, 0.92) 0%, rgba(3, 8, 20, 0.65) 75%, transparent 100%);
-  border-bottom: 1px solid rgba(0, 216, 255, 0.3);
+  background: linear-gradient(180deg, rgba(3, 8, 20, 0.94) 0%, rgba(3, 8, 20, 0.75) 75%, transparent 100%);
+  border-bottom: 1px solid rgba(142, 197, 252, 0.2);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -2340,11 +2354,7 @@ body.pure-view #info-card {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.astro-icon {
-  font-size: 24px;
-  filter: drop-shadow(0 0 8px rgba(0, 216, 255, 0.6));
+  margin-left: 48px; /* Dégage l'espace pour le bouton menu hamburger #toggle-panel */
 }
 
 .astro-titles {
@@ -2354,18 +2364,18 @@ body.pure-view #info-card {
 }
 
 .astro-title {
-  color: #00d8ff;
-  font-size: 13px;
+  color: #8ec5fc;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(0, 216, 255, 0.6);
+  text-shadow: 0 0 10px rgba(142, 197, 252, 0.3);
 }
 
 .astro-subtitle {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  font-weight: 500;
+  color: #dfba6a;
+  font-size: 9.5px;
+  letter-spacing: 1.8px;
+  font-weight: 600;
 }
 
 .astro-stats {
@@ -2378,8 +2388,8 @@ body.pure-view #info-card {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 25, 55, 0.7);
-  border: 1px solid rgba(0, 216, 255, 0.35);
+  background: rgba(6, 16, 32, 0.75);
+  border: 1px solid rgba(142, 197, 252, 0.22);
   border-radius: 4px;
   padding: 6px 14px;
   font-size: 11px;
@@ -2387,13 +2397,13 @@ body.pure-view #info-card {
 }
 
 .astro-stat-lbl {
-  color: rgba(122, 184, 224, 0.8);
+  color: rgba(142, 197, 252, 0.75);
   font-size: 10px;
   letter-spacing: 1.2px;
 }
 
 .astro-stat-val {
-  color: #00ffcc;
+  color: #68d391;
   font-weight: 700;
 }
 
@@ -2402,9 +2412,9 @@ body.pure-view #info-card {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 60, 80, 0.15);
-  border: 1px solid rgba(255, 60, 80, 0.45);
-  color: #ff99aa;
+  background: rgba(226, 133, 143, 0.12);
+  border: 1px solid rgba(226, 133, 143, 0.35);
+  color: #f1a5ad;
   padding: 7px 18px;
   border-radius: 4px;
   cursor: pointer;
@@ -2415,10 +2425,10 @@ body.pure-view #info-card {
 }
 
 .astro-exit-btn:hover {
-  background: rgba(255, 60, 80, 0.35);
-  border-color: rgba(255, 80, 100, 0.9);
+  background: rgba(226, 133, 143, 0.25);
+  border-color: rgba(226, 133, 143, 0.7);
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(255, 60, 80, 0.4);
+  box-shadow: 0 0 12px rgba(226, 133, 143, 0.3);
   transform: translateY(-1px);
 }
 
@@ -2438,8 +2448,8 @@ body.pure-view #info-card {
   pointer-events: auto;
   width: 300px;
   max-height: calc(100vh - 160px);
-  background: rgba(4, 10, 22, 0.88);
-  border: 1px solid rgba(0, 216, 255, 0.25);
+  background: rgba(4, 10, 22, 0.9);
+  border: 1px solid rgba(142, 197, 252, 0.22);
   border-radius: 6px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -2451,19 +2461,19 @@ body.pure-view #info-card {
 
 .astro-panel-header {
   padding: 12px 14px;
-  background: rgba(0, 20, 45, 0.5);
-  border-bottom: 1px solid rgba(0, 216, 255, 0.2);
+  background: rgba(6, 16, 32, 0.6);
+  border-bottom: 1px solid rgba(142, 197, 252, 0.18);
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .astro-panel-title {
-  color: #00d8ff;
+  color: #8ec5fc;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  text-shadow: 0 0 6px rgba(0, 216, 255, 0.4);
+  text-shadow: 0 0 8px rgba(142, 197, 252, 0.3);
 }
 
 .astro-filter-tabs {
@@ -2486,16 +2496,15 @@ body.pure-view #info-card {
 }
 
 .astro-filter-btn:hover {
-  background: rgba(0, 216, 255, 0.1);
+  background: rgba(142, 197, 252, 0.1);
   color: #ffffff;
-  border-color: rgba(0, 216, 255, 0.3);
+  border-color: rgba(142, 197, 252, 0.3);
 }
 
 .astro-filter-btn.active {
-  background: rgba(0, 216, 255, 0.22);
-  border-color: #00d8ff;
-  color: #00ffff;
-  box-shadow: 0 0 8px rgba(0, 216, 255, 0.3);
+  background: rgba(142, 197, 252, 0.18);
+  border-color: #8ec5fc;
+  color: #ffffff;
 }
 
 .astro-poi-list {
@@ -2511,7 +2520,7 @@ body.pure-view #info-card {
   width: 4px;
 }
 .astro-poi-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 216, 255, 0.3);
+  background: rgba(142, 197, 252, 0.25);
   border-radius: 2px;
 }
 
@@ -2529,30 +2538,60 @@ body.pure-view #info-card {
 }
 
 .astro-poi-item:hover {
-  background: rgba(0, 216, 255, 0.08);
-  border-color: rgba(0, 216, 255, 0.35);
+  background: rgba(142, 197, 252, 0.08);
+  border-color: rgba(142, 197, 252, 0.3);
   transform: translateX(2px);
 }
 
 .astro-poi-item.active {
-  background: rgba(0, 216, 255, 0.18);
-  border-color: #00d8ff;
-  box-shadow: 0 0 12px rgba(0, 216, 255, 0.35);
+  background: rgba(142, 197, 252, 0.15);
+  border-color: rgba(142, 197, 252, 0.6);
+  box-shadow: 0 0 10px rgba(142, 197, 252, 0.2);
 }
 
 .astro-poi-item.locked {
-  border-color: rgba(255, 170, 0, 0.2);
+  border-color: rgba(223, 186, 106, 0.2);
 }
 
 .astro-poi-item.locked:hover {
-  background: rgba(255, 170, 0, 0.08);
-  border-color: rgba(255, 170, 0, 0.4);
+  background: rgba(223, 186, 106, 0.08);
+  border-color: rgba(223, 186, 106, 0.4);
 }
 
 .astro-poi-item.locked.active {
-  background: rgba(255, 170, 0, 0.16);
-  border-color: #ffaa00;
-  box-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
+  background: rgba(223, 186, 106, 0.14);
+  border-color: rgba(223, 186, 106, 0.6);
+  box-shadow: 0 0 10px rgba(223, 186, 106, 0.2);
+}
+
+.astro-poi-item.vessel-pinned {
+  background: rgba(104, 211, 145, 0.07);
+  border-color: rgba(104, 211, 145, 0.35);
+  margin-bottom: 6px;
+}
+
+.astro-poi-item.vessel-pinned:hover {
+  background: rgba(104, 211, 145, 0.15);
+  border-color: rgba(104, 211, 145, 0.6);
+}
+
+.astro-poi-item.vessel-pinned.active {
+  background: rgba(104, 211, 145, 0.22);
+  border-color: #68d391;
+  box-shadow: 0 0 12px rgba(104, 211, 145, 0.25);
+}
+
+.astro-vessel-tag {
+  margin-left: auto;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #68d391;
+  background: rgba(104, 211, 145, 0.15);
+  border: 1px solid rgba(104, 211, 145, 0.5);
+  border-radius: 3px;
+  padding: 1px 5px;
+  text-shadow: 0 0 5px rgba(104, 211, 145, 0.4);
 }
 
 .astro-poi-dot {
@@ -2591,8 +2630,8 @@ body.pure-view #info-card {
   pointer-events: auto;
   width: 380px;
   max-height: calc(100vh - 160px);
-  background: rgba(4, 10, 22, 0.90);
-  border: 1px solid rgba(0, 216, 255, 0.3);
+  background: rgba(4, 10, 22, 0.92);
+  border: 1px solid rgba(142, 197, 252, 0.22);
   border-radius: 6px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -2608,7 +2647,7 @@ body.pure-view #info-card {
   width: 4px;
 }
 .astro-inspect-card::-webkit-scrollbar-thumb {
-  background: rgba(0, 216, 255, 0.3);
+  background: rgba(142, 197, 252, 0.25);
   border-radius: 2px;
 }
 
@@ -2623,17 +2662,15 @@ body.pure-view #info-card {
 }
 
 .astro-card-badge.discovered {
-  background: rgba(0, 216, 255, 0.15);
-  border: 1px solid #00d8ff;
-  color: #00d8ff;
-  box-shadow: 0 0 8px rgba(0, 216, 255, 0.35);
+  background: rgba(104, 211, 145, 0.12);
+  border: 1px solid rgba(104, 211, 145, 0.6);
+  color: #68d391;
 }
 
 .astro-card-badge.locked {
-  background: rgba(255, 170, 0, 0.15);
-  border: 1px solid #ffaa00;
-  color: #ffaa00;
-  box-shadow: 0 0 8px rgba(255, 170, 0, 0.35);
+  background: rgba(223, 186, 106, 0.12);
+  border: 1px solid rgba(223, 186, 106, 0.6);
+  color: #dfba6a;
 }
 
 .astro-card-header {
@@ -2651,7 +2688,7 @@ body.pure-view #info-card {
 
 .astro-card-sub {
   font-size: 11px;
-  color: #7ab8e0;
+  color: #8ec5fc;
   letter-spacing: 0.5px;
 }
 
@@ -2660,9 +2697,9 @@ body.pure-view #info-card {
   flex-direction: column;
   gap: 4px;
   padding: 8px 12px;
-  background: rgba(0, 20, 45, 0.45);
+  background: rgba(6, 16, 32, 0.6);
   border-radius: 4px;
-  border: 1px solid rgba(0, 216, 255, 0.15);
+  border: 1px solid rgba(142, 197, 252, 0.15);
   font-size: 11px;
   color: rgba(255, 255, 255, 0.75);
 }
@@ -2683,7 +2720,7 @@ body.pure-view #info-card {
 .astro-grid-lbl {
   font-size: 9px;
   letter-spacing: 0.8px;
-  color: rgba(122, 184, 224, 0.7);
+  color: rgba(142, 197, 252, 0.7);
   text-transform: uppercase;
 }
 
@@ -2706,11 +2743,11 @@ body.pure-view #info-card {
 
 /* Panneau Verrouillé */
 .astro-locked-panel {
-  background: rgba(255, 170, 0, 0.06);
-  border: 1px solid rgba(255, 170, 0, 0.28);
+  background: rgba(223, 186, 106, 0.06);
+  border: 1px solid rgba(223, 186, 106, 0.3);
   border-radius: 6px;
   padding: 12px 14px;
-  color: rgba(255, 230, 180, 0.9);
+  color: rgba(255, 240, 200, 0.9);
   font-size: 11.5px;
   line-height: 1.5;
 }
@@ -2719,7 +2756,7 @@ body.pure-view #info-card {
   font-weight: 700;
   font-size: 11px;
   letter-spacing: 1px;
-  color: #ffaa00;
+  color: #dfba6a;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -2748,8 +2785,8 @@ body.pure-view #info-card {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #ffaa00;
-  color: #000;
+  background: #dfba6a;
+  color: #040a14;
   font-size: 9px;
   font-weight: bold;
   flex-shrink: 0;
@@ -2757,12 +2794,12 @@ body.pure-view #info-card {
 }
 
 .astro-quest-hint {
-  background: rgba(0, 216, 255, 0.08);
-  border: 1px solid rgba(0, 216, 255, 0.25);
+  background: rgba(142, 197, 252, 0.08);
+  border: 1px solid rgba(142, 197, 252, 0.25);
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 10.5px;
-  color: #88ddff;
+  color: #8ec5fc;
 }
 
 .astro-card-actions {
@@ -2774,8 +2811,8 @@ body.pure-view #info-card {
 }
 
 .astro-btn-primary {
-  background: linear-gradient(135deg, rgba(0, 150, 255, 0.45), rgba(0, 216, 255, 0.25));
-  border: 1px solid #00d8ff;
+  background: linear-gradient(135deg, rgba(80, 150, 230, 0.4), rgba(142, 197, 252, 0.2));
+  border: 1px solid #8ec5fc;
   color: #ffffff;
   padding: 10px 14px;
   border-radius: 4px;
@@ -2788,21 +2825,21 @@ body.pure-view #info-card {
 }
 
 .astro-btn-primary:hover {
-  background: linear-gradient(135deg, rgba(0, 180, 255, 0.65), rgba(0, 230, 255, 0.45));
-  box-shadow: 0 0 15px rgba(0, 216, 255, 0.5);
+  background: linear-gradient(135deg, rgba(100, 170, 245, 0.55), rgba(142, 197, 252, 0.35));
+  box-shadow: 0 0 12px rgba(142, 197, 252, 0.35);
   transform: translateY(-1px);
 }
 
 .astro-btn-primary.active {
-  background: linear-gradient(135deg, rgba(0, 230, 160, 0.45), rgba(0, 255, 200, 0.25));
-  border: 1px solid #00ffc8;
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.35), rgba(104, 211, 145, 0.2));
+  border: 1px solid #68d391;
   color: #ffffff;
-  box-shadow: 0 0 16px rgba(0, 255, 200, 0.45);
+  box-shadow: 0 0 12px rgba(104, 211, 145, 0.3);
 }
 
 .astro-btn-primary.active:hover {
-  background: linear-gradient(135deg, rgba(0, 250, 180, 0.65), rgba(0, 255, 220, 0.45));
-  box-shadow: 0 0 20px rgba(0, 255, 200, 0.65);
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.5), rgba(104, 211, 145, 0.35));
+  box-shadow: 0 0 16px rgba(104, 211, 145, 0.45);
 }
 
 .astro-btn-secondary {
@@ -2843,10 +2880,10 @@ body.pure-view #info-card {
 .astro-kbd {
   display: inline-block;
   padding: 2px 6px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(0, 216, 255, 0.4);
+  background: rgba(6, 16, 32, 0.7);
+  border: 1px solid rgba(142, 197, 252, 0.35);
   border-radius: 3px;
-  color: #00d8ff;
+  color: #8ec5fc;
   font-family: monospace;
   font-size: 10px;
   margin: 0 3px;
@@ -2854,11 +2891,11 @@ body.pure-view #info-card {
 
 /* ── Étiquette HTML pour anomalie non cartographiée ── */
 .poi-label-anomaly {
-  color: #ffaa33 !important;
-  border-color: rgba(255, 170, 51, 0.6) !important;
-  background: rgba(25, 15, 5, 0.8) !important;
-  text-shadow: 0 0 8px rgba(255, 170, 51, 0.85) !important;
-  box-shadow: 0 0 6px rgba(255, 170, 51, 0.4) !important;
+  color: #dfba6a !important;
+  border-color: rgba(223, 186, 106, 0.6) !important;
+  background: rgba(20, 16, 8, 0.82) !important;
+  text-shadow: 0 0 8px rgba(223, 186, 106, 0.6) !important;
+  box-shadow: 0 0 6px rgba(223, 186, 106, 0.25) !important;
 }
 
 
