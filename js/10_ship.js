@@ -1009,50 +1009,183 @@ function createHolographicMap() {
   rim.position.y = -0.60;
   holoMapGroup.add(rim);
 
-  // ── Mini Galaxy (particle spiral) ──
+  // ── Mini Galaxy Hologram (Faithful replica of createGalaxySpiral) ──
   const holoGalaxyGroup = new THREE.Group();
   holoGalaxyGroup.position.y = -0.15; // Float above pedestal
   holoMapGroup.add(holoGalaxyGroup);
 
-  const particleCount = 3000;
-  const positions = new Float32Array(particleCount * 3);
-  const colors = new Float32Array(particleCount * 3);
-  const sizes = new Float32Array(particleCount);
+  // Scaled down from 520,000 ly to 0.32 units radius to fit the table
+  const HOLO_SCALE = 0.32 / 520000;
+  const ARM_N = 1500;   // 1500 * 4 = 6000 arm particles
+  const BULGE_N = 2200; // golden central bar & bulge
+  const DISK_N = 1400;  // inter-arm diffuse haze
+  const HII_N = 400;    // bright pink HII nebulae
+  const TOTAL_N = 4 * ARM_N + BULGE_N + DISK_N + HII_N; // 10000 particles
 
-  for (let i = 0; i < particleCount; i++) {
-    const armIndex = i % 4;
-    const armAngle = (armIndex / 4) * Math.PI * 2;
-    const r = Math.random() * 0.35;
-    const windAngle = r * 5.0 + armAngle;
-    const spread = 0.03 + r * 0.06;
+  const positions = new Float32Array(TOTAL_N * 3);
+  const colors = new Float32Array(TOTAL_N * 3);
+  let idx = 0;
 
-    const x = Math.cos(windAngle) * r + (Math.random() - 0.5) * spread;
-    const z = Math.sin(windAngle) * r + (Math.random() - 0.5) * spread;
-    const y = (Math.random() - 0.5) * 0.02 * (1 - r / 0.35);
+  const SGR_EXCL = 22000 * HOLO_SCALE;
+  const SGR_FADE = 35000 * HOLO_SCALE;
 
-    positions[i * 3] = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
+  // 1. 4 Spiral Arms (Identical formula to createGalaxySpiral in 08_galactic_builder.js)
+  const armOffsets = [0, Math.PI * 0.52, Math.PI * 1.0, Math.PI * 1.52];
+  for (let arm = 0; arm < 4; arm++) {
+    for (let i = 0; i < ARM_N; i++) {
+      const t = Math.pow(Math.random(), 0.7);
+      const theta = t * 4.2 * Math.PI;
+      const r = (28000 * Math.exp(0.21 * theta)) * HOLO_SCALE;
 
-    // Color: bluish-white core, bluer outer
-    const t = r / 0.35;
-    colors[i * 3] = 0.5 + (1 - t) * 0.5;     // R
-    colors[i * 3 + 1] = 0.6 + (1 - t) * 0.4;  // G  
-    colors[i * 3 + 2] = 1.0;                     // B
+      const spreadW = (3000 * HOLO_SCALE) + r * 0.045;
+      const spread = (Math.random() - 0.5) * 2 * spreadW;
+      const g1 = Math.random() + 0.001, g2 = Math.random();
+      const height = Math.sqrt(-2 * Math.log(g1)) * Math.cos(2 * Math.PI * g2) * ((1800 * HOLO_SCALE) + r * 0.012);
 
-    sizes[i] = 1.5 + Math.random() * 2;
+      const angle = theta + armOffsets[arm];
+      const finalR = r + spread;
+      const px = Math.cos(angle) * finalR;
+      const pz = Math.sin(angle) * finalR;
+
+      const dc = Math.sqrt(px * px + height * height + pz * pz);
+      if (dc < SGR_EXCL) {
+        positions[idx * 3] = 0; positions[idx * 3 + 1] = -999; positions[idx * 3 + 2] = 0;
+        colors[idx * 3] = 0; colors[idx * 3 + 1] = 0; colors[idx * 3 + 2] = 0;
+        idx++; continue;
+      }
+      const fade = dc < SGR_FADE ? clamp((dc - SGR_EXCL) / (SGR_FADE - SGR_EXCL), 0, 1) : 1;
+      const armCenter = Math.abs(spread) / spreadW;
+      const dust = armCenter < 0.10 ? 0.35 + armCenter * 6.5 : 1.0;
+      const edgeFade = clamp(1 - dc / 0.32, 0.05, 1);
+      const brightness = (0.45 + Math.random() * 0.55) * fade * dust * edgeFade;
+
+      positions[idx * 3] = px;
+      positions[idx * 3 + 1] = height;
+      positions[idx * 3 + 2] = pz;
+
+      const rnd = Math.random();
+      if (rnd < 0.65) {
+        colors[idx * 3] = (0.60 + Math.random() * 0.15) * brightness;
+        colors[idx * 3 + 1] = (0.65 + Math.random() * 0.15) * brightness;
+        colors[idx * 3 + 2] = (0.90 + Math.random() * 0.10) * brightness;
+      } else if (rnd < 0.85) {
+        colors[idx * 3] = (0.75 + Math.random() * 0.15) * brightness;
+        colors[idx * 3 + 1] = (0.80 + Math.random() * 0.15) * brightness;
+        colors[idx * 3 + 2] = (0.95 + Math.random() * 0.05) * brightness;
+      } else {
+        colors[idx * 3] = (0.90 + Math.random() * 0.10) * brightness;
+        colors[idx * 3 + 1] = (0.85 + Math.random() * 0.10) * brightness;
+        colors[idx * 3 + 2] = (0.70 + Math.random() * 0.15) * brightness;
+      }
+      idx++;
+    }
+  }
+
+  // 2. Central Bulge & Bar (Golden ellipse matching real galaxy)
+  for (let i = 0; i < BULGE_N; i++) {
+    const r = Math.pow(Math.random(), 2.5) * (80000 * HOLO_SCALE);
+    const theta = Math.random() * Math.PI * 2;
+    const barAngle = 0.44;
+    const stretch = 1.8 - clamp(r / (80000 * HOLO_SCALE), 0, 1) * 0.6;
+    const rawX = Math.cos(theta) * r * stretch;
+    const rawZ = Math.sin(theta) * r;
+    const x = rawX * Math.cos(barAngle) - rawZ * Math.sin(barAngle);
+    const z = rawX * Math.sin(barAngle) + rawZ * Math.cos(barAngle);
+    const y = (Math.random() - 0.5) * r * 0.22;
+
+    const dc = Math.sqrt(x * x + y * y + z * z);
+    if (dc < SGR_EXCL) {
+      positions[idx * 3] = 0; positions[idx * 3 + 1] = -999; positions[idx * 3 + 2] = 0;
+      colors[idx * 3] = 0; colors[idx * 3 + 1] = 0; colors[idx * 3 + 2] = 0;
+      idx++; continue;
+    }
+    const fade = dc < SGR_FADE ? clamp((dc - SGR_EXCL) / (SGR_FADE - SGR_EXCL), 0, 1) : 1;
+    const brightness = (0.60 + Math.random() * 0.40) * fade;
+    const rFrac = clamp(dc / (80000 * HOLO_SCALE), 0, 1);
+
+    positions[idx * 3] = x;
+    positions[idx * 3 + 1] = y;
+    positions[idx * 3 + 2] = z;
+
+    colors[idx * 3] = 1.0 * brightness;
+    colors[idx * 3 + 1] = (0.90 - rFrac * 0.25 + Math.random() * 0.05) * brightness;
+    colors[idx * 3 + 2] = (0.58 - rFrac * 0.30 + Math.random() * 0.06) * brightness;
+    idx++;
+  }
+
+  // 3. Diffuse Disk Fill (Inter-arm soft blue-lavender haze)
+  for (let i = 0; i < DISK_N; i++) {
+    const r = (15000 * HOLO_SCALE) + Math.pow(Math.random(), 0.6) * (460000 * HOLO_SCALE);
+    const theta = Math.random() * Math.PI * 2;
+    const px = Math.cos(theta) * r;
+    const py = (Math.random() - 0.5) * (6000 * HOLO_SCALE);
+    const pz = Math.sin(theta) * r;
+
+    const dc = Math.sqrt(px * px + py * py + pz * pz);
+    if (dc < SGR_EXCL) {
+      positions[idx * 3] = 0; positions[idx * 3 + 1] = -999; positions[idx * 3 + 2] = 0;
+      colors[idx * 3] = 0; colors[idx * 3 + 1] = 0; colors[idx * 3 + 2] = 0;
+      idx++; continue;
+    }
+    const fade = dc < SGR_FADE ? clamp((dc - SGR_EXCL) / (SGR_FADE - SGR_EXCL), 0, 1) : 1;
+    const edgeFade = clamp(1 - dc / 0.32, 0, 1);
+    const brightness = (0.15 + Math.random() * 0.25) * fade * edgeFade;
+
+    positions[idx * 3] = px;
+    positions[idx * 3 + 1] = py;
+    positions[idx * 3 + 2] = pz;
+
+    colors[idx * 3] = (0.50 + Math.random() * 0.15) * brightness;
+    colors[idx * 3 + 1] = (0.52 + Math.random() * 0.15) * brightness;
+    colors[idx * 3 + 2] = (0.80 + Math.random() * 0.18) * brightness;
+    idx++;
+  }
+
+  // 4. Pink/Magenta H II Star Nurseries along the arms
+  for (let i = 0; i < HII_N; i++) {
+    const arm = Math.floor(Math.random() * 4);
+    const t = Math.pow(Math.random(), 0.6);
+    const theta = t * 4.2 * Math.PI;
+    const r = (28000 * Math.exp(0.21 * theta)) * HOLO_SCALE;
+    const spreadW = (3000 * HOLO_SCALE) + r * 0.04;
+    const spread = (Math.random() - 0.5) * 2 * spreadW * 0.7;
+    const height = (Math.random() - 0.5) * (3500 * HOLO_SCALE);
+
+    const angle = theta + armOffsets[arm];
+    const finalR = r + spread;
+    const px = Math.cos(angle) * finalR;
+    const pz = Math.sin(angle) * finalR;
+
+    const dc = Math.sqrt(px * px + height * height + pz * pz);
+    if (dc < SGR_EXCL) {
+      positions[idx * 3] = 0; positions[idx * 3 + 1] = -999; positions[idx * 3 + 2] = 0;
+      colors[idx * 3] = 0; colors[idx * 3 + 1] = 0; colors[idx * 3 + 2] = 0;
+      idx++; continue;
+    }
+    const fade = dc < SGR_FADE ? clamp((dc - SGR_EXCL) / (SGR_FADE - SGR_EXCL), 0, 1) : 1;
+    const brightness = (0.70 + Math.random() * 0.30) * fade;
+
+    positions[idx * 3] = px;
+    positions[idx * 3 + 1] = height;
+    positions[idx * 3 + 2] = pz;
+
+    colors[idx * 3] = (0.92 + Math.random() * 0.08) * brightness;
+    colors[idx * 3 + 1] = (0.22 + Math.random() * 0.20) * brightness;
+    colors[idx * 3 + 2] = (0.42 + Math.random() * 0.25) * brightness;
+    idx++;
   }
 
   const holoGeo = new THREE.BufferGeometry();
   holoGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   holoGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  holoGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
+  const ptex = (typeof getParticleTexture === 'function') ? getParticleTexture() : null;
   const holoMat = new THREE.PointsMaterial({
-    size: 0.006,
+    size: 0.007,
+    map: ptex,
     vertexColors: true,
     transparent: true,
-    opacity: 0.7,
+    opacity: 0.85,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     sizeAttenuation: true,
@@ -1061,49 +1194,66 @@ function createHolographicMap() {
   const holoParticles = new THREE.Points(holoGeo, holoMat);
   holoGalaxyGroup.add(holoParticles);
 
-  // ── Sun marker (golden dot) ──
-  const sunMarkerGeo = new THREE.SphereGeometry(0.008, 8, 8);
+  // ── Central Sgr A* Core in Hologram ──
+  const sgrCore = new THREE.Mesh(
+    new THREE.SphereGeometry(0.006, 12, 12),
+    new THREE.MeshBasicMaterial({ color: 0x020108 })
+  );
+  sgrCore.position.set(0, 0, 0);
+  holoGalaxyGroup.add(sgrCore);
+
+  const sgrAccretion = new THREE.Mesh(
+    new THREE.RingGeometry(0.007, 0.016, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0xffaa22,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    })
+  );
+  sgrAccretion.rotation.x = Math.PI / 2;
+  holoGalaxyGroup.add(sgrAccretion);
+
+  // ── Sun Marker (Position matches actual galactic coordinate [260000, 250, 0]) ──
+  const sunMarkerGeo = new THREE.SphereGeometry(0.006, 8, 8);
   const sunMarkerMat = new THREE.MeshStandardMaterial({
-    color: 0x000000, emissive: new THREE.Color(0xffcc44), emissiveIntensity: 2.0
+    color: 0x000000, emissive: new THREE.Color(0xffcc44), emissiveIntensity: 2.2
   });
-  // Sun position scaled: real sun is at ~26000 ly from center in a 500000 ly radius galaxy
-  // Scaled to our 0.35 radius: 26000/500000 * 0.35 = 0.0182
+  // Real Sun is at pos [260000, 250, 0], scaled: 260000 * HOLO_SCALE
   const sunMarker = new THREE.Mesh(sunMarkerGeo, sunMarkerMat);
-  sunMarker.position.set(0.0182, 0, 0);
+  sunMarker.position.set(260000 * HOLO_SCALE, 250 * HOLO_SCALE, 0);
   holoGalaxyGroup.add(sunMarker);
 
   // Sun label glow ring
   const sunRing = new THREE.Mesh(
-    new THREE.TorusGeometry(0.015, 0.002, 6, 16),
+    new THREE.TorusGeometry(0.012, 0.0018, 6, 16),
     new THREE.MeshStandardMaterial({
-      color: 0x000000, emissive: new THREE.Color(0xffcc44), emissiveIntensity: 1.5
+      color: 0x000000, emissive: new THREE.Color(0xffcc44), emissiveIntensity: 1.8
     })
   );
   sunRing.rotation.x = Math.PI / 2;
   sunRing.position.copy(sunMarker.position);
   holoGalaxyGroup.add(sunRing);
 
-  // ── POI markers (small colored dots) ──
-  const poiMarkerMat = new THREE.MeshStandardMaterial({
-    color: 0x000000, emissive: new THREE.Color(0x4080ff), emissiveIntensity: 1.2
-  });
+  // ── POI Markers (Small sharp beacon pips directly situated on arms) ──
+  if (typeof GALACTIC_POI !== 'undefined') {
+    for (const poi of GALACTIC_POI) {
+      if (poi.id === 'sol') continue;
+      const px = poi.pos[0] * HOLO_SCALE;
+      const py = poi.pos[1] * HOLO_SCALE;
+      const pz = poi.pos[2] * HOLO_SCALE;
 
-  for (const poi of GALACTIC_POI) {
-    if (poi.id === 'sol') continue; // Already have sun marker
-    const px = (poi.pos[0] / 500000) * 0.35;
-    const py = (poi.pos[1] / 500000) * 0.35;
-    const pz = (poi.pos[2] / 500000) * 0.35;
-
-    const dot = new THREE.Mesh(
-      new THREE.SphereGeometry(0.005, 6, 6),
-      new THREE.MeshStandardMaterial({
-        color: 0x000000,
-        emissive: new THREE.Color(poi.dotColor || '#4080ff'),
-        emissiveIntensity: 1.0
-      })
-    );
-    dot.position.set(px, py, pz);
-    holoGalaxyGroup.add(dot);
+      const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.0035, 6, 6),
+        new THREE.MeshStandardMaterial({
+          color: 0x000000,
+          emissive: new THREE.Color(poi.dotColor || '#4080ff'),
+          emissiveIntensity: 1.5
+        })
+      );
+      dot.position.set(px, py, pz);
+      holoGalaxyGroup.add(dot);
+    }
   }
 
   // ── Holographic projection beam (light column from pedestal) ──
