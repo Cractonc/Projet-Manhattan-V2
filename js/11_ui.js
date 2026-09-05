@@ -783,6 +783,7 @@ function renderAstrometryList() {
 
   for (const poi of filtered) {
     const isDisc = discovered.includes(poi.id);
+    const isTarget = (state.cockpitTarget === poi.id);
     const item = document.createElement('div');
     item.className = 'astro-poi-item' + (isDisc ? '' : ' locked') + (state.selectedPOI === poi.id ? ' active' : '');
     item.dataset.id = poi.id;
@@ -792,11 +793,17 @@ function renderAstrometryList() {
     const subText = isDisc
       ? (poi.type || 'Secteur stellaire')
       : `Secteur [${Math.round(poi.pos[0]/1000)}k, ${Math.round(poi.pos[2]/1000)}k]`;
+    const targetTagHtml = isTarget
+      ? `<span style="margin-left:auto; font-size:9px; color:#00ffc8; font-weight:700; border:1px solid rgba(0,255,200,0.5); border-radius:3px; padding:1px 5px; text-shadow:0 0 5px rgba(0,255,200,0.5);">🎯 CAP</span>`
+      : '';
 
     item.innerHTML = `
       <div class="astro-poi-dot" style="background:${dotColor}; color:${dotColor};"></div>
-      <div class="astro-poi-info">
-        <div class="astro-poi-name">${nameText}</div>
+      <div class="astro-poi-info" style="display:flex; flex-direction:column; flex:1;">
+        <div style="display:flex; align-items:center;">
+          <span class="astro-poi-name">${nameText}</span>
+          ${targetTagHtml}
+        </div>
         <div class="astro-poi-sub">${subText}</div>
       </div>
     `;
@@ -847,6 +854,12 @@ function selectAstrometryPOI(poiId) {
   const card = document.getElementById('astro-inspect-card');
   if (!card) return;
 
+  const isTargetLocked = (state.cockpitTarget === poiId);
+  const btnLabel = isTargetLocked
+    ? '✅ CAP VERROUILLÉ [DESTINATION ACTIVE]'
+    : (isDisc ? '🎯 DÉFINIR COMME DESTINATION DE VOL' : '🎯 TRACER LE CAP DE NAVIGATION');
+  const btnActiveCls = isTargetLocked ? ' active' : '';
+
   if (isDisc) {
     // ── ASTRE DÉCOUVERT : SIMULATION 3D ENTIÈREMENT DÉBLOQUÉE ──
     let gridHtml = '';
@@ -877,7 +890,7 @@ function selectAstrometryPOI(poiId) {
       <div class="astro-grid-table">${gridHtml}</div>
       <div class="astro-desc">${descText}</div>
       <div class="astro-card-actions">
-        <button class="astro-btn-primary" id="btn-astro-set-flight">🎯 DÉFINIR COMME DESTINATION DE VOL</button>
+        <button class="astro-btn-primary${btnActiveCls}" id="btn-astro-set-flight">${btnLabel}</button>
         <button class="astro-btn-secondary" id="btn-astro-recenter">🔍 RECENTRER LA VUE 3D</button>
       </div>
     `;
@@ -912,7 +925,7 @@ function selectAstrometryPOI(poiId) {
       </div>
       ${questHintHtml}
       <div class="astro-card-actions">
-        <button class="astro-btn-primary" id="btn-astro-set-flight">🎯 TRACER LE CAP DE NAVIGATION</button>
+        <button class="astro-btn-primary${btnActiveCls}" id="btn-astro-set-flight">${btnLabel}</button>
         <button class="astro-btn-secondary" id="btn-astro-recenter">🔍 CENTRER SUR L'ANOMALIE</button>
       </div>
     `;
@@ -943,6 +956,20 @@ function setFlightTargetFromAstrometry(poiId) {
   if (typeof galacticPOIObjects === 'undefined' || !galacticPOIObjects[poiId]) return;
 
   state.cockpitTarget = poiId;
+  state.selectedPOI = poiId;
+
+  // Audio confirmation chime
+  if (typeof playNavLockChime === 'function') {
+    playNavLockChime();
+  }
+
+  // Instant button visual feedback
+  const btnSet = document.getElementById('btn-astro-set-flight');
+  if (btnSet) {
+    btnSet.classList.add('active');
+    btnSet.innerHTML = '✅ CAP VERROUILLÉ [DESTINATION ACTIVE]';
+  }
+
   const discovered = (state.player && Array.isArray(state.player.discoveredPOIs))
     ? state.player.discoveredPOIs
     : ['sol'];
@@ -952,8 +979,17 @@ function setFlightTargetFromAstrometry(poiId) {
   if (typeof setHUDTarget === 'function') {
     setHUDTarget(name);
   }
+
+  // Update 2D Wall map immediately
+  if (typeof render2DGalaxyMap === 'function') {
+    render2DGalaxyMap(poiId);
+  }
+
+  // Refresh Astrometry list to update 🎯 CAP tag
+  renderAstrometryList();
+
   if (typeof showNotification === 'function') {
-    showNotification(`🧭 Cap verrouillé sur l'ordinateur de bord : ${name}`);
+    showNotification(`🧭 Cap verrouillé sur l'ordinateur de bord : ${name}`, 2200);
   }
 }
 

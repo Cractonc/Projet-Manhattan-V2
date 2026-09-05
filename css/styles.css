@@ -595,6 +595,122 @@ canvas {
   opacity: 1;
 }
 
+/* ── Cockpit Windshield 3D Waypoint ── */
+.ckp-waypoint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.15s ease;
+  z-index: 105;
+}
+
+.ckp-waypoint.visible {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ckp-wp-reticle {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ckp-wp-bracket {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: rgba(0, 216, 255, 0.85);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ckp-wp-bracket.bl-tl { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
+.ckp-wp-bracket.bl-tr { top: 0; right: 0; border-top: 2px solid; border-right: 2px solid; }
+.ckp-wp-bracket.bl-bl { bottom: 0; left: 0; border-bottom: 2px solid; border-left: 2px solid; }
+.ckp-wp-bracket.bl-br { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
+
+.ckp-wp-diamond {
+  width: 7px;
+  height: 7px;
+  background: #00d8ff;
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px #00d8ff;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.ckp-wp-info {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(3, 12, 24, 0.85);
+  border: 1px solid rgba(0, 216, 255, 0.45);
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.7);
+  border-radius: 3px;
+  padding: 4px 9px;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.ckp-wp-tag {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: #00d8ff;
+  opacity: 0.85;
+}
+
+.ckp-wp-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(0, 216, 255, 0.6);
+}
+
+.ckp-wp-dist {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: #ffd700;
+  margin-top: 1px;
+}
+
+.ckp-wp-status {
+  font-size: 7.5px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+/* Aligné avec le réticule de vol */
+.ckp-waypoint.aligned .ckp-wp-bracket {
+  border-color: #00ffc8;
+  box-shadow: 0 0 8px #00ffc8;
+}
+
+.ckp-waypoint.aligned .ckp-wp-diamond {
+  background: #00ffc8;
+  box-shadow: 0 0 12px #00ffc8;
+}
+
+.ckp-waypoint.aligned .ckp-wp-info {
+  border-color: #00ffc8;
+  box-shadow: 0 0 15px rgba(0, 255, 200, 0.4);
+}
+
+.ckp-waypoint.aligned .ckp-wp-tag {
+  color: #00ffc8;
+}
+
+.ckp-waypoint.aligned .ckp-wp-status {
+  color: #00ffc8;
+  font-weight: bold;
+}
+
 .ckp-target {
   position: absolute;
   top: 28px;
@@ -2759,6 +2875,18 @@ body.pure-view #info-card {
   background: linear-gradient(135deg, rgba(0, 180, 255, 0.65), rgba(0, 230, 255, 0.45));
   box-shadow: 0 0 15px rgba(0, 216, 255, 0.5);
   transform: translateY(-1px);
+}
+
+.astro-btn-primary.active {
+  background: linear-gradient(135deg, rgba(0, 230, 160, 0.45), rgba(0, 255, 200, 0.25));
+  border: 1px solid #00ffc8;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 255, 200, 0.45);
+}
+
+.astro-btn-primary.active:hover {
+  background: linear-gradient(135deg, rgba(0, 250, 180, 0.65), rgba(0, 255, 220, 0.45));
+  box-shadow: 0 0 20px rgba(0, 255, 200, 0.65);
 }
 
 .astro-btn-secondary {
