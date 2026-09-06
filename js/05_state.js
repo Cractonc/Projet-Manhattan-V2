@@ -87,8 +87,29 @@ var state = {
     targetPOI: null,
     startPos: new THREE.Vector3(),
     endPos: new THREE.Vector3(),
-  }
+  },
+  // Mobile / Tablet touch controls mode
+  mobileMode: false
 };
+
+function setMobileMode(enabled, shouldSave) {
+  state.mobileMode = !!enabled;
+  if (state.mobileMode) {
+    document.body.classList.add('mobile-mode-active');
+  } else {
+    document.body.classList.remove('mobile-mode-active');
+  }
+  const toggleEl = document.getElementById('toggle-mobile-mode');
+  if (toggleEl && toggleEl.checked !== state.mobileMode) {
+    toggleEl.checked = state.mobileMode;
+  }
+  if (typeof updateMobileControlsVisibility === 'function') {
+    updateMobileControlsVisibility();
+  }
+  if (shouldSave !== false && typeof saveGame === 'function') {
+    saveGame();
+  }
+}
 
 // ============================================================
 // SAVE / LOAD SYSTEM
@@ -182,6 +203,10 @@ function loadGame() {
       }
       if (typeof state.player.credits !== 'number') {
         state.player.credits = 0;
+      }
+
+      if (typeof state.mobileMode === 'boolean') {
+        setMobileMode(state.mobileMode, false);
       }
       
       console.log('Game loaded from LocalStorage.');

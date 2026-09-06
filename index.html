@@ -182,7 +182,7 @@
       <div class="tele-target-name" id="tele-name">SCANNING...</div>
       <div class="tele-target-info" id="tele-info">DISTANCE: --- | CLASS: ---</div>
     </div>
-    <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:0.58rem; letter-spacing:0.18em; color:rgba(160,210,255,0.6); background:rgba(0,0,0,0.4); padding:4px 18px; border-radius:3px; border:1px solid rgba(122,184,224,0.2); pointer-events:none; opacity:0.5;">F QUITTER L'OBSERVATION</div>
+    <button id="btn-exit-telescope" class="tele-exit-btn" title="Quitter l'observation (F)">✕ QUITTER L'OBSERVATION [F]</button>
   </div>
 
   <!-- Astrometry 3D Simulation Lab HUD -->
@@ -246,6 +246,72 @@
     <div class="warp-eta" id="warp-eta-text"></div>
   </div>
 
+  <!-- Mobile & Tablet Touch Controls Overlay (Désactivé par défaut) -->
+  <div id="mobile-controls-overlay">
+    <!-- 1. WALK MODE OVERLAY -->
+    <div id="mobile-walk-controls" class="mobile-sub-overlay">
+      <!-- Joystick virtuel bas-gauche -->
+      <div id="vjoy-zone">
+        <div id="vjoy-base">
+          <div id="vjoy-knob"></div>
+        </div>
+      </div>
+      <!-- Zone droite de regard (touch-look zone) -->
+      <div id="mobile-walk-look-zone"></div>
+      <!-- Bouton Sprint bas-gauche au dessus du joystick -->
+      <div class="mobile-walk-actions">
+        <button id="btn-mobile-sprint" class="mobile-touch-btn mobile-sprint-btn" title="Maintenir pour courir">⚡ SPRINT</button>
+      </div>
+    </div>
+
+    <!-- 2. COCKPIT FLIGHT MODE OVERLAY (Approche 1: Hybride Touchpad + Slider) -->
+    <div id="mobile-cockpit-controls" class="mobile-sub-overlay">
+      <!-- Colonne gauche : Gaz & Propulsion -->
+      <div class="mobile-cockpit-left">
+        <div class="mobile-throttle-wrapper">
+          <div class="mobile-throttle-label">GAZ</div>
+          <div id="mobile-throttle-track">
+            <div id="mobile-throttle-fill"></div>
+            <div id="mobile-throttle-handle"></div>
+          </div>
+          <div id="mobile-throttle-val">0%</div>
+        </div>
+        <div class="mobile-propulsion-btns">
+          <button id="btn-mobile-stop" class="mobile-touch-btn mobile-btn-stop" title="Frein d'urgence">🛑 STOP</button>
+          <button id="btn-mobile-boost" class="mobile-touch-btn mobile-btn-boost" title="Hyperpropulsion">⚡ BOOST</button>
+          <button id="btn-mobile-rev" class="mobile-touch-btn mobile-btn-rev" title="Marche arrière">◀ REV</button>
+        </div>
+      </div>
+
+      <!-- Zone centrale/droite tactile pour orienter le vaisseau (Pitch / Yaw) -->
+      <div id="mobile-cockpit-look-zone"></div>
+
+      <!-- Barre supérieure : Se lever / Quitter le vaisseau -->
+      <div class="mobile-cockpit-topbar">
+        <button id="btn-mobile-standup" class="mobile-touch-btn mobile-btn-nav" title="Se lever du siège pour marcher (F)">🚶 SE LEVER</button>
+        <button id="btn-mobile-exit-cockpit" class="mobile-touch-btn mobile-btn-nav" title="Vue libre orbitale (V)">◎ VUE LIBRE</button>
+      </div>
+
+      <!-- Cluster d'actions spatiales en bas à droite -->
+      <div class="mobile-cockpit-right">
+        <button id="btn-mobile-autonav" class="mobile-touch-btn mobile-round-btn mobile-btn-autonav" title="Pilote Automatique">🧭 NAV</button>
+        <button id="btn-mobile-target" class="mobile-touch-btn mobile-round-btn mobile-btn-target" title="Cibler l'astre le plus proche">🎯 CIBLE</button>
+        <button id="btn-mobile-level" class="mobile-touch-btn mobile-round-btn mobile-btn-level" title="Réaligner horizon">⚖️ HORIZON</button>
+        <button id="btn-mobile-laser" class="mobile-touch-btn mobile-round-btn mobile-btn-laser" title="Laser de minage thermique">🔴 LASER</button>
+        <button id="btn-mobile-scan" class="mobile-touch-btn mobile-round-btn mobile-btn-scan" title="Scanner radar">📡 SCAN</button>
+        <button id="btn-mobile-warp" class="mobile-touch-btn mobile-round-btn mobile-btn-warp" title="Saut FTL Warp" style="display:none;">🌌 WARP</button>
+        <button id="btn-mobile-scale" class="mobile-touch-btn mobile-round-btn mobile-btn-scale" title="Basculer Système ↔ Galaxie">🪐 ÉCHELLE</button>
+      </div>
+    </div>
+
+    <!-- 3. ORBIT / SPECTATOR MODE OVERLAY -->
+    <div id="mobile-orbit-controls" class="mobile-sub-overlay">
+      <div class="mobile-orbit-bottom">
+        <button id="btn-mobile-enter-cockpit" class="mobile-touch-btn mobile-btn-enter" title="Entrer dans le vaisseau">🚀 ENTRER DANS LE VAISSEAU</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div id="settings-overlay" class="modal-overlay">
     <div class="modal-window">
@@ -255,6 +321,18 @@
       </div>
       
       <div class="modal-content" id="settings-main-view">
+        <div class="settings-section">
+          <div class="settings-toggle-row">
+            <div>
+              <h3>📱 Mode Mobile & Tablette</h3>
+              <p class="settings-desc">Active les commandes tactiles (joystick virtuel à gauche, curseur de gaz, boutons d'action cliquables).</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-mobile-mode">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
         <div class="settings-section">
           <h3>Raccourcis & Commandes</h3>
           <p class="settings-desc">Consultez tous les contrôles clavier et souris pour chaque mode du simulateur.</p>
@@ -277,6 +355,7 @@
           <button class="shortcuts-tab-btn" data-tab="cockpit">🚀 PILOTAGE (COCKPIT)</button>
           <button class="shortcuts-tab-btn" data-tab="walk">🚶 INTÉRIEUR VAISSEAU</button>
           <button class="shortcuts-tab-btn" data-tab="orbit">◎ VUE LIBRE ORBITALE</button>
+          <button class="shortcuts-tab-btn" data-tab="mobile">📱 COMMANDES TACTILES</button>
         </div>
 
         <div class="shortcuts-grid">
@@ -345,6 +424,25 @@
               <div class="shortcut-row"><span class="key-badge">G</span><span><strong>Basculer échelle</strong> Galaxie / Système</span></div>
               <div class="shortcut-row"><span class="key-badge">Espace</span><span><strong>Mettre en pause</strong> la simulation</span></div>
             </div>
+
+            <div class="shortcut-group" data-group="mobile">
+              <h4>📱 Commandes Tactiles (Tablette / Mobile)</h4>
+              <div class="shortcut-subheading">🚶 Mode Marche (Vaisseau)</div>
+              <div class="shortcut-row"><span class="key-badge">Joystick Gauche</span><span><strong>Déplacement</strong> fluide (pousser à fond pour sprinter)</span></div>
+              <div class="shortcut-row"><span class="key-badge">Glisser à droite</span><span><strong>Orienter la vue</strong> (regarder autour)</span></div>
+              <div class="shortcut-row"><span class="key-badge">Bouton Cliquable</span><span><strong>Interagir / Piloter</strong> (remplace la touche [F])</span></div>
+              <div class="shortcut-row"><span class="key-badge">Bouton ⚡ SPRINT</span><span><strong>Courir / Accélérer</strong> la marche</span></div>
+
+              <div class="shortcut-subheading">🚀 Mode Pilotage (Cockpit)</div>
+              <div class="shortcut-row"><span class="key-badge">Curseur Gaz (Gauche)</span><span><strong>Accélérer / Ralentir</strong> (0 à 100%)</span></div>
+              <div class="shortcut-row"><span class="key-badge">Glisser au centre/droite</span><span><strong>Virages & Tangage</strong> (contrôle précis du nez)</span></div>
+              <div class="shortcut-row"><span class="key-badge">🛑 STOP</span><span><strong>Freinage d'urgence</strong> (arrêt instantané)</span></div>
+              <div class="shortcut-row"><span class="key-badge">🧭 NAV AUTO</span><span><strong>Pilote Automatique</strong> (navigation autonome vers cible)</span></div>
+              <div class="shortcut-row"><span class="key-badge">🎯 CIBLE</span><span><strong>Cibler & Cycler</strong> les astres et POI</span></div>
+              <div class="shortcut-row"><span class="key-badge">⚖️ HORIZON</span><span><strong>Remise à plat</strong> automatique de l'assiette</span></div>
+              <div class="shortcut-row"><span class="key-badge">🔴 LASER / 📡 SCAN</span><span><strong>Minage & Radar</strong> (maintenir le bouton)</span></div>
+              <div class="shortcut-row"><span class="key-badge">🚶 SE LEVER</span><span><strong>Retour au mode marche</strong> dans le vaisseau</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -409,6 +507,7 @@
   <script src="js/10_ship.js"></script>
   <script src="js/11_ui.js"></script>
   <script src="js/12_main.js"></script>
+  <script src="js/13_touch.js"></script>
 </body>
 
 </html>

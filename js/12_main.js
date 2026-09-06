@@ -168,6 +168,10 @@ function animate() {
 
   updateLabels();
 
+  if (typeof updateTouchControls === 'function') {
+    updateTouchControls(dt);
+  }
+
   // Rotate sun texture
   if (planetObjects['sun'] && planetObjects['sun'].mesh) {
     planetObjects['sun'].mesh.rotation.y += dt * 0.03;
@@ -577,7 +581,22 @@ function setupEvents() {
       const dx = e.touches[0].clientX - lastTX;
       const dy = e.touches[0].clientY - lastTY;
       lastTX = e.touches[0].clientX; lastTY = e.touches[0].clientY;
-      if (state.cameraMode === 'ASTROMETRY' || state.scaleLevel === 'GALACTIC') {
+      if (state.cameraMode === 'ASTROMETRY') {
+        galCam.tTheta -= dx * 0.006;
+        galCam.tPhi = clamp(galCam.tPhi + dy * 0.006, 0.1, Math.PI - 0.1);
+        return;
+      }
+      if (state.cameraMode === 'WALK') {
+        walkKeys.mouseDX += dx;
+        walkKeys.mouseDY += dy;
+        return;
+      }
+      if (state.cameraMode === 'COCKPIT') {
+        cockpitKeys.mouseDX += dx;
+        cockpitKeys.mouseDY += dy;
+        return;
+      }
+      if (state.scaleLevel === 'GALACTIC') {
         galCam.tTheta -= dx * 0.006;
         galCam.tPhi = clamp(galCam.tPhi + dy * 0.006, 0.1, Math.PI - 0.1);
       } else {
@@ -674,19 +693,8 @@ function setupEvents() {
           e.preventDefault();
           return;
         case 'KeyF':
-          if (state.observing) {
-            exitObservationMode();
-          } else {
-            // Interact: sit at pilot seat if near
-            if (state.currentRoom === 'cockpit' && walker.position.z < 0.3 && Math.abs(walker.position.x) < 0.5) {
-              enterPilotFromWalk();
-            } else if (state.currentRoom === 'observatory' && walker.position.z > 0.5 && walker.position.z < 1.5 && Math.abs(walker.position.x) < 0.6) {
-              enterObservationMode();
-            } else if (state.currentRoom === 'galaxymap' && walker.floor === 0) {
-              if (typeof enterAstrometryMode === 'function') enterAstrometryMode();
-            } else {
-              walkKeys.interact = true;
-            }
+          if (typeof triggerWalkInteraction === 'function') {
+            triggerWalkInteraction();
           }
           return;
         case 'KeyV':
@@ -920,6 +928,8 @@ function setupEvents() {
       document.getElementById('settings-overlay').classList.add('active');
       document.getElementById('settings-main-view').style.display = 'block';
       document.getElementById('settings-shortcuts-view').style.display = 'none';
+      const tEl = document.getElementById('toggle-mobile-mode');
+      if (tEl) tEl.checked = !!state.mobileMode;
     });
   }
   const btnCloseSettings = document.getElementById('btn-close-settings');
@@ -942,6 +952,16 @@ function setupEvents() {
       document.getElementById('settings-main-view').style.display = 'block';
     });
   }
+  const toggleMobileModeEl = document.getElementById('toggle-mobile-mode');
+  if (toggleMobileModeEl) {
+    toggleMobileModeEl.checked = !!state.mobileMode;
+    toggleMobileModeEl.addEventListener('change', (e) => {
+      if (typeof setMobileMode === 'function') {
+        setMobileMode(e.target.checked);
+      }
+    });
+  }
+
   const settingsOverlayEl = document.getElementById('settings-overlay');
   if (settingsOverlayEl) {
     settingsOverlayEl.addEventListener('click', (e) => {
@@ -958,6 +978,7 @@ function setupEvents() {
   const groupCockpit = document.querySelector('.shortcut-group[data-group="cockpit"]');
   const groupWalk = document.querySelector('.shortcut-group[data-group="walk"]');
   const groupOrbit = document.querySelector('.shortcut-group[data-group="orbit"]');
+  const groupMobile = document.querySelector('.shortcut-group[data-group="mobile"]');
 
   shortcutTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -969,24 +990,35 @@ function setupEvents() {
         if (groupCockpit) groupCockpit.style.display = '';
         if (groupWalk) groupWalk.style.display = '';
         if (groupOrbit) groupOrbit.style.display = '';
+        if (groupMobile) groupMobile.style.display = '';
         if (secondaryCol) secondaryCol.style.display = '';
         if (shortcutGrid) shortcutGrid.classList.remove('single-column');
       } else if (tab === 'cockpit') {
         if (groupCockpit) groupCockpit.style.display = '';
         if (groupWalk) groupWalk.style.display = 'none';
         if (groupOrbit) groupOrbit.style.display = 'none';
+        if (groupMobile) groupMobile.style.display = 'none';
         if (secondaryCol) secondaryCol.style.display = 'none';
         if (shortcutGrid) shortcutGrid.classList.add('single-column');
       } else if (tab === 'walk') {
         if (groupCockpit) groupCockpit.style.display = 'none';
         if (groupWalk) groupWalk.style.display = '';
         if (groupOrbit) groupOrbit.style.display = 'none';
+        if (groupMobile) groupMobile.style.display = 'none';
         if (secondaryCol) secondaryCol.style.display = '';
         if (shortcutGrid) shortcutGrid.classList.add('single-column');
       } else if (tab === 'orbit') {
         if (groupCockpit) groupCockpit.style.display = 'none';
         if (groupWalk) groupWalk.style.display = 'none';
         if (groupOrbit) groupOrbit.style.display = '';
+        if (groupMobile) groupMobile.style.display = 'none';
+        if (secondaryCol) secondaryCol.style.display = '';
+        if (shortcutGrid) shortcutGrid.classList.add('single-column');
+      } else if (tab === 'mobile') {
+        if (groupCockpit) groupCockpit.style.display = 'none';
+        if (groupWalk) groupWalk.style.display = 'none';
+        if (groupOrbit) groupOrbit.style.display = 'none';
+        if (groupMobile) groupMobile.style.display = '';
         if (secondaryCol) secondaryCol.style.display = '';
         if (shortcutGrid) shortcutGrid.classList.add('single-column');
       }

@@ -1832,6 +1832,25 @@ function exitObservationMode() {
   cockpitCamera.updateProjectionMatrix();
 }
 
+function triggerWalkInteraction() {
+  if (state.observing) {
+    exitObservationMode();
+    return;
+  }
+  const inElevator = state.currentRoom === 'elevator';
+  if (state.currentRoom === 'cockpit' && walker.position.z < 0.3 && Math.abs(walker.position.x) < 0.5) {
+    enterPilotFromWalk();
+  } else if (state.currentRoom === 'observatory' && walker.position.z > 0.5 && walker.position.z < 1.5 && Math.abs(walker.position.x) < 0.6) {
+    enterObservationMode();
+  } else if (state.currentRoom === 'galaxymap' && walker.floor === 0) {
+    if (typeof enterAstrometryMode === 'function') enterAstrometryMode();
+  } else if (inElevator) {
+    walker.targetFloor = walker.floor === 0 ? 1 : (walker.floor === 1 ? -1 : 0);
+  } else {
+    walkKeys.interact = true;
+  }
+}
+
 function enterAstrometryMode() {
   if (state.cameraMode !== 'WALK') return;
   state.prevCameraMode = 'WALK';
@@ -2086,19 +2105,28 @@ function updateWalkMode(dt) {
   const nearPilotSeat = walker.position.z < 0.3 && Math.abs(walker.position.x) < 0.5 && state.currentRoom === 'cockpit';
   const nearTelescope = walker.position.z > 0.5 && walker.position.z < 1.5 && Math.abs(walker.position.x) < 0.6 && state.currentRoom === 'observatory';
   const nearGalaxyMap = state.currentRoom === 'galaxymap' && walker.floor === 0;
+  const isMobile = !!state.mobileMode;
+
+  if (promptEl && !promptEl._hasClickListener) {
+    promptEl._hasClickListener = true;
+    promptEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerWalkInteraction();
+    });
+  }
 
   if (nearPilotSeat) {
     promptEl.classList.add('visible');
-    promptEl.textContent = 'APPUYEZ [F] POUR PILOTER';
+    promptEl.textContent = isMobile ? '🎮 TOUCHER POUR PILOTER' : 'APPUYEZ [F] POUR PILOTER';
   } else if (nearTelescope) {
     promptEl.classList.add('visible');
-    promptEl.textContent = 'APPUYEZ [F] POUR OBSERVER';
+    promptEl.textContent = isMobile ? '🔭 TOUCHER POUR OBSERVER' : 'APPUYEZ [F] POUR OBSERVER';
   } else if (nearGalaxyMap) {
     promptEl.classList.add('visible');
-    promptEl.textContent = 'APPUYEZ [F] POUR CONSULTER LES ARCHIVES 3D';
+    promptEl.textContent = isMobile ? '🛰️ TOUCHER POUR ARCHIVES 3D' : 'APPUYEZ [F] POUR CONSULTER LES ARCHIVES 3D';
   } else if (inElevator) {
     promptEl.classList.add('visible');
-    promptEl.textContent = 'APPUYEZ [F] POUR CHANGER D\'ÉTAGE';
+    promptEl.textContent = isMobile ? '🛗 TOUCHER POUR CHANGER D\'ÉTAGE' : 'APPUYEZ [F] POUR CHANGER D\'ÉTAGE';
   } else {
     promptEl.classList.remove('visible');
   }
