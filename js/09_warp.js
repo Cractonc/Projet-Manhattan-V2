@@ -491,128 +491,382 @@ function triggerWormholeJump(wormholeData) {
   if (_isWormholeJumping) return;
   _isWormholeJumping = true;
 
-  // 1. Activer le cooldown (4 secondes)
-  state.wormholeCooldown = 4.0;
+  // 1. Initialiser le cooldown de sécurité (6 secondes)
+  state.wormholeCooldown = 6.0;
 
-  // 2. Feedback sonore si audio disponible
-  playWormholeAudio();
-
-  // 3. Éléments visuels pour le flash et la transition FTL
+  // 2. Récupérer les éléments visuels du DOM
   const overlay = document.getElementById('warp-overlay');
   const fxCanvas = document.getElementById('warp-fx');
   const transitionDiv = document.getElementById('cockpit-transition');
+  const cockpitHud = document.getElementById('cockpit-hud');
 
-  if (overlay) overlay.classList.add('active');
-  if (fxCanvas) fxCanvas.classList.add('active');
-  if (transitionDiv) {
-    transitionDiv.style.background = '#e6ffff'; // Flash cyan/blanc
-    transitionDiv.classList.add('active');
-    setTimeout(() => {
-      if (transitionDiv) transitionDiv.classList.remove('active');
-    }, 280);
+  if (overlay) {
+    overlay.classList.add('active');
+    overlay.classList.add('wormhole-active');
+  }
+  if (fxCanvas) {
+    fxCanvas.classList.add('active');
+    if (typeof initWarpFx === 'function') initWarpFx();
   }
 
-  // Pic de Bloom temporaire pour effet de saturation lumineuse
-  const prevBloomStrength = (typeof bloomPass !== 'undefined' && bloomPass) ? bloomPass.strength : 0.4;
-  if (typeof bloomPass !== 'undefined' && bloomPass) {
-    bloomPass.strength = 1.4;
-  }
-
-  // Animation FTL sur ~1.0 seconde (FOV + streaks + distorsion)
-  const startTime = performance.now();
-  const jumpDuration = 1000;
-  let hasTeleported = false;
+  // 3. Sauvegarder les états initiaux des passes de post-processing et de la caméra
+  const prevBloomStrength = (typeof bloomPass !== 'undefined' && bloomPass) ? bloomPass.strength : 0.40;
+  const prevChromaAmount = (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material && chromaPass.material.uniforms.u_chromaAmount)
+    ? chromaPass.material.uniforms.u_chromaAmount.value
+    : 0.0020;
 
   const baseFov = (typeof cockpitCamera !== 'undefined' && cockpitCamera) ? cockpitCamera.fov : 75;
+  const baseCamX = (typeof cockpitCamera !== 'undefined' && cockpitCamera) ? cockpitCamera.position.x : 0;
+  const baseCamY = (typeof cockpitCamera !== 'undefined' && cockpitCamera) ? cockpitCamera.position.y : 0.08;
+  const baseCamZ = (typeof cockpitCamera !== 'undefined' && cockpitCamera) ? cockpitCamera.position.z : -0.5;
 
-  function animateJump(now) {
+  // 4. Lancer le synthétiseur audio relativiste
+  playWormholeAudioSequence();
+
+  // Notification d'engagement métrique
+  if (typeof showNotification === 'function') {
+    showNotification("ATTENTION : GORGE D'EINSTEIN-ROSEN // DISTORSION GÉODÉSIQUE ACTIVE", 2500);
+  }
+
+  const startTime = performance.now();
+  const totalDuration = 3800; // 3.8 secondes pour les 4 phases
+  let hasInverted = false;
+  let hasTeleported = false;
+  let hasGlitchStarted = false;
+
+  function animateWormholeTransit(now) {
     const currentTime = (typeof now === 'number' && !isNaN(now)) ? now : performance.now();
     const elapsed = currentTime - startTime;
-    const progress = Math.min(1.0, elapsed / jumpDuration);
+    const progress = clamp(elapsed / totalDuration, 0.0, 1.0);
 
-    // Dessin intensif des traînées d'espace-temps
-    const streakIntensity = Math.sin(progress * Math.PI);
-    if (typeof drawWarpStreaks === 'function') {
-      drawWarpStreaks(streakIntensity * 1.5);
-    }
+    // ═══════════════════════════════════════════════════════════════
+    // PHASE 1 : INFALL TIDAL & LORENTZ ABERRATION (0.0s -> 0.9s, p: 0.0 -> 0.24)
+    // ═══════════════════════════════════════════════════════════════
+    if (progress < 0.24) {
+      const s1 = progress / 0.24; // 0.0 -> 1.0
+      const ease1 = s1 * s1;
 
-    // Effet d'étirement élastique du champ de vision (FOV)
-    if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
-      const fovPulse = Math.sin(progress * Math.PI);
-      cockpitCamera.fov = baseFov + fovPulse * 30; // étirement jusqu'à 105°
-      cockpitCamera.updateProjectionMatrix();
-    }
+      // Étirement relativiste du FOV (Lorentz beaming)
+      if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
+        cockpitCamera.fov = baseFov + ease1 * 35.0; // 75° -> 110°
+        cockpitCamera.updateProjectionMatrix();
 
-    // Décroissance progressive du bloom
-    if (typeof bloomPass !== 'undefined' && bloomPass) {
-      bloomPass.strength = lerp(1.4, prevBloomStrength, progress);
-    }
-
-    if (progress >= 0.45 && !hasTeleported) {
-      hasTeleported = true;
-
-      // 4. Téléportation instantanée des coordonnées du vaisseau vers targetPos
-      // avec un léger décalage vers l'avant (2500 unités) pour sortir de la zone de déclenchement
-      let forwardDir = new THREE.Vector3(0, 0, -1);
-      if (typeof ship !== 'undefined' && ship && ship.quaternion) {
-        forwardDir.applyQuaternion(ship.quaternion).normalize();
+        // Micro-tremblements gravitationnels de marée
+        const jitterIntensity = ease1 * 0.015;
+        cockpitCamera.position.x = baseCamX + (Math.random() - 0.5) * jitterIntensity;
+        cockpitCamera.position.y = baseCamY + (Math.random() - 0.5) * jitterIntensity;
       }
 
-      const offsetDist = 2500;
-      const targetVec = new THREE.Vector3(
-        wormholeData.targetPos.x + forwardDir.x * offsetDist,
-        wormholeData.targetPos.y + forwardDir.y * offsetDist,
-        wormholeData.targetPos.z + forwardDir.z * offsetDist
-      );
-
-      if (typeof ship !== 'undefined' && ship && ship.position) {
-        ship.position.copy(targetVec);
+      // Montée en puissance du bloom et de l'aberration chromatique
+      if (typeof bloomPass !== 'undefined' && bloomPass) {
+        bloomPass.strength = lerp(prevBloomStrength, 1.8, ease1);
       }
-      if (state.shipPosition) {
-        state.shipPosition.copy(targetVec);
-      }
-      if (typeof shipRig !== 'undefined' && shipRig) {
-        shipRig.position.copy(targetVec);
-      }
-      if (typeof vesselMapObject !== 'undefined' && vesselMapObject && vesselMapObject.group) {
-        vesselMapObject.group.position.copy(targetVec);
-      }
-      if (typeof galCam !== 'undefined' && state.cameraMode === 'FREE') {
-        galCam.tLookAt.copy(targetVec);
-        galCam.lookAt.copy(targetVec);
+      if (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material) {
+        chromaPass.material.uniforms.u_chromaAmount.value = lerp(prevChromaAmount, 0.018, ease1);
       }
 
-      // 5. Notification au joueur
-      if (typeof showNotification === 'function') {
-        showNotification("Saut Wormhole : Arrivée à " + wormholeData.targetName, 4500);
+      // Dessin des flux de contraction optique sur le canvas
+      drawWormholeTraversalFX(1, s1, wormholeData.targetColor || wormholeData.color);
+
+    // ═══════════════════════════════════════════════════════════════
+    // PHASE 2 : INVERSION D'HORIZON & RÉFRACTIONS VERRIÈRE (0.9s -> 1.8s, p: 0.24 -> 0.48)
+    // ═══════════════════════════════════════════════════════════════
+    } else if (progress < 0.48) {
+      const s2 = (progress - 0.24) / 0.24; // 0.0 -> 1.0
+
+      if (!hasInverted) {
+        hasInverted = true;
+        // Flash optique cyan-blanc au franchissement de gorge (l=0)
+        if (transitionDiv) {
+          transitionDiv.style.background = '#e0ffff';
+          transitionDiv.classList.add('active');
+          setTimeout(() => {
+            if (transitionDiv) transitionDiv.classList.remove('active');
+          }, 320);
+        }
       }
+
+      // Déclenchement du glitch électromagnétique sur le HUD cockpit
+      if (!hasGlitchStarted && cockpitHud) {
+        hasGlitchStarted = true;
+        cockpitHud.classList.add('wormhole-glitch');
+      }
+
+      // Pic de FOV (ouverture d'horizon jusqu'à 118°)
+      if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
+        const peakFov = 110 + Math.sin(s2 * Math.PI) * 8.0;
+        cockpitCamera.fov = peakFov;
+        cockpitCamera.updateProjectionMatrix();
+
+        // Tremblements accrus lors du franchissement de l'horizon
+        const jitter = Math.sin(s2 * Math.PI) * 0.025;
+        cockpitCamera.position.x = baseCamX + (Math.random() - 0.5) * jitter;
+        cockpitCamera.position.y = baseCamY + (Math.random() - 0.5) * jitter;
+      }
+
+      // Pic de saturation lumineuse (Bloom 2.8) et aberration chromatique maximale (0.040)
+      if (typeof bloomPass !== 'undefined' && bloomPass) {
+        const bPeak = lerp(1.8, 2.8, Math.sin(s2 * Math.PI));
+        bloomPass.strength = bPeak;
+      }
+      if (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material) {
+        chromaPass.material.uniforms.u_chromaAmount.value = lerp(0.018, 0.040, Math.sin(s2 * Math.PI));
+      }
+
+      // Réfractions caustiques internes sur la verrière cockpit
+      drawWormholeTraversalFX(2, s2, wormholeData.targetColor || wormholeData.color);
+
+    // ═══════════════════════════════════════════════════════════════
+    // PHASE 3 : TRANSIT CONDUIT EINSTEIN-ROSEN (1.8s -> 2.8s, p: 0.48 -> 0.74)
+    // ═══════════════════════════════════════════════════════════════
+    } else if (progress < 0.74) {
+      const s3 = (progress - 0.48) / 0.26; // 0.0 -> 1.0
+
+      if (!hasTeleported && s3 >= 0.15) {
+        hasTeleported = true;
+
+        // Téléportation physique instantanée des coordonnées du vaisseau dans l'Univers 2
+        // avec décalage de dégagement de 3 200 AL vers l'avant dans la direction du cap
+        let forwardDir = new THREE.Vector3(0, 0, -1);
+        if (typeof ship !== 'undefined' && ship && ship.quaternion) {
+          forwardDir.applyQuaternion(ship.quaternion).normalize();
+        }
+
+        const offsetDist = 3200;
+        const targetVec = new THREE.Vector3(
+          wormholeData.targetPos.x + forwardDir.x * offsetDist,
+          wormholeData.targetPos.y + forwardDir.y * offsetDist,
+          wormholeData.targetPos.z + forwardDir.z * offsetDist
+        );
+
+        if (typeof ship !== 'undefined' && ship && ship.position) {
+          ship.position.copy(targetVec);
+        }
+        if (state.shipPosition) {
+          state.shipPosition.copy(targetVec);
+        }
+        if (typeof shipRig !== 'undefined' && shipRig) {
+          shipRig.position.copy(targetVec);
+        }
+        if (typeof vesselMapObject !== 'undefined' && vesselMapObject && vesselMapObject.group) {
+          vesselMapObject.group.position.copy(targetVec);
+        }
+        if (typeof galCam !== 'undefined' && state.cameraMode === 'FREE') {
+          galCam.tLookAt.copy(targetVec);
+          galCam.lookAt.copy(targetVec);
+        }
+      }
+
+      // Compression progressive du FOV vers une valeur intermédiaire
+      if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
+        cockpitCamera.fov = lerp(110, 88, s3);
+        cockpitCamera.updateProjectionMatrix();
+        cockpitCamera.position.x = lerp(cockpitCamera.position.x, baseCamX, 0.1);
+        cockpitCamera.position.y = lerp(cockpitCamera.position.y, baseCamY, 0.1);
+      }
+
+      // Décroissance du bloom et des aberrations
+      if (typeof bloomPass !== 'undefined' && bloomPass) {
+        bloomPass.strength = lerp(2.8, 1.1, s3);
+      }
+      if (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material) {
+        chromaPass.material.uniforms.u_chromaAmount.value = lerp(0.040, 0.010, s3);
+      }
+
+      // Dessin du flux FTL hyper-espace dans le goulot
+      drawWormholeTraversalFX(3, s3, wormholeData.targetColor || wormholeData.color);
+
+    // ═══════════════════════════════════════════════════════════════
+    // PHASE 4 : ÉMERGENCE FLUIDE DANS LE SECTEUR CIBLE (2.8s -> 3.8s, p: 0.74 -> 1.0)
+    // ═══════════════════════════════════════════════════════════════
+    } else {
+      const s4 = (progress - 0.74) / 0.26; // 0.0 -> 1.0
+      const ease4 = 1.0 - Math.pow(1.0 - s4, 3.0); // cubic out
+
+      // Retrait du glitch HUD à l'arrivée
+      if (cockpitHud && cockpitHud.classList.contains('wormhole-glitch')) {
+        cockpitHud.classList.remove('wormhole-glitch');
+      }
+
+      // Rétablissement amorti du FOV normal
+      if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
+        cockpitCamera.fov = lerp(88, baseFov, ease4);
+        cockpitCamera.updateProjectionMatrix();
+        cockpitCamera.position.set(baseCamX, baseCamY, baseCamZ);
+      }
+
+      // Rétablissement complet du bloom et chroma d'origine
+      if (typeof bloomPass !== 'undefined' && bloomPass) {
+        bloomPass.strength = lerp(1.1, prevBloomStrength, ease4);
+      }
+      if (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material) {
+        chromaPass.material.uniforms.u_chromaAmount.value = lerp(0.010, prevChromaAmount, ease4);
+      }
+
+      // Dissipation douce des particules d'émergence
+      drawWormholeTraversalFX(4, s4, wormholeData.targetColor || wormholeData.color);
     }
 
     if (progress < 1.0) {
-      requestAnimationFrame(animateJump);
+      requestAnimationFrame(animateWormholeTransit);
     } else {
-      // Fin de la transition FTL
-      if (overlay) overlay.classList.remove('active');
+      // Nettoyage final et rétablissement des paramètres nominaux
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.classList.remove('wormhole-active');
+      }
       if (fxCanvas) fxCanvas.classList.remove('active');
       if (typeof clearWarpStreaks === 'function') clearWarpStreaks();
+      if (cockpitHud) cockpitHud.classList.remove('wormhole-glitch');
+
       if (typeof cockpitCamera !== 'undefined' && cockpitCamera) {
         cockpitCamera.fov = baseFov;
+        cockpitCamera.position.set(baseCamX, baseCamY, baseCamZ);
         cockpitCamera.updateProjectionMatrix();
       }
       if (typeof bloomPass !== 'undefined' && bloomPass) {
         bloomPass.strength = prevBloomStrength;
       }
-      if (transitionDiv) {
-        transitionDiv.style.background = '#000000'; // Rétablir la couleur par défaut
+      if (typeof chromaPass !== 'undefined' && chromaPass && chromaPass.material) {
+        chromaPass.material.uniforms.u_chromaAmount.value = prevChromaAmount;
       }
+      if (transitionDiv) {
+        transitionDiv.style.background = '#000000';
+      }
+
+      // Notification finale de confirmation de navigation
+      if (typeof showNotification === 'function') {
+        showNotification("TRANSIT COMPLÉTÉ // SECTEUR CIBLE : " + wormholeData.targetName, 4500);
+      }
+
       _isWormholeJumping = false;
     }
   }
 
-  requestAnimationFrame(animateJump);
+  requestAnimationFrame(animateWormholeTransit);
 }
 
-function playWormholeAudio() {
+function hexToRgb(hex) {
+  if (typeof hex === 'string') {
+    if (hex.startsWith('#')) hex = hex.slice(1);
+    hex = parseInt(hex, 16);
+  }
+  return {
+    r: (hex >> 16) & 255,
+    g: (hex >> 8) & 255,
+    b: hex & 255
+  };
+}
+
+function drawWormholeTraversalFX(phaseIndex, subProgress, targetColorHex) {
+  if (!warpFxCtx) return;
+  const w = warpFxCanvas.width;
+  const h = warpFxCanvas.height;
+  const cx = w * 0.5;
+  const cy = h * 0.5;
+  warpFxCtx.clearRect(0, 0, w, h);
+
+  const rgb = hexToRgb(targetColorHex || 0x00ffff);
+  const now = performance.now() * 0.001;
+
+  if (phaseIndex === 1) {
+    // ── Phase 1 : Infall & Lorentz Beaming ──
+    // Contraction radiale des flux lumineux vers le centre
+    const numRays = 40;
+    for (let i = 0; i < numRays; i++) {
+      const angle = (i / numRays) * Math.PI * 2 + now * 0.5;
+      const rOuter = Math.max(w, h) * (0.8 - subProgress * 0.4);
+      const rInner = rOuter * 0.4;
+      warpFxCtx.beginPath();
+      warpFxCtx.moveTo(cx + Math.cos(angle) * rOuter, cy + Math.sin(angle) * rOuter);
+      warpFxCtx.lineTo(cx + Math.cos(angle) * rInner, cy + Math.sin(angle) * rInner);
+      warpFxCtx.strokeStyle = `rgba(255, 255, 255, ${(0.15 + 0.35 * subProgress).toFixed(3)})`;
+      warpFxCtx.lineWidth = 1.2 + subProgress * 2.0;
+      warpFxCtx.stroke();
+    }
+  } else if (phaseIndex === 2) {
+    // ── Phase 2 : Inversion d'horizon & Réfractions sur la Verrière ──
+    // Anneaux caustiques de courbure se propageant sur les vitres du cockpit
+    const ringCount = 5;
+    for (let r = 0; r < ringCount; r++) {
+      const ringP = (subProgress + r / ringCount) % 1.0;
+      const radius = ringP * Math.max(w, h) * 0.75;
+      const alpha = Math.sin(ringP * Math.PI) * 0.55;
+
+      warpFxCtx.beginPath();
+      warpFxCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      warpFxCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha.toFixed(3)})`;
+      warpFxCtx.lineWidth = 3.5 * (1.0 - ringP);
+      warpFxCtx.stroke();
+    }
+
+    // Filaments caustiques de distorsion sur la verrière (lignes brisées de réfraction)
+    const filCount = 18;
+    for (let f = 0; f < filCount; f++) {
+      const baseAng = (f / filCount) * Math.PI * 2;
+      warpFxCtx.beginPath();
+      let curR = 50;
+      warpFxCtx.moveTo(cx + Math.cos(baseAng) * curR, cy + Math.sin(baseAng) * curR);
+      while (curR < Math.max(w, h) * 0.6) {
+        curR += 40 + Math.sin(f + curR) * 15;
+        const ang = baseAng + (Math.sin(curR * 0.05 + now * 3.0) * 0.18);
+        warpFxCtx.lineTo(cx + Math.cos(ang) * curR, cy + Math.sin(ang) * curR);
+      }
+      warpFxCtx.strokeStyle = `rgba(255, 255, 255, ${(0.4 * Math.sin(subProgress * Math.PI)).toFixed(3)})`;
+      warpFxCtx.lineWidth = 1.5;
+      warpFxCtx.stroke();
+    }
+  } else if (phaseIndex === 3) {
+    // ── Phase 3 : Conduit d'Einstein-Rosen (Tube FTL à haute vitesse) ──
+    const streakCount = 90;
+    for (let s = 0; s < streakCount; s++) {
+      const angle = (s / streakCount) * Math.PI * 2 + Math.sin(s * 12.0) * 0.2;
+      const speed = 0.5 + (s % 5) * 0.2;
+      const rStart = 40 + ((s * 37 + now * 1200 * speed) % (Math.max(w, h) * 0.6));
+      const rEnd = rStart + (90 + (s % 7) * 45);
+
+      warpFxCtx.beginPath();
+      warpFxCtx.moveTo(cx + Math.cos(angle) * rStart, cy + Math.sin(angle) * rStart);
+      warpFxCtx.lineTo(cx + Math.cos(angle) * rEnd, cy + Math.sin(angle) * rEnd);
+      const isTargetCol = (s % 3 === 0);
+      const strokeR = isTargetCol ? rgb.r : 220;
+      const strokeG = isTargetCol ? rgb.g : 240;
+      const strokeB = isTargetCol ? rgb.b : 255;
+      warpFxCtx.strokeStyle = `rgba(${strokeR}, ${strokeG}, ${strokeB}, 0.65)`;
+      warpFxCtx.lineWidth = 1.2 + (s % 4) * 0.7;
+      warpFxCtx.stroke();
+    }
+
+    // Cercles de compression du conduit
+    const tubeRings = 4;
+    for (let tr = 0; tr < tubeRings; tr++) {
+      const trP = ((now * 2.0 + tr / tubeRings) % 1.0);
+      const rad = Math.pow(trP, 1.8) * Math.max(w, h) * 0.55;
+      warpFxCtx.beginPath();
+      warpFxCtx.arc(cx, cy, rad, 0, Math.PI * 2);
+      warpFxCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(0.45 * (1.0 - trP)).toFixed(3)})`;
+      warpFxCtx.lineWidth = 2.0;
+      warpFxCtx.stroke();
+    }
+  } else if (phaseIndex === 4) {
+    // ── Phase 4 : Émergence fluide & Débouché ──
+    const decay = 1.0 - subProgress;
+    const burstCount = 28;
+    for (let b = 0; b < burstCount; b++) {
+      const angle = (b / burstCount) * Math.PI * 2;
+      const rStart = Math.max(w, h) * 0.2 * subProgress;
+      const rEnd = rStart + 160 * decay;
+      warpFxCtx.beginPath();
+      warpFxCtx.moveTo(cx + Math.cos(angle) * rStart, cy + Math.sin(angle) * rStart);
+      warpFxCtx.lineTo(cx + Math.cos(angle) * rEnd, cy + Math.sin(angle) * rEnd);
+      warpFxCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(0.35 * decay).toFixed(3)})`;
+      warpFxCtx.lineWidth = 1.0 + decay * 2.0;
+      warpFxCtx.stroke();
+    }
+  }
+}
+
+function playWormholeAudioSequence() {
   try {
     const ctx = (typeof audioCtx !== 'undefined' && audioCtx)
       ? audioCtx
@@ -620,34 +874,82 @@ function playWormholeAudio() {
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
 
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const filter = ctx.createBiquadFilter();
-    const gain = ctx.createGain();
+    const t0 = ctx.currentTime;
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(90, now);
-    osc.frequency.exponentialRampToValueAtTime(520, now + 0.35);
-    osc.frequency.exponentialRampToValueAtTime(110, now + 0.95);
+    // 1. Grondement infrabasse (Tidal Infall, 0.0s -> 1.0s)
+    const subOsc = ctx.createOscillator();
+    const subFilter = ctx.createBiquadFilter();
+    const subGain = ctx.createGain();
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(250, now);
-    filter.frequency.exponentialRampToValueAtTime(1600, now + 0.35);
-    filter.frequency.exponentialRampToValueAtTime(300, now + 0.95);
+    subOsc.type = 'sawtooth';
+    subOsc.frequency.setValueAtTime(42, t0);
+    subOsc.frequency.exponentialRampToValueAtTime(175, t0 + 0.95);
+    subOsc.frequency.exponentialRampToValueAtTime(75, t0 + 2.2);
 
-    gain.gain.setValueAtTime(0.01, now);
-    gain.gain.linearRampToValueAtTime(0.12, now + 0.25);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+    subFilter.type = 'lowpass';
+    subFilter.frequency.setValueAtTime(140, t0);
+    subFilter.frequency.exponentialRampToValueAtTime(480, t0 + 0.95);
+    subFilter.frequency.exponentialRampToValueAtTime(180, t0 + 2.2);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
+    subGain.gain.setValueAtTime(0.01, t0);
+    subGain.gain.linearRampToValueAtTime(0.22, t0 + 0.7);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t0 + 2.4);
 
-    osc.start(now);
-    osc.stop(now + 1.15);
+    subOsc.connect(subFilter);
+    subFilter.connect(subGain);
+    subGain.connect(ctx.destination);
+
+    subOsc.start(t0);
+    subOsc.stop(t0 + 2.45);
+
+    // 2. Choc d'inversion d'horizon & Résonance de gorge (1.0s -> 2.2s)
+    const throatOsc = ctx.createOscillator();
+    const throatFilter = ctx.createBiquadFilter();
+    const throatGain = ctx.createGain();
+
+    throatOsc.type = 'sine';
+    throatOsc.frequency.setValueAtTime(320, t0 + 0.9);
+    throatOsc.frequency.exponentialRampToValueAtTime(680, t0 + 1.25);
+    throatOsc.frequency.exponentialRampToValueAtTime(240, t0 + 2.2);
+
+    throatFilter.type = 'bandpass';
+    throatFilter.frequency.setValueAtTime(400, t0 + 0.9);
+    throatFilter.Q.setValueAtTime(4.0, t0 + 0.9);
+
+    throatGain.gain.setValueAtTime(0.001, t0 + 0.9);
+    throatGain.gain.linearRampToValueAtTime(0.18, t0 + 1.25);
+    throatGain.gain.exponentialRampToValueAtTime(0.001, t0 + 2.3);
+
+    throatOsc.connect(throatFilter);
+    throatFilter.connect(throatGain);
+    throatGain.connect(ctx.destination);
+
+    throatOsc.start(t0 + 0.9);
+    throatOsc.stop(t0 + 2.35);
+
+    // 3. Carillon harmonique d'émergence (2.8s -> 3.7s)
+    const chimeOsc = ctx.createOscillator();
+    const chimeGain = ctx.createGain();
+
+    chimeOsc.type = 'triangle';
+    chimeOsc.frequency.setValueAtTime(523.25, t0 + 2.7);
+    chimeOsc.frequency.exponentialRampToValueAtTime(1046.5, t0 + 3.4);
+
+    chimeGain.gain.setValueAtTime(0.001, t0 + 2.7);
+    chimeGain.gain.linearRampToValueAtTime(0.08, t0 + 2.85);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.7);
+
+    chimeOsc.connect(chimeGain);
+    chimeGain.connect(ctx.destination);
+
+    chimeOsc.start(t0 + 2.7);
+    chimeOsc.stop(t0 + 3.75);
+
   } catch (e) {
     // Silencieux si l'audio n'est pas encore débloqué par un clic utilisateur
   }
 }
+
+var playWormholeAudio = playWormholeAudioSequence;
 
 

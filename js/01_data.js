@@ -848,7 +848,10 @@ var WORMHOLES = [
     pos: { x: 235000, y: 800, z: -30000 },
     targetPos: { x: 25000, y: -500, z: 15000 },
     targetName: "Secteur Sagittarius A*",
-    color: 0x00ffff
+    color: 0x00ffff,
+    targetColor: 0xffaa22,
+    seed: 1.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
   {
     id: "wh_core_orion",
@@ -856,7 +859,10 @@ var WORMHOLES = [
     pos: { x: 25000, y: -500, z: 15000 },
     targetPos: { x: 235000, y: 800, z: -30000 },
     targetName: "Secteur Bras d'Orion",
-    color: 0x00ffff
+    color: 0xffaa22,
+    targetColor: 0x00ffff,
+    seed: 2.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
 
   // ── Paire 2 : Bras du Cygne <-> Bras de la Carène ──
@@ -866,7 +872,10 @@ var WORMHOLES = [
     pos: { x: -220000, y: 1500, z: -150000 },
     targetPos: { x: 110000, y: -800, z: 130000 },
     targetName: "Secteur de la Carène",
-    color: 0xcc44ff
+    color: 0xcc44ff,
+    targetColor: 0xff3388,
+    seed: 3.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
   {
     id: "wh_carina_cygnus",
@@ -874,17 +883,23 @@ var WORMHOLES = [
     pos: { x: 110000, y: -800, z: 130000 },
     targetPos: { x: -220000, y: 1500, z: -150000 },
     targetName: "Secteur Bras du Cygne",
-    color: 0xcc44ff
+    color: 0xff3388,
+    targetColor: 0xcc44ff,
+    seed: 4.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
 
-  // ── Paire 3 : Périmètre Persée Nord <-> Sagittaire B2 Intérieur ──
+  // ── Paire 3 : Périmètre Persée Nord <-> Sagittaire Profond ──
   {
     id: "wh_perseus_sgr",
     name: "Passage de Persée vers Sagittaire",
     pos: { x: -280000, y: -1200, z: 180000 },
     targetPos: { x: 40000, y: 800, z: -120000 },
     targetName: "Secteur Sagittaire Profond",
-    color: 0x00ffaa
+    color: 0x00ffaa,
+    targetColor: 0x2288ff,
+    seed: 5.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
   {
     id: "wh_sgr_perseus",
@@ -892,7 +907,10 @@ var WORMHOLES = [
     pos: { x: 40000, y: 800, z: -120000 },
     targetPos: { x: -280000, y: -1200, z: 180000 },
     targetName: "Périmètre Bras de Persée",
-    color: 0x00ffaa
+    color: 0x2288ff,
+    targetColor: 0x00ffaa,
+    seed: 6.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
 
   // ── Paire 4 : Bordure Australe Éloignée <-> Amas d'Hercule ──
@@ -902,7 +920,10 @@ var WORMHOLES = [
     pos: { x: 180000, y: -2000, z: 280000 },
     targetPos: { x: -160000, y: 2200, z: -260000 },
     targetName: "Secteur de l'Amas d'Hercule",
-    color: 0xffaa22
+    color: 0xff8800,
+    targetColor: 0x9955ff,
+    seed: 7.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   },
   {
     id: "wh_hercules_austral",
@@ -910,7 +931,10 @@ var WORMHOLES = [
     pos: { x: -160000, y: 2200, z: -260000 },
     targetPos: { x: 180000, y: -2000, z: 280000 },
     targetName: "Bordure Australe Galactique",
-    color: 0xffaa22
+    color: 0x9955ff,
+    targetColor: 0xff8800,
+    seed: 8.0,
+    type: "Métrique d'Ellis / Pont d'Einstein-Rosen"
   }
 ];
 

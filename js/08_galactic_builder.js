@@ -553,11 +553,227 @@ function getParticleTexture() {
 }
 
 // ============================================================
-// WORMHOLES BUILDER & ANIMATOR (Étape 3.1)
-// Optimisé pour Intel UHD 620 : tore biseauté, contre-rotation
-// gyroscopique, disque additif et bascule LOD Sprite > 80 000
+// RELATIVISTIC WORMHOLES BUILDER & SHADER (Étape 3.1)
+// Modèle physique de Kip Thorne / Métrique de Morris-Thorne & Ellis
+// Lentille gravitationnelle analytique O(1) sans raymarching pour Intel UHD 620
+// Sphère 3D isotrope, anneau d'Einstein caustique et projection céleste
 // ============================================================
 window.wormholeMeshes = [];
+var _tempWhVec = new THREE.Vector3();
+
+var WORMHOLE_VERTEX_SHADER = /* glsl */`
+  varying vec3 v_localPos;
+  varying vec3 v_normal;
+  varying vec3 v_worldPos;
+
+  void main() {
+    v_localPos = position;
+    v_normal = normalize(normal);
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    v_worldPos = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`;
+
+var WORMHOLE_FRAGMENT_SHADER = /* glsl */`
+  precision highp float;
+
+  varying vec3 v_localPos;
+  varying vec3 v_normal;
+  varying vec3 v_worldPos;
+
+  uniform float u_time;
+  uniform vec3  u_cameraLocalPos;
+  uniform vec3  u_color;        // Teinte locale du vortex
+  uniform vec3  u_targetColor;  // Teinte du secteur cible
+  uniform vec3  u_targetDir;    // Vecteur directeur galactique vers la destination
+  uniform float u_targetSeed;   // Graine procédurale du quadrant (1.0 à 8.0)
+  uniform float u_throatRadius; // Rayon de gorge (1400.0)
+
+  // Hash 3D ultra-rapide sans boucle
+  float hash31(vec3 p) {
+    p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  }
+
+  vec3 hash33(vec3 p) {
+    vec3 q = fract(p * vec3(0.1031, 0.1030, 0.0973));
+    q += dot(q, q.yxz + 33.33);
+    return fract((q.xxy + q.yxx) * q.zyx);
+  }
+
+  // Bruit 3D de valeur avec lissage cubique hermite
+  float noise3D(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+
+    float n000 = hash31(i + vec3(0.0, 0.0, 0.0));
+    float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+    float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+    float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+    float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+    float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+    float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+    float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+
+    float nx00 = mix(n000, n100, f.x);
+    float nx10 = mix(n010, n110, f.x);
+    float nx01 = mix(n001, n101, f.x);
+    float nx11 = mix(n011, n111, f.x);
+
+    float nxy0 = mix(nx00, nx10, f.y);
+    float nxy1 = mix(nx01, nx11, f.y);
+
+    return mix(nxy0, nxy1, f.z);
+  }
+
+  // FBM 3 octaves pour le ciel lointain et nébuleuses du quadrant destination
+  float fbm3D(vec3 p) {
+    float v = 0.0;
+    v += 0.500 * noise3D(p); p *= 2.02;
+    v += 0.250 * noise3D(p); p *= 2.03;
+    v += 0.125 * noise3D(p);
+    return v;
+  }
+
+  // Générateur procédural du ciel de destination (Univers 2)
+  vec3 renderDestinationSky(vec3 rayDir, float u) {
+    // Base orthonormée orientée vers le secteur cible
+    vec3 fwd = normalize(u_targetDir);
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    if (abs(fwd.y) > 0.92) up = vec3(1.0, 0.0, 0.0);
+    vec3 right = normalize(cross(up, fwd));
+    up = cross(fwd, right);
+
+    // Direction céleste projetée dans le repère du secteur de destination
+    vec3 destRay = normalize(right * rayDir.x + up * rayDir.y + fwd * rayDir.z);
+
+    // 1. Étoiles lointaines primaires (champ stellaire riche)
+    vec3 starCoord = destRay * 125.0;
+    vec3 starGrid = floor(starCoord);
+    vec3 starFrac = fract(starCoord) - 0.5;
+    float starHash = hash31(starGrid + vec3(u_targetSeed * 47.19));
+
+    vec3 starCol = vec3(0.0);
+    if (starHash > 0.976) {
+      vec3 starJitter = (hash33(starGrid) - 0.5) * 0.65;
+      float starDist = length(starFrac - starJitter);
+      float starBright = smoothstep(0.15, 0.0, starDist) * pow((starHash - 0.976) / 0.024, 3.5) * 3.4;
+      float twinkle = 0.82 + 0.18 * sin(u_time * 2.8 + starHash * 45.0);
+      vec3 tint = mix(vec3(0.85, 0.95, 1.0), vec3(1.0, 0.85, 0.6), hash31(starGrid + 1.2));
+      starCol = tint * (starBright * twinkle);
+    }
+
+    // Poussière stellaire fine
+    vec3 fineCoord = destRay * 280.0;
+    vec3 fineGrid = floor(fineCoord);
+    float fineHash = hash31(fineGrid + vec3(u_targetSeed * 19.33));
+    if (fineHash > 0.990) {
+      float fineDist = length(fract(fineCoord) - 0.5);
+      starCol += vec3(0.9, 0.95, 1.0) * (smoothstep(0.18, 0.0, fineDist) * 1.6);
+    }
+
+    // 2. Nébuleuses gazeuses et filaments cosmiques du quadrant cible
+    vec3 nebP = destRay * 2.5 + vec3(u_targetSeed * 3.1415, u_time * 0.015, u_targetSeed * 1.414);
+    float neb1 = fbm3D(nebP);
+    float neb2 = fbm3D(nebP * 2.1 + vec3(1.7));
+    float dustAbsorption = clamp(1.0 - fbm3D(destRay * 3.6 + vec3(4.8)) * 1.65, 0.0, 1.0);
+
+    vec3 gasColor = mix(u_targetColor * 0.45, u_targetColor * 1.75, neb2) * (neb1 * neb1 * 2.4);
+    gasColor *= dustAbsorption;
+
+    // Plan galactique du secteur cible & renflement de noyau
+    float galacticLat = abs(destRay.y);
+    float galacticPlane = exp(-galacticLat * 3.5) * 0.40;
+    vec3 coreBulge = vec3(1.0, 0.85, 0.6) * (pow(max(0.0, dot(destRay, fwd)), 3.5) * 0.75);
+
+    vec3 skyFinal = starCol + gasColor + (u_targetColor * galacticPlane) + coreBulge;
+
+    // Blueshift gravitationnel aux abords du goulot
+    float blueshift = pow(clamp(u / 0.94, 0.0, 1.0), 4.0);
+    vec3 blueshiftTint = vec3(0.55, 0.85, 1.25);
+    skyFinal = mix(skyFinal, skyFinal * blueshiftTint, blueshift * 0.6);
+
+    return skyFinal;
+  }
+
+  void main() {
+    // Normale locale (sphère unitaire centrée à l'origine locale)
+    vec3 N = normalize(v_localPos);
+
+    // Rayon depuis la caméra locale vers le point de surface
+    vec3 rayDir = normalize(v_localPos - u_cameraLocalPos);
+
+    // Cosinus de l'angle d'incidence
+    // Au centre du disque projeté : cosPhi = 1.0
+    // À la silhouette rasante : cosPhi = 0.0
+    float cosPhi = clamp(-dot(rayDir, N), 0.0, 1.0);
+
+    // Paramètre d'impact normalisé u = sin(phi) dans [0.0, 1.0]
+    float u = sqrt(max(0.0, 1.0 - cosPhi * cosPhi));
+
+    // Rayon de l'horizon de gorge (Métrique d'Ellis)
+    float uThroat = 0.940;
+
+    // ── 1. RÉGION DU GOULOT TRAVERSABLE (u < uThroat) ──
+    // Réfraction géodésique fermée vers l'Univers 2 (Kip Thorne fish-eye warping)
+    float throatDistort = pow(u / uThroat, 1.8) * 0.70;
+    vec3 refractedRay = normalize(rayDir + N * (throatDistort * (1.0 - u * 0.35)));
+
+    // Dispersion chromatique physique traversant la gorge
+    vec3 colR = renderDestinationSky(normalize(refractedRay + N * 0.012), u);
+    vec3 colG = renderDestinationSky(refractedRay, u);
+    vec3 colB = renderDestinationSky(normalize(refractedRay - N * 0.012), u);
+    vec3 throatColor = vec3(colR.r, colG.g, colB.b);
+
+    // ── 2. ANNEAU D'EINSTEIN & CAUSTIQUE GRAVITATIONNELLE (u dans [0.88, 1.0]) ──
+    // Double profil lorentzien caustique ultra-lumineux avec séparation chromatique
+    float causticR = exp(-pow((u - 0.936) / 0.038, 2.0)) * 5.2;
+    float causticG = exp(-pow((u - 0.945) / 0.034, 2.0)) * 5.8;
+    float causticB = exp(-pow((u - 0.954) / 0.030, 2.0)) * 6.6;
+
+    // Halo extérieur diffus
+    float outerHalo = exp(-pow((u - 0.970) / 0.075, 2.0)) * 1.8;
+
+    // Ondelette azimutale de cisaillement gravitationnel
+    float phiAzimuth = atan(N.y, N.x);
+    float shearWave = 1.0 + 0.08 * sin(phiAzimuth * 8.0 + u_time * 2.0)
+                          + 0.05 * cos(phiAzimuth * 18.0 - u_time * 3.2);
+
+    vec3 einsteinRing = vec3(causticR, causticG, causticB) * shearWave;
+    einsteinRing += vec3(outerHalo) * mix(u_color, vec3(1.0), 0.72);
+
+    // Cœur incandescent blanc-pur au pic de la caustique
+    float whiteHot = exp(-pow((u - 0.945) / 0.018, 2.0)) * 3.2;
+    einsteinRing += vec3(whiteHot);
+
+    // ── 3. CEINTURE RELATIVISTE ÉQUATORIALE (ACCENT KIP THORNE) ──
+    float eqPlane = abs(N.y);
+    float eqBelt = exp(-eqPlane * 36.0) * exp(-pow((u - 0.942) / 0.05, 2.0)) * 1.25;
+    vec3 eqColor = mix(u_color, vec3(1.0, 0.92, 0.75), 0.5) * eqBelt;
+
+    // ── 4. COMPOSITION & MÉLANGE OPTIQUE ──
+    vec3 finalColor;
+    if (u < uThroat) {
+      // Intérieur de la gorge : ciel de destination + lueur interne de l'anneau d'Einstein
+      float ringBlend = smoothstep(0.86, uThroat, u);
+      finalColor = mix(throatColor, throatColor + einsteinRing * 0.82, ringBlend);
+    } else {
+      // Extérieur : caustique gravitationnelle de lumière galactique déviée
+      float rimFalloff = smoothstep(1.0, 0.94, u);
+      finalColor = einsteinRing * rimFalloff;
+    }
+
+    finalColor += eqColor;
+
+    // Lissage anti-aliasing très propre en bordure
+    float alpha = smoothstep(1.002, 0.985, u);
+
+    gl_FragColor = vec4(finalColor, clamp(alpha, 0.0, 1.0));
+  }
+`;
 
 function createWormholes() {
   if (window.wormholeMeshes && window.wormholeMeshes.length > 0) return;
@@ -578,76 +794,67 @@ function createWormholes() {
       galacticLODs.push(lod);
     }
 
-    // ── NIVEAU 0 : Géométrie 3D détaillée (Distance <= 80 000) ──
+    // Vecteur d'orientation vers la destination dans la galaxie
+    const targetDirVec = new THREE.Vector3(
+      wh.targetPos.x - wh.pos.x,
+      wh.targetPos.y - wh.pos.y,
+      wh.targetPos.z - wh.pos.z
+    );
+    if (targetDirVec.lengthSq() > 0.001) {
+      targetDirVec.normalize();
+    } else {
+      targetDirVec.set(0, 0, 1);
+    }
+
+    // ── NIVEAU 0 : Sphère 3D Isotrope Relativiste (Distance <= 80 000 AL) ──
     const level0 = new THREE.Group();
 
-    // 1. Tore principal fin (châssis gravitationnel externe)
-    const outerGeo = new THREE.TorusGeometry(1200, 26, 8, 48);
-    const outerMat = new THREE.MeshBasicMaterial({
-      color: wh.color,
-      transparent: true,
-      opacity: 0.88,
-      wireframe: false
-    });
-    const outerMesh = new THREE.Mesh(outerGeo, outerMat);
-    level0.add(outerMesh);
-
-    // 2. Tore intérieur incliné en contre-rotation
-    const innerGeo = new THREE.TorusGeometry(820, 16, 8, 36);
-    const innerMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.85
-    });
-    const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-    innerMesh.rotation.x = Math.PI * 0.35;
-    level0.add(innerMesh);
-
-    // 3. Disque de vortex semi-transparent (mélange additif)
-    const discGeo = new THREE.RingGeometry(60, 800, 36);
-    const discMat = new THREE.MeshBasicMaterial({
-      color: wh.color,
-      transparent: true,
-      opacity: 0.45,
+    // Matériau Shader Relativiste Kip Thorne
+    const sphereMat = new THREE.ShaderMaterial({
+      vertexShader: WORMHOLE_VERTEX_SHADER,
+      fragmentShader: WORMHOLE_FRAGMENT_SHADER,
+      uniforms: {
+        u_time: { value: 0 },
+        u_cameraLocalPos: { value: new THREE.Vector3(0, 0, 10000) },
+        u_color: { value: new THREE.Color(wh.color) },
+        u_targetColor: { value: new THREE.Color(wh.targetColor || wh.color) },
+        u_targetDir: { value: targetDirVec },
+        u_targetSeed: { value: wh.seed || (i + 1.0) * 1.37 },
+        u_throatRadius: { value: 1400.0 }
+      },
       side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const discMesh = new THREE.Mesh(discGeo, discMat);
-    level0.add(discMesh);
-
-    // 4. Cœur singulier lumineux
-    const coreGeo = new THREE.SphereGeometry(180, 16, 16);
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
       transparent: true,
-      opacity: 0.95,
-      blending: THREE.AdditiveBlending
+      depthWrite: false,
+      blending: THREE.NormalBlending
     });
-    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-    level0.add(coreMesh);
 
-    // 5. Halo lumineux de proximité
+    // Géométrie sphérique 3D sans orientation privilégiée
+    const sphereGeo = new THREE.SphereGeometry(1400, 48, 48);
+    const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+    sphereMesh.renderOrder = 10;
+    level0.add(sphereMesh);
+
+    // Halo subtil de lentille externe (glow doux diffus)
     const haloMat = new THREE.SpriteMaterial({
       map: ptex,
       color: wh.color,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     const glowSprite = new THREE.Sprite(haloMat);
-    glowSprite.scale.set(3200, 3200, 1);
+    glowSprite.scale.set(3400, 3400, 1);
     level0.add(glowSprite);
 
     lod.addLevel(level0, 0);
 
-    // ── NIVEAU 1 : Sprite 2D lointain (Distance > 80 000 unités) ──
+    // ── NIVEAU 1 : Balise Sprite 2D lointaine (Distance > 80 000 AL) ──
     const farMat = new THREE.SpriteMaterial({
       map: ptex,
       color: wh.color,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.92,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
@@ -665,7 +872,7 @@ function createWormholes() {
       galacticClickables.push(clickMesh);
     }
 
-    // Label 3D HTML
+    // Label 3D HTML pour le HUD
     let labelEl = null;
     if (typeof makeLabel === 'function') {
       labelEl = makeLabel(wh.name, 'poi-label wormhole-marker-label');
@@ -689,10 +896,8 @@ function createWormholes() {
       id: wh.id,
       group: group,
       lod: lod,
-      outerMesh: outerMesh,
-      innerMesh: innerMesh,
-      discMesh: discMesh,
-      coreMesh: coreMesh,
+      sphereMesh: sphereMesh,
+      sphereMat: sphereMat,
       glowSprite: glowSprite,
       farSprite: farSprite,
       clickMesh: clickMesh,
@@ -701,7 +906,7 @@ function createWormholes() {
     };
     window.wormholeMeshes.push(whMeshObj);
 
-    // Intégration transparente avec le catalogue POI galactique
+    // Intégration transparente au catalogue POI galactique
     if (typeof galacticPOIObjects !== 'undefined') {
       galacticPOIObjects[wh.id] = {
         group: group,
@@ -719,10 +924,11 @@ function createWormholes() {
           pos: [wh.pos.x, wh.pos.y, wh.pos.z],
           dotColor: '#' + new THREE.Color(wh.color).getHexString(),
           info: {
-            'Type': "Pont d'Einstein-Rosen",
+            'Type': "Pont d'Einstein-Rosen (Métrique d'Ellis)",
             'Destination': wh.targetName,
-            'Statut': "Vortex Actif",
-            'Déclenchement': "Approche < 1 400 AL"
+            'Statut': "Métrique Ouverte / Traversable",
+            'Horizon': "Rayon de gorge r₀ = 1 400 AL",
+            'Déclenchement': "Approche cockpit < 1 400 AL"
           }
         },
         detail: level0,
@@ -732,30 +938,31 @@ function createWormholes() {
   }
 }
 
-function updateWormholes(dt, now) {
+function updateWormholes(dt, now, activeCam) {
   if (!window.wormholeMeshes || window.wormholeMeshes.length === 0) return;
+
+  const cam = activeCam
+    || (typeof cockpitCamera !== 'undefined' && cockpitCamera)
+    || (typeof galacticCamera !== 'undefined' && galacticCamera)
+    || (typeof camera !== 'undefined' ? camera : null);
 
   for (let i = 0; i < window.wormholeMeshes.length; i++) {
     const wm = window.wormholeMeshes[i];
     if (!wm || !wm.lod) continue;
 
     const curLevel = wm.lod.getCurrentLevel();
-    if (curLevel === 0) {
-      // Rotation lente du tore externe
-      wm.outerMesh.rotation.z += dt * 0.45;
-      wm.outerMesh.rotation.y += dt * 0.25;
+    if (curLevel === 0 && wm.sphereMat) {
+      wm.sphereMat.uniforms.u_time.value = now;
 
-      // Contre-rotation du tore gyroscopique intérieur
-      wm.innerMesh.rotation.z -= dt * 0.70;
-      wm.innerMesh.rotation.x += dt * 0.35;
-
-      // Rotation et pulsation du disque vortex et du cœur
-      wm.discMesh.rotation.z += dt * 0.90;
-      const pulse = 1.0 + Math.sin(now * 3.5 + i * 1.5) * 0.12;
-      wm.discMesh.scale.set(pulse, pulse, 1);
-      wm.coreMesh.scale.set(pulse, pulse, pulse);
-    } else {
-      // Scintillement du sprite de loin
+      // Calcul précis de la position de la caméra dans l'espace local de la sphère
+      if (cam) {
+        wm.sphereMesh.updateMatrixWorld();
+        cam.getWorldPosition(_tempWhVec);
+        wm.sphereMesh.worldToLocal(_tempWhVec);
+        wm.sphereMat.uniforms.u_cameraLocalPos.value.copy(_tempWhVec);
+      }
+    } else if (wm.farSprite) {
+      // Scintillement doux du sprite de balise lointaine
       const farPulse = 1.0 + Math.sin(now * 2.5 + i * 1.2) * 0.10;
       wm.farSprite.scale.set(7000 * farPulse, 7000 * farPulse, 1);
     }
@@ -1213,7 +1420,7 @@ function updateGalacticPOIs(dt, activeCam) {
   }
 
   // 3. Mise à jour des vortex / trous de ver (Étape 3.1)
-  updateWormholes(dt, now);
+  updateWormholes(dt, now, activeCam);
 
   // 4. Mise à jour de la représentation cartographique du Manhattan
   updateVesselMap(dt, now);
