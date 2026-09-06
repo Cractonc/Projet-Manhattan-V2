@@ -892,7 +892,7 @@ function texMagnetar(r1, g1, b1, r2, g2, b2) {
     // Magnetic field halo (figure-8 dipole)
     const dipole = Math.exp(-dist * 2.5) * (0.3 + 0.2 * Math.pow(Math.abs(Math.cos(angle)), 2));
     const flicker = fbm(u * 12 + angle, v * 12, 3) * 0.1;
-    const fade = clamp(Math.pow(1.0 - dist, 0.5), 0, 1); // Steeper fade to hide beam tips
+    const fade = Math.pow(Math.max(0, 1.0 - dist), 0.5); // Prevent NaN for dist > 1.0
     const total = clamp(beams + core + dipole + flicker, 0, 1) * fade;
     return [
       clamp(lerp(r1, r2, beams) * total + core * 255, 0, 255),
@@ -927,28 +927,130 @@ function texProtostar(r1, g1, b1, r2, g2, b2) {
   }, 256, 256);
 }
 
-// Shell SNR: thin expanding shell with hollow interior
-function texShellSNR(r1, g1, b1, r2, g2, b2) {
+// ── Shell Supernova Remnant (Asymmetrical, filamentary, organic shock wave) ──
+function texShellSNR(poi) {
+  const pColors = (poi && poi.shellColors) || [70, 220, 170, 40, 150, 200];
+  const r1 = pColors[0], g1 = pColors[1], b1 = pColors[2];
+  const r2 = pColors[3], g2 = pColors[4], b2 = pColors[5];
+  const stype = (poi && poi.shellType) || 'generic';
+  const idStr = (poi && poi.id) || 'snr';
+  let seed = 0;
+  for (let i = 0; i < idStr.length; i++) seed += idStr.charCodeAt(i);
+  const seedF = (seed % 37) * 0.25;
+
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
     const angle = Math.atan2(cy, cx);
-    // Thin shell ring
-    const shell = Math.exp(-Math.pow((dist - 0.65) * 10, 2));
-    // Filamentary structure on the shell
-    const filaments = fbm(angle * 2 + u * 4, dist * 8 + v * 4, 5) * 0.4;
-    const shellDetail = shell * (0.7 + filaments);
-    // Very faint interior glow
-    const interior = Math.exp(-dist * 3) * 0.08;
-    // Bright knots on the shell
-    const knots = fbm(u * 10 + 3.3, v * 10 - 2.1, 4);
-    const knotBright = shell * Math.pow(clamp(knots, 0, 1), 3) * 0.5;
-    const total = clamp(shellDetail + interior + knotBright, 0, 1);
+
+    // Continuous angular organic distortion (breaks circular symmetry)
+    const nA = fbm(Math.cos(angle) * 2.2 + seedF, Math.sin(angle) * 2.2 + seedF, 4);
+    const nB = fbm(u * 9 + seedF, v * 9 - seedF, 4);
+    const rPerturb = (nA - 0.5) * 0.35;
+
+    let shell = 0;
+    let knots = 0;
+    let filaments = 0;
+    let coreGlow = 0;
+
+    if (stype === 'jellyfish') {
+      // IC 443 Jellyfish: Shock arc violently hitting molecular cloud to upper right, frayed tentacles to lower left
+      const shockDir = Math.cos(angle - 0.75); // Peak at ~43 degrees
+      const baseR = 0.58 + shockDir * 0.12 + rPerturb;
+      const sharpness = shockDir > 0 ? 8.5 : 4.5;
+      const arc = Math.exp(-Math.pow((dist - baseR) * sharpness, 2));
+      const tentacles = (shockDir < 0.2) ? fbm(u * 14 + seedF, v * 14, 4) * Math.exp(-dist * 2.2) * 0.55 : 0;
+      const folds = (shockDir > 0) ? Math.pow(fbm(angle * 5, dist * 8, 3), 2) * 0.45 : 0;
+      shell = arc * (0.8 + folds) + tentacles;
+      coreGlow = Math.exp(-dist * 12) * 0.4;
+    } else if (stype === 'manatee') {
+      // W50 Manatee: Elongated laterally by relativistic jets of SS 433
+      const ex = cx * 0.8, ey = cy * 1.5;
+      const eDist = Math.sqrt(ex * ex + ey * ey) * 2;
+      const baseR = 0.62 + rPerturb * 0.8;
+      const mainShell = Math.exp(-Math.pow((eDist - baseR) * 6.5, 2));
+      const wingX = Math.exp(-Math.pow(cy * 10, 2)) * Math.exp(-Math.pow((Math.abs(cx) - 0.38) * 6, 2)) * 0.65;
+      shell = mainShell + wingX + (nB * 0.3 * mainShell);
+      coreGlow = Math.exp(-dist * 14) * 0.5;
+    } else if (stype === 'puppis') {
+      // Puppis A: Fragmented clumpy shock with bright X-ray knots
+      const baseR = 0.60 + rPerturb * 1.1;
+      const rawShell = Math.exp(-Math.pow((dist - baseR) * 7.5, 2));
+      knots = Math.pow(fbm(u * 16 + seedF, v * 16, 4), 2.2) * 1.8;
+      shell = rawShell * (0.4 + knots);
+      coreGlow = Math.exp(-dist * 10) * 0.35;
+    } else {
+      // W28 / Generic SNR: Shredded multi-layered filamentary shell
+      const baseR = 0.60 + rPerturb;
+      const rawShell = Math.exp(-Math.pow((dist - baseR) * 7.0, 2));
+      filaments = fbm(u * 10 + nA, v * 10 + nA, 4) * 0.5;
+      shell = rawShell * (0.6 + filaments);
+      coreGlow = Math.exp(-dist * 8) * 0.2;
+    }
+
+    const fade = clamp(1.15 - dist * 1.05, 0, 1);
+    const total = clamp(shell + coreGlow, 0, 1.4) * fade;
+
     return [
-      clamp(lerp(r1, r2, filaments + 0.5) * total, 0, 255),
-      clamp(lerp(g1, g2, filaments + 0.5) * total, 0, 255),
-      clamp(lerp(b1, b2, shell) * total, 0, 255),
+      clamp((lerp(r1, r2, nA) * total + coreGlow * 255) * fade, 0, 255),
+      clamp((lerp(g1, g2, nA) * total + coreGlow * 240) * fade, 0, 255),
+      clamp((lerp(b1, b2, nB) * total + coreGlow * 255) * fade, 0, 255),
       clamp(total * 240, 0, 255) | 0
+    ];
+  }, 256, 256);
+}
+
+// ── Pulsar / Pulsar Wind Nebula (Relativistic beams, synchrotron torus, neutron star) ──
+function texPulsar(poi) {
+  const pCols = (poi && poi.pulsarColors) || [60, 220, 255, 140, 70, 240];
+  const r1 = pCols[0], g1 = pCols[1], b1 = pCols[2];
+  const r2 = pCols[3], g2 = pCols[4], b2 = pCols[5];
+  const tilt = (poi && poi.magTilt) || 0.6;
+  const cosT = Math.cos(tilt), sinT = Math.sin(tilt);
+  const isCannonball = !!(poi && poi.isCannonball);
+
+  return makeTexture((u, v) => {
+    const cx = u - 0.5, cy = v - 0.5;
+    const dist = Math.sqrt(cx * cx + cy * cy) * 2;
+
+    // Coordinate system aligned with magnetic pole axis
+    const mx = cx * cosT - cy * sinT; // Perpendicular to beam
+    const my = cx * sinT + cy * cosT; // Along relativistic beam
+
+    // 1. Ultra-dense neutron star core
+    const core = Math.exp(-dist * 22) * 2.5;
+    const corona = Math.exp(-dist * 6) * 0.7;
+
+    // 2. Twin collimated relativistic particle beams (narrow, smooth)
+    const beamSpread = 0.035 + Math.abs(my) * 0.12;
+    const beamCutoff = Math.exp(-Math.abs(my) * 3.2);
+    const beams = Math.exp(-Math.pow(mx / beamSpread, 2)) * beamCutoff * 1.3;
+
+    // 3. Synchrotron equatorial wind nebula (tilted 90 deg from beams)
+    const torusDist = Math.sqrt(Math.pow(mx * 1.2, 2) + Math.pow(my * 3.2, 2)) * 2;
+    const torusBase = Math.exp(-Math.pow((torusDist - 0.42) * 5.5, 2)) * 0.55;
+    const turbulence = fbm(u * 8 + 1.2, v * 8 - 0.5, 4) * 0.4;
+    const torus = torusBase * (0.8 + turbulence);
+
+    // 4. If Cannonball: supersonic bow shock trailing behind
+    let bowShock = 0;
+    if (isCannonball) {
+      const apexDist = my - (mx * mx * 4.5);
+      if (apexDist < 0.2) {
+        const shockWall = Math.exp(-Math.pow((apexDist + 0.05) * 8.0, 2));
+        const trailingFade = Math.exp(-Math.max(0, -my) * 2.2);
+        bowShock = shockWall * trailingFade * 0.85;
+      }
+    }
+
+    const fade = clamp(1.2 - dist * 1.05, 0, 1);
+    const totalEnergy = (core + corona + beams + torus + bowShock) * fade;
+
+    return [
+      clamp((lerp(r1, r2, my * 0.5 + 0.5) * totalEnergy + core * 255 + corona * 180), 0, 255),
+      clamp((lerp(g1, g2, my * 0.5 + 0.5) * totalEnergy + core * 255 + corona * 220), 0, 255),
+      clamp((lerp(b1, b2, Math.abs(mx) * 2) * totalEnergy + core * 255 + corona * 255), 0, 255),
+      clamp(clamp(totalEnergy, 0, 1.2) * 245, 0, 255) | 0
     ];
   }, 256, 256);
 }
@@ -978,17 +1080,21 @@ function texSupernova() {
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
-    const angle = Math.atan2(cy, cx);
-    const rays = Math.pow(Math.abs(Math.sin(angle * 6 + dist * 3)), 0.5);
-    const shell = Math.exp(-Math.pow((dist - 0.5) * 5, 2)) * 0.8;
-    const core = Math.exp(-dist * 6) * 0.5;
-    const filaments = fbm(u * 10 + angle, v * 10, 4) * 0.4;
-    const total = (shell * rays + core + filaments * shell) * clamp(1 - dist * 0.9, 0, 1);
+    // Filamentary chaotic blast without rigid geometric rays
+    const f1 = fbm(u * 7 + 0.4, v * 7 - 0.8, 5);
+    const f2 = fbm(u * 12 - 1.1, v * 12 + 2.3, 4);
+    const rDistort = 0.55 + (f1 - 0.5) * 0.28;
+    const shell = Math.exp(-Math.pow((dist - rDistort) * 6.5, 2));
+    const shockFront = shell * (0.6 + f2 * 0.7);
+    const interiorFilaments = Math.exp(-dist * 2.5) * f1 * 0.4;
+    const core = Math.exp(-dist * 12) * 1.2;
+    const total = clamp(shockFront + interiorFilaments + core, 0, 1.3) * clamp(1.15 - dist, 0, 1);
+
     return [
-      clamp(100 * total + 180 * core, 0, 255),
+      clamp(140 * total + 180 * core, 0, 255),
       clamp(180 * total + 220 * core, 0, 255),
       clamp(255 * total + 255 * core, 0, 255),
-      clamp(total * 255, 0, 255) | 0
+      clamp(total * 250, 0, 255) | 0
     ];
   }, 256, 256);
 }
@@ -1005,7 +1111,7 @@ function texCluster() {
       brightness += Math.exp(-sd * 35) * (0.6 + hash2d(i, 2) * 0.5);
     }
     const haze = Math.exp(-dist * 2.2) * 0.45; // Halo bleuté élargi
-    const core = Math.exp(-Math.pow(dist * 3.0, 2)) * 2.5; // Noyau en surbrillance blanche (comme les 300 étoiles superposées de Près)
+    const core = Math.exp(-Math.pow(dist * 3.0, 2)) * 2.5; // Noyau en surbrillance blanche
     const total = clamp(brightness + haze + core, 0, 1.5);
     const alpha = clamp((brightness + haze + core) * 1.5, 0, 1);
     return [
@@ -1034,20 +1140,70 @@ function texBrightStar(sr, sg, sb) {
   }, 128, 128);
 }
 
-function texRingNebula() {
+// ── Planetary Nebula / Ring & Torus (M57, Helix, Cat's Eye, Red Spider) ──
+function texRingNebula(poi) {
+  const rtype = (poi && poi.ringType) || 'ring';
+  const pCols = (poi && poi.ringColors) || [70, 210, 180, 220, 60, 80];
+  const r1 = pCols[0], g1 = pCols[1], b1 = pCols[2]; // Inner OIII / core
+  const r2 = pCols[3], g2 = pCols[4], b2 = pCols[5]; // Outer shell / NII/H-alpha
+
   return makeTexture((u, v) => {
     const cx = u - 0.5, cy = v - 0.5;
     const dist = Math.sqrt(cx * cx + cy * cy) * 2;
-    const ring = Math.exp(-Math.pow((dist - 0.55) * 6, 2));
-    const noise = fbm(u * 8, v * 8, 4) * 0.3;
-    const inner = Math.exp(-dist * 3) * 0.3;
-    const total = ring * (0.7 + noise) + inner;
-    const fade = clamp(1 - dist * 0.9, 0, 1);
+    const angle = Math.atan2(cy, cx);
+
+    // Central white dwarf star
+    const whiteDwarf = Math.exp(-dist * 26) * 2.2;
+    const centralGlow = Math.exp(-dist * 7) * 0.35;
+
+    let innerDisk = 0;
+    let ringShell = 0;
+    let extraFeatures = 0;
+
+    if (rtype === 'helix') {
+      // Helix Nebula: Interlocking double helical rings + radial cometary knots
+      const r1Ring = Math.exp(-Math.pow((dist - 0.42) * 7.5, 2)) * 0.7;
+      const r2Ring = Math.exp(-Math.pow((dist - 0.68) * 6.5, 2)) * 0.85;
+      const knots = Math.pow(Math.abs(Math.sin(angle * 18 + fbm(u * 6, v * 6, 3) * 2)), 3) * Math.exp(-dist * 2.8) * 0.35;
+      ringShell = r1Ring + r2Ring;
+      extraFeatures = knots;
+      innerDisk = Math.exp(-dist * 2.5) * 0.25;
+    } else if (rtype === 'cateye') {
+      // Cat's Eye Nebula: Concentric onion shells + central diamond knot
+      const concentric = Math.pow(Math.sin(dist * 24), 2) * Math.exp(-dist * 2.5) * 0.35;
+      const innerTorus = Math.exp(-Math.pow((dist - 0.38) * 9, 2)) * 0.9;
+      const outerHalo = Math.exp(-Math.pow((dist - 0.72) * 6, 2)) * 0.5;
+      ringShell = innerTorus + outerHalo;
+      extraFeatures = concentric;
+      innerDisk = Math.exp(-dist * 4) * 0.4;
+    } else if (rtype === 'spider') {
+      // Red Spider: Bipolar pinched hourglass with fast wind waves
+      const waist = Math.exp(-Math.pow(cx * 8, 2) - Math.pow(cy * 2.5, 2)) * 0.6;
+      const lobes = Math.exp(-Math.pow((Math.abs(cy) - 0.3) * 5, 2)) * Math.exp(-Math.pow(cx * 3.5, 2)) * 0.8;
+      ringShell = waist + lobes;
+      innerDisk = Math.exp(-dist * 5) * 0.3;
+    } else {
+      // M57 Ring Nebula: Classic elliptical torus (warm outer rim, cyan inner ionized disk)
+      const ellipDist = Math.sqrt(Math.pow(cx * 1.1, 2) + Math.pow(cy * 0.9, 2)) * 2;
+      const n = fbm(u * 8, v * 8, 4) * 0.25;
+      ringShell = Math.exp(-Math.pow((ellipDist - 0.56) * 6.8, 2)) * (0.85 + n);
+      innerDisk = smoothstep(clamp(1.0 - ellipDist * 1.8, 0, 1)) * 0.38;
+      extraFeatures = Math.exp(-Math.pow((ellipDist - 0.72) * 9, 2)) * 0.3;
+    }
+
+    const fade = clamp(1.15 - dist * 1.05, 0, 1);
+    const total = clamp(ringShell + innerDisk + extraFeatures + centralGlow, 0, 1.4) * fade;
+
+    const shellWeight = clamp(ringShell / (total + 0.001), 0, 1);
+    const cr = lerp(r1, r2, shellWeight) * total + whiteDwarf * 255;
+    const cg = lerp(g1, g2, shellWeight) * total + whiteDwarf * 255;
+    const cb = lerp(b1, b2, shellWeight) * total + whiteDwarf * 255;
+
     return [
-      clamp((80 + 100 * ring) * total * fade, 0, 255),
-      clamp((200 + 55 * ring) * total * fade, 0, 255),
-      clamp((160 + 80 * ring) * total * fade, 0, 255),
-      clamp(total * fade * 230, 0, 255) | 0
+      clamp(cr, 0, 255),
+      clamp(cg, 0, 255),
+      clamp(cb, 0, 255),
+      clamp(total * 240, 0, 255) | 0
     ];
   }, 256, 256);
 }
@@ -1089,10 +1245,17 @@ function getGalacticTexture(poi) {
     case 'wolfrayet': tex = texWolfRayet(...(poi.wrColors || [130, 220, 255, 60, 140, 200])); break;
     case 'magnetar': tex = texMagnetar(...(poi.magColors || [255, 80, 255, 100, 40, 200])); break;
     case 'protostar': tex = texProtostar(...(poi.protoColors || [255, 170, 70, 200, 100, 40])); break;
-    case 'shellsnr': tex = texShellSNR(...(poi.shellColors || [70, 220, 170, 40, 150, 200])); break;
-    case 'supernova': tex = texSupernova(); break;
+    case 'shellsnr': tex = texShellSNR(poi); break;
+    case 'pulsar': tex = texPulsar(poi); break;
+    case 'supernova': 
+      if (poi.id.includes('pulsar') || poi.id.includes('psr')) {
+        tex = texPulsar(poi);
+      } else {
+        tex = texSupernova();
+      }
+      break;
     case 'cluster': tex = texCluster(); break;
-    case 'ring': tex = texRingNebula(); break;
+    case 'ring': tex = texRingNebula(poi); break;
     case 'star': tex = texBrightStar(...(poi.starColor || [255, 200, 100])); break;
     case 'sol': tex = texSolMarker(); break;
     default: tex = texBrightStar(200, 200, 255);

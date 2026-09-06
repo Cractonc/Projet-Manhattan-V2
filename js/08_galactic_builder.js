@@ -445,6 +445,12 @@ function createGalacticPOIs() {
       } else {
         extras = createBlackHoleExtras(s, detail, poi.id);
       }
+    } else if (poi.vType === 'pulsar' || (poi.vType === 'supernova' && (poi.id.includes('pulsar') || poi.id.includes('psr')))) {
+      extras = createPulsarExtras(s, poi, detail);
+    } else if (poi.vType === 'shellsnr') {
+      extras = createShellSNRExtras(s, poi, detail);
+    } else if (poi.vType === 'ring') {
+      extras = createRingNebulaExtras(s, poi, detail);
     } else if (poi.vType === 'nebula' || poi.vType === 'darkneb' || poi.vType === 'reflection') {
       extras = createNebulaExtras(s, poi, detail);
     } else if (poi.vType === 'cluster') {
@@ -467,6 +473,9 @@ function createGalacticPOIs() {
       const dimmedSpriteMat = sprite.material.clone();
       if (poi.vType === 'blackhole') dimmedSpriteMat.opacity = 0.15;
       else if (poi.vType === 'system') dimmedSpriteMat.opacity = 0.05;
+      else if (poi.vType === 'pulsar') dimmedSpriteMat.opacity = 0.06;
+      else if (poi.vType === 'shellsnr') dimmedSpriteMat.opacity = 0.16;
+      else if (poi.vType === 'ring') dimmedSpriteMat.opacity = 0.14;
       dimmedSprite = new THREE.Sprite(dimmedSpriteMat);
       dimmedSprite.scale.copy(sprite.scale);
       level0.add(dimmedSprite);
@@ -1193,6 +1202,384 @@ function createSupernovaExtras(s, poi, parent) {
   return { type: 'supernova', shell, mat, pulsar, pulsarMat, s };
 }
 
+// ── Pulsar: 3D relativistic lighthouse, synchrotron torus, bow shock ──
+function createPulsarExtras(s, poi, parent) {
+  const ptex = getParticleTexture();
+  const pulsarRoot = new THREE.Group();
+  parent.add(pulsarRoot);
+
+  const cols = poi.pulsarColors || [60, 220, 255, 140, 70, 240];
+  const c1 = new THREE.Color(cols[0] / 255, cols[1] / 255, cols[2] / 255);
+  const c2 = new THREE.Color(cols[3] / 255, cols[4] / 255, cols[5] / 255);
+
+  // 1. Spin Group (rotates on Y axis)
+  const spinGroup = new THREE.Group();
+  pulsarRoot.add(spinGroup);
+
+  // 2. Magnetic Axis Group (tilted relative to spin axis)
+  const magneticGroup = new THREE.Group();
+  const magTilt = poi.magTilt || 0.55;
+  magneticGroup.rotation.z = magTilt;
+  spinGroup.add(magneticGroup);
+
+  // 3. Central ultra-dense neutron star
+  const nsGeo = new THREE.SphereGeometry(s * 0.028, 16, 16);
+  const nsMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const neutronStar = new THREE.Mesh(nsGeo, nsMat);
+  magneticGroup.add(neutronStar);
+
+  // Core glow halo (blooming)
+  const coreGlowMat = new THREE.SpriteMaterial({
+    map: ptex, color: c1, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const coreGlow = new THREE.Sprite(coreGlowMat);
+  coreGlow.scale.set(s * 0.28, s * 0.28, 1);
+  magneticGroup.add(coreGlow);
+
+  // 4. Twin collimated relativistic beam cones
+  const beamLen = s * 1.35;
+  const beamGeo = new THREE.CylinderGeometry(s * 0.008, s * 0.095, beamLen, 24, 1, true);
+  const beamMat = new THREE.MeshBasicMaterial({
+    color: c1, transparent: true, opacity: 0.38,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+  });
+
+  const beamTop = new THREE.Mesh(beamGeo, beamMat);
+  beamTop.position.y = beamLen * 0.5;
+  magneticGroup.add(beamTop);
+
+  const beamBottom = new THREE.Mesh(beamGeo, beamMat.clone());
+  beamBottom.rotation.x = Math.PI;
+  beamBottom.position.y = -beamLen * 0.5;
+  magneticGroup.add(beamBottom);
+
+  // 5. Relativistic particle streams flowing along beams
+  const beamCount = 140;
+  const beamPosArr = new Float32Array(beamCount * 3);
+  const beamColArr = new Float32Array(beamCount * 3);
+  const beamSpeeds = new Float32Array(beamCount);
+  for (let i = 0; i < beamCount; i++) {
+    const isTop = i < beamCount / 2;
+    const sign = isTop ? 1 : -1;
+    const yDist = Math.random() * beamLen;
+    const spread = (yDist / beamLen) * s * 0.07;
+    beamPosArr[i * 3] = (Math.random() - 0.5) * spread;
+    beamPosArr[i * 3 + 1] = sign * yDist;
+    beamPosArr[i * 3 + 2] = (Math.random() - 0.5) * spread;
+    beamSpeeds[i] = (1.0 + Math.random() * 1.5) * s * 1.4;
+
+    const t = yDist / beamLen;
+    beamColArr[i * 3] = lerp(1.0, c1.r, t);
+    beamColArr[i * 3 + 1] = lerp(1.0, c1.g, t);
+    beamColArr[i * 3 + 2] = lerp(1.0, c1.b, t);
+  }
+  const beamPartGeo = new THREE.BufferGeometry();
+  beamPartGeo.setAttribute('position', new THREE.BufferAttribute(beamPosArr, 3));
+  beamPartGeo.setAttribute('color', new THREE.BufferAttribute(beamColArr, 3));
+  const beamPartMat = new THREE.PointsMaterial({
+    size: 4.5, sizeAttenuation: false, vertexColors: true, map: ptex,
+    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const beamParticles = new THREE.Points(beamPartGeo, beamPartMat);
+  magneticGroup.add(beamParticles);
+
+  // 6. Synchrotron equatorial wind nebula (PWN torus)
+  const torusCount = (poi.id === 'vela-pulsar') ? 380 : 250;
+  const torusPos = new Float32Array(torusCount * 3);
+  const torusCol = new Float32Array(torusCount * 3);
+  for (let i = 0; i < torusCount; i++) {
+    const isOuter = (poi.id === 'vela-pulsar') && (i > torusCount / 2);
+    const minR = isOuter ? s * 0.32 : s * 0.12;
+    const maxR = isOuter ? s * 0.55 : s * 0.32;
+    const r = minR + Math.random() * (maxR - minR);
+    const theta = Math.random() * Math.PI * 2;
+    torusPos[i * 3] = Math.cos(theta) * r;
+    torusPos[i * 3 + 1] = (Math.random() - 0.5) * s * 0.05;
+    torusPos[i * 3 + 2] = Math.sin(theta) * r;
+
+    const tColor = isOuter ? c2 : c1;
+    torusCol[i * 3] = tColor.r;
+    torusCol[i * 3 + 1] = tColor.g;
+    torusCol[i * 3 + 2] = tColor.b;
+  }
+  const torusGeo = new THREE.BufferGeometry();
+  torusGeo.setAttribute('position', new THREE.BufferAttribute(torusPos, 3));
+  torusGeo.setAttribute('color', new THREE.BufferAttribute(torusCol, 3));
+  const torusMat = new THREE.PointsMaterial({
+    size: 5.0, sizeAttenuation: false, vertexColors: true, map: ptex,
+    transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const torusMesh = new THREE.Points(torusGeo, torusMat);
+  magneticGroup.add(torusMesh);
+
+  // 7. Cannonball Bow Shock (PSR J0002+6216)
+  let bowShock = null;
+  if (poi.isCannonball || poi.id === 'cannonball-psr') {
+    const bowCount = 380;
+    const bowPos = new Float32Array(bowCount * 3);
+    const bowCol = new Float32Array(bowCount * 3);
+    for (let i = 0; i < bowCount; i++) {
+      const zFrac = Math.pow(Math.random(), 1.5);
+      const zDist = zFrac * s * 1.8;
+      const r = Math.sqrt(zFrac) * s * 0.65;
+      const angle = Math.random() * Math.PI * 2;
+      bowPos[i * 3] = Math.cos(angle) * r + (Math.random() - 0.5) * s * 0.04;
+      bowPos[i * 3 + 1] = Math.sin(angle) * r * 0.6 + (Math.random() - 0.5) * s * 0.04;
+      bowPos[i * 3 + 2] = -zDist;
+
+      const fade = 1.0 - zFrac * 0.65;
+      bowCol[i * 3] = lerp(c1.r, 0.1, zFrac) * fade;
+      bowCol[i * 3 + 1] = lerp(c1.g, 0.4, zFrac) * fade;
+      bowCol[i * 3 + 2] = lerp(c1.b, 0.9, zFrac) * fade;
+    }
+    const bowGeo = new THREE.BufferGeometry();
+    bowGeo.setAttribute('position', new THREE.BufferAttribute(bowPos, 3));
+    bowGeo.setAttribute('color', new THREE.BufferAttribute(bowCol, 3));
+    const bowMat = new THREE.PointsMaterial({
+      size: 4.2, sizeAttenuation: false, vertexColors: true, map: ptex,
+      transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    bowShock = new THREE.Points(bowGeo, bowMat);
+    pulsarRoot.add(bowShock);
+  }
+
+  return {
+    type: 'pulsar',
+    spinGroup,
+    magneticGroup,
+    beamTop,
+    beamBottom,
+    beamParticles,
+    beamPosArr,
+    beamSpeeds,
+    beamCount,
+    beamLen,
+    torusMesh,
+    bowShock,
+    coreGlow,
+    coreGlowMat,
+    spinRate: (poi.spinRate || 8.0) * 0.35,
+    s,
+    poi
+  };
+}
+
+// ── Shell Supernova Remnant: Asymmetric 3D filament cloud, shock sheets, central relic ──
+function createShellSNRExtras(s, poi, parent) {
+  const ptex = getParticleTexture();
+  const snrGroup = new THREE.Group();
+  parent.add(snrGroup);
+
+  const stype = poi.shellType || 'generic';
+  const cols = poi.shellColors || [70, 220, 170, 40, 150, 200];
+  const c1 = new THREE.Color(cols[0] / 255, cols[1] / 255, cols[2] / 255);
+  const c2 = new THREE.Color(cols[3] / 255, cols[4] / 255, cols[5] / 255);
+
+  const count = 620;
+  const posArr = new Float32Array(count * 3);
+  const colArr = new Float32Array(count * 3);
+  const phases = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const u = Math.random(), v = Math.random();
+    const theta = u * Math.PI * 2;
+    const phi = Math.acos(2 * v - 1);
+
+    // Asymmetric radius modulation
+    let rScale = 0.5;
+    let colT = Math.random();
+
+    if (stype === 'jellyfish') {
+      // Violent molecular cloud shock front on upper-right, trailing tentacles on opposite
+      const shockAlignment = Math.cos(theta - 0.75) * Math.sin(phi);
+      const isShock = shockAlignment > 0;
+      rScale = isShock ? (0.45 + 0.1 * Math.random()) : (0.5 + 0.35 * Math.random());
+      colT = isShock ? 0.2 : 0.8;
+    } else if (stype === 'manatee') {
+      // W50 Manatee: Elongated laterally along X
+      rScale = 0.48 + 0.12 * Math.random();
+    } else if (stype === 'puppis') {
+      // Clumpy shockwave
+      rScale = 0.46 + 0.14 * Math.random();
+      colT = Math.random() < 0.3 ? 0.1 : 0.7; // Bright X-ray knots
+    } else {
+      rScale = 0.45 + 0.15 * Math.random();
+    }
+
+    let px = Math.sin(phi) * Math.cos(theta) * s * rScale;
+    let py = Math.sin(phi) * Math.sin(theta) * s * rScale;
+    let pz = Math.cos(phi) * s * rScale;
+
+    // Apply distortion for W50 Manatee wings
+    if (stype === 'manatee') {
+      px *= 1.6;
+      py *= 0.85;
+      pz *= 0.85;
+    }
+
+    posArr[i * 3] = px;
+    posArr[i * 3 + 1] = py;
+    posArr[i * 3 + 2] = pz;
+
+    const chosenCol = new THREE.Color().lerpColors(c1, c2, colT);
+    colArr[i * 3] = chosenCol.r;
+    colArr[i * 3 + 1] = chosenCol.g;
+    colArr[i * 3 + 2] = chosenCol.b;
+    phases[i] = Math.random() * Math.PI * 2;
+  }
+
+  const filGeo = new THREE.BufferGeometry();
+  filGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+  filGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+  const filMat = new THREE.PointsMaterial({
+    size: 5.5, sizeAttenuation: false, vertexColors: true, map: ptex,
+    transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const filaments = new THREE.Points(filGeo, filMat);
+  snrGroup.add(filaments);
+
+  // Translucent 3D shock sheet rings
+  const sheetGeo = new THREE.RingGeometry(s * 0.38, s * 0.52, 48);
+  const sheetMat = new THREE.MeshBasicMaterial({
+    color: c1, transparent: true, opacity: 0.14,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+  });
+  const sheet1 = new THREE.Mesh(sheetGeo, sheetMat);
+  sheet1.rotation.x = Math.PI * 0.3;
+  sheet1.rotation.y = Math.PI * 0.2;
+  snrGroup.add(sheet1);
+
+  const sheet2 = new THREE.Mesh(sheetGeo, sheetMat.clone());
+  sheet2.material.color = c2;
+  sheet2.material.opacity = 0.10;
+  sheet2.rotation.x = -Math.PI * 0.25;
+  sheet2.rotation.z = Math.PI * 0.4;
+  snrGroup.add(sheet2);
+
+  // Central remnant (pulsar or microquasar)
+  let centralRelic = null;
+  if (stype === 'manatee') {
+    // SS 433 microquasar with opposing jets
+    const ssGeo = new THREE.SphereGeometry(s * 0.02, 12, 12);
+    const ssMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    centralRelic = new THREE.Mesh(ssGeo, ssMat);
+    const jetGeo = new THREE.CylinderGeometry(s * 0.004, s * 0.03, s * 0.9, 12, 1, true);
+    const jetMat = new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    const ssJets = new THREE.Mesh(jetGeo, jetMat);
+    ssJets.rotation.z = Math.PI * 0.5;
+    centralRelic.add(ssJets);
+    snrGroup.add(centralRelic);
+  } else {
+    // Compact neutron star
+    const relicMat = new THREE.SpriteMaterial({ map: ptex, color: 0xaaddff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+    centralRelic = new THREE.Sprite(relicMat);
+    centralRelic.scale.set(s * 0.12, s * 0.12, 1);
+    snrGroup.add(centralRelic);
+  }
+
+  return {
+    type: 'shellsnr',
+    snrGroup,
+    filaments,
+    filMat,
+    phases,
+    sheet1,
+    sheet2,
+    centralRelic,
+    s,
+    poi
+  };
+}
+
+// ── Ring / Planetary Nebula: Multi-shell 3D torus, white dwarf, OIII/H-alpha ──
+function createRingNebulaExtras(s, poi, parent) {
+  const ptex = getParticleTexture();
+  const ringGroup = new THREE.Group();
+  parent.add(ringGroup);
+
+  const rtype = poi.ringType || 'ring';
+  const pCols = poi.ringColors || [70, 210, 180, 220, 60, 80];
+  const cInner = new THREE.Color(pCols[0] / 255, pCols[1] / 255, pCols[2] / 255);
+  const cOuter = new THREE.Color(pCols[3] / 255, pCols[4] / 255, pCols[5] / 255);
+
+  // Central white dwarf
+  const wdGeo = new THREE.SphereGeometry(s * 0.02, 16, 16);
+  const wdMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const whiteDwarf = new THREE.Mesh(wdGeo, wdMat);
+  ringGroup.add(whiteDwarf);
+
+  const wdGlowMat = new THREE.SpriteMaterial({ map: ptex, color: 0xddeeff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+  const wdGlow = new THREE.Sprite(wdGlowMat);
+  wdGlow.scale.set(s * 0.2, s * 0.2, 1);
+  ringGroup.add(wdGlow);
+
+  // Inner OIII ionized disk (translucent)
+  const innerGeo = new THREE.RingGeometry(s * 0.03, s * 0.28, 48);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: cInner, transparent: true, opacity: 0.28,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+  });
+  const innerDisk = new THREE.Mesh(innerGeo, innerMat);
+  innerDisk.rotation.x = Math.PI * 0.45;
+  ringGroup.add(innerDisk);
+
+  // Outer shell particle torus
+  const count = rtype === 'helix' ? 520 : 420;
+  const posArr = new Float32Array(count * 3);
+  const colArr = new Float32Array(count * 3);
+  const phases = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    let r = s * 0.32 + Math.random() * s * 0.2;
+    let yPerturb = (Math.random() - 0.5) * s * 0.08;
+
+    if (rtype === 'helix') {
+      const isCoil2 = i > count / 2;
+      const coilZ = isCoil2 ? s * 0.08 : -s * 0.08;
+      yPerturb += coilZ;
+      r = isCoil2 ? (s * 0.38 + Math.random() * s * 0.18) : (s * 0.25 + Math.random() * s * 0.16);
+    } else if (rtype === 'cateye') {
+      const shellTier = i % 3;
+      r = (0.2 + shellTier * 0.14) * s + Math.random() * s * 0.05;
+    }
+
+    posArr[i * 3] = Math.cos(theta) * r;
+    posArr[i * 3 + 1] = yPerturb;
+    posArr[i * 3 + 2] = Math.sin(theta) * r;
+
+    const t = clamp((r - s * 0.25) / (s * 0.28), 0, 1);
+    const c = new THREE.Color().lerpColors(cInner, cOuter, t);
+    colArr[i * 3] = c.r;
+    colArr[i * 3 + 1] = c.g;
+    colArr[i * 3 + 2] = c.b;
+    phases[i] = Math.random() * Math.PI * 2;
+  }
+
+  const ringPartGeo = new THREE.BufferGeometry();
+  ringPartGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+  ringPartGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+  const ringPartMat = new THREE.PointsMaterial({
+    size: 5.2, sizeAttenuation: false, vertexColors: true, map: ptex,
+    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const ringParticles = new THREE.Points(ringPartGeo, ringPartMat);
+  ringParticles.rotation.x = Math.PI * 0.45;
+  ringGroup.add(ringParticles);
+
+  return {
+    type: 'ring',
+    ringGroup,
+    innerDisk,
+    ringParticles,
+    ringPartMat,
+    phases,
+    s,
+    poi
+  };
+}
+
 // ── Mini Star System for Galactic View ──
 function createMiniSystemExtras(s, parent, sysBodies, coreSize, dotCol) {
   const g = new THREE.Group();
@@ -1262,6 +1649,9 @@ function createMiniSystemExtras(s, parent, sysBodies, coreSize, dotCol) {
 
 // ── POI animation update (called every frame when galactic) ──
 var _camWorldPos = new THREE.Vector3();
+var _camDir = new THREE.Vector3();
+var _beamDir = new THREE.Vector3();
+var _qBeam = new THREE.Quaternion();
 function updateGalacticPOIs(dt, activeCam) {
   // Get world position of active camera (critical for cockpit mode)
   activeCam.getWorldPosition(_camWorldPos);
@@ -1359,13 +1749,63 @@ function updateGalacticPOIs(dt, activeCam) {
       const op = 0.65 + Math.sin(t + ex.phases[0]) * 0.2;
       ex.mat.opacity = op;
 
+    } else if (ex.type === 'pulsar') {
+      // 1. Continuous spin of the magnetic dipole axis
+      ex.spinGroup.rotation.y += dt * ex.spinRate;
+
+      // 2. Flow relativistic particles along beams outward
+      const bp = ex.beamParticles.geometry.attributes.position.array;
+      for (let i = 0; i < ex.beamCount; i++) {
+        const isTop = i < ex.beamCount / 2;
+        const sign = isTop ? 1 : -1;
+        bp[i * 3 + 1] += sign * dt * ex.beamSpeeds[i];
+        if (Math.abs(bp[i * 3 + 1]) > ex.beamLen) {
+          bp[i * 3 + 1] = sign * Math.random() * ex.s * 0.05;
+          const spread = (Math.abs(bp[i * 3 + 1]) / ex.beamLen) * ex.s * 0.07;
+          bp[i * 3] = (Math.random() - 0.5) * spread;
+          bp[i * 3 + 2] = (Math.random() - 0.5) * spread;
+        }
+      }
+      ex.beamParticles.geometry.attributes.position.needsUpdate = true;
+
+      // 3. Synchrotron torus rotation
+      if (ex.torusMesh) {
+        ex.torusMesh.rotation.y -= dt * 0.25;
+      }
+
+      // 4. Bow shock shimmer
+      if (ex.bowShock) {
+        ex.bowShock.rotation.z += dt * 0.04;
+      }
+
+      // 5. Realistic lighthouse beam sweep flash
+      _beamDir.set(0, 1, 0).applyQuaternion(ex.magneticGroup.getWorldQuaternion(_qBeam));
+      _camDir.subVectors(_camWorldPos, obj.group.position).normalize();
+      const align = Math.abs(_beamDir.dot(_camDir));
+      // Cinematic exponential flash when the beam sweeps past line of sight
+      const sweepFlash = Math.pow(align, 14.0);
+      ex.coreGlowMat.opacity = 0.4 + sweepFlash * 0.9;
+      const glowScale = ex.s * 0.28 * (1.0 + sweepFlash * 0.5);
+      ex.coreGlow.scale.set(glowScale, glowScale, 1);
+
+    } else if (ex.type === 'shellsnr') {
+      ex.filaments.rotation.y += dt * 0.008;
+      ex.sheet1.rotation.z += dt * 0.006;
+      ex.sheet2.rotation.y -= dt * 0.005;
+      const shPulse = 0.78 + Math.sin(now * 0.7) * 0.12;
+      ex.filMat.opacity = shPulse;
+
+    } else if (ex.type === 'ring') {
+      ex.ringParticles.rotation.z += dt * 0.006;
+      const innerPulse = 0.24 + Math.sin(now * 0.5) * 0.06;
+      ex.innerDisk.material.opacity = innerPulse;
+
     } else if (ex.type === 'supernova') {
-      const flash = 0.3 + Math.abs(Math.sin(now * 8)) * 0.7;
-      ex.pulsarMat.opacity = flash;
-      const ps = ex.s * 0.1 + flash * ex.s * 0.08;
-      ex.pulsar.scale.set(ps, ps, 1);
-      ex.shell.rotation.y += dt * 0.05;
-      ex.mat.opacity = 0.4 + Math.sin(now * 0.8) * 0.12;
+      ex.shell.rotation.y += dt * 0.04;
+      ex.mat.opacity = 0.45 + Math.sin(now * 0.8) * 0.12;
+      if (ex.pulsarMat) {
+        ex.pulsarMat.opacity = 0.45 + Math.sin(now * 3.0) * 0.18;
+      }
 
     } else if (ex.type === 'sol') {
       // Slow orbital motion

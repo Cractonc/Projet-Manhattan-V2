@@ -215,6 +215,7 @@ var GALACTIC_POI = [
   {
     id: 'ring-neb', name: 'Ring Nebula', type: 'Planetary Nebula', tier: 3,
     pos: [224000, 2000, -30000], vType: 'ring', scale: 3000, dotColor: '#60c0a0',
+    ringType: 'ring', ringColors: [80, 220, 180, 220, 60, 80],
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'M57 / NGC 6720', 'Distance': '~2 283 ly', 'Diameter': '~1.3 ly', 'Central star': 'White dwarf, 120 000 K' }
   },
   {
@@ -230,7 +231,8 @@ var GALACTIC_POI = [
   },
   {
     id: 'vela-pulsar', name: 'Vela Pulsar', type: 'Supernova Remnant', tier: 3,
-    pos: [238400, -2500, -32000], vType: 'supernova', scale: 3500, dotColor: '#40e0ff',
+    pos: [238400, -2500, -32000], vType: 'pulsar', scale: 3500, dotColor: '#40e0ff',
+    pulsarColors: [70, 200, 255, 150, 70, 240], spinRate: 11.2, magTilt: 0.52,
     info: { 'Type': 'Pulsar / SNR', 'Distance': '~936 ly', 'Spin': '~11.2 rev/s', 'Age': '~11 000 years', 'Feature': 'One of the nearest pulsars' }
   },
   {
@@ -287,6 +289,7 @@ var GALACTIC_POI = [
   {
     id: 'helix-neb', name: 'Helix Nebula', type: 'Planetary Nebula', tier: 3,
     pos: [252000, 800, -12000], vType: 'ring', scale: 2800, dotColor: '#40ccaa',
+    ringType: 'helix', ringColors: [60, 200, 220, 240, 90, 70],
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 7293', 'Distance': '~650 ly', 'Diameter': '~5.7 ly', 'Feature': 'Eye of God — closest large PN' }
   },
   {
@@ -304,6 +307,7 @@ var GALACTIC_POI = [
   {
     id: 'cat-eye-neb', name: 'Cat\'s Eye Nebula', type: 'Planetary Nebula', tier: 4,
     pos: [217000, 1500, -125000], vType: 'ring', scale: 4000, dotColor: '#55ccaa',
+    ringType: 'cateye', ringColors: [90, 230, 200, 210, 120, 240],
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 6543', 'Distance': '~3 300 ly', 'Feature': 'Complex concentric gas shells' }
   },
   {
@@ -382,6 +386,7 @@ var GALACTIC_POI = [
   {
     id: 'red-spider', name: 'Red Spider Nebula', type: 'Planetary Nebula', tier: 4,
     pos: [-98000, -800, 22000], vType: 'ring', scale: 3200, dotColor: '#ee5533',
+    ringType: 'spider', ringColors: [230, 80, 50, 190, 50, 120],
     info: { 'Type': 'Planetary Nebula', 'Catalog': 'NGC 6537', 'Distance': '~4 000 ly', 'Feature': 'Fastest stellar winds measured (~300 km/s)' }
   },
   {
@@ -409,7 +414,8 @@ var GALACTIC_POI = [
   },
   {
     id: 'cannonball-psr', name: 'Cannonball Pulsar', type: 'Pulsar / PWN', tier: 4,
-    pos: [-78000, 1000, -91000], vType: 'supernova', scale: 3200, dotColor: '#33ddcc',
+    pos: [-78000, 1000, -91000], vType: 'pulsar', scale: 3200, dotColor: '#33ddcc',
+    pulsarColors: [50, 240, 220, 30, 150, 240], spinRate: 8.5, magTilt: 0.65, isCannonball: true,
     info: { 'Type': 'Pulsar Wind Nebula', 'Catalog': 'IGR J11014-6103', 'Distance': '~15 000 ly', 'Speed': '~1 000 km/s', 'Feature': 'Fastest known pulsar with jet trail' }
   },
   {
@@ -445,7 +451,7 @@ var GALACTIC_POI = [
   {
     id: 'ic443', name: 'Jellyfish Nebula', type: 'SNR Shell', tier: 3,
     pos: [-150000, -1000, -140000], vType: 'shellsnr', scale: 4500, dotColor: '#44ddaa',
-    shellColors: [70, 220, 170, 40, 150, 200],
+    shellColors: [70, 220, 170, 40, 150, 200], shellType: 'jellyfish',
     info: { 'Type': 'Shell-type Supernova Remnant', 'Catalog': 'IC 443', 'Distance': '~5 000 ly', 'Feature': 'Jellyfish shape — interacts with molecular cloud' }
   },
   {
@@ -475,7 +481,7 @@ var GALACTIC_POI = [
   {
     id: 'puppis-a', name: 'Puppis A', type: 'SNR Shell', tier: 3,
     pos: [205000, -1800, 175000], vType: 'shellsnr', scale: 4800, dotColor: '#33ccbb',
-    shellColors: [50, 200, 190, 30, 140, 180],
+    shellColors: [50, 200, 190, 30, 140, 180], shellType: 'puppis',
     info: { 'Type': 'Shell Supernova Remnant', 'Distance': '~7 000 ly', 'Age': '~3 700 years', 'Feature': 'One of the brightest X-ray sources in the sky' }
   },
   {
@@ -487,7 +493,7 @@ var GALACTIC_POI = [
   {
     id: 'w50-manatee', name: 'W50 / Manatee Nebula', type: 'SS 433 Relic', tier: 3,
     pos: [-50000, -2000, 220000], vType: 'shellsnr', scale: 5200, dotColor: '#55ddaa',
-    shellColors: [85, 220, 170, 50, 180, 140],
+    shellColors: [85, 220, 170, 50, 180, 140], shellType: 'manatee',
     info: { 'Type': 'SNR + Microquasar Jet', 'Distance': '~18 000 ly', 'Diameter': '~700 × 350 ly', 'Feature': 'Distorted by relativistic jets from SS 433' }
   },
   {
@@ -505,7 +511,7 @@ var GALACTIC_POI = [
   {
     id: 'snr-w28', name: 'W28', type: 'Mixed-Morphology SNR', tier: 4,
     pos: [30000, 800, -60000], vType: 'shellsnr', scale: 4000, dotColor: '#44ccaa',
-    shellColors: [70, 200, 170, 40, 160, 140],
+    shellColors: [70, 200, 170, 40, 160, 140], shellType: 'w28',
     info: { 'Type': 'Mixed-Morphology SNR', 'Distance': '~6 000 ly', 'Age': '~35 000 years', 'Feature': 'Accelerates cosmic rays — interacts with giant molecular clouds' }
   },
   {
