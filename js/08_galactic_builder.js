@@ -728,45 +728,14 @@ var WORMHOLE_FRAGMENT_SHADER = /* glsl */`
     vec3 colB = renderDestinationSky(normalize(refractedRay - N * 0.012), u);
     vec3 throatColor = vec3(colR.r, colG.g, colB.b);
 
-    // ── 2. ANNEAU D'EINSTEIN & CAUSTIQUE GRAVITATIONNELLE (u dans [0.88, 1.0]) ──
-    // Double profil lorentzien caustique ultra-lumineux avec séparation chromatique
-    float causticR = exp(-pow((u - 0.936) / 0.038, 2.0)) * 5.2;
-    float causticG = exp(-pow((u - 0.945) / 0.034, 2.0)) * 5.8;
-    float causticB = exp(-pow((u - 0.954) / 0.030, 2.0)) * 6.6;
-
-    // Halo extérieur diffus
-    float outerHalo = exp(-pow((u - 0.970) / 0.075, 2.0)) * 1.8;
-
-    // Ondelette azimutale de cisaillement gravitationnel
-    float phiAzimuth = atan(N.y, N.x);
-    float shearWave = 1.0 + 0.08 * sin(phiAzimuth * 8.0 + u_time * 2.0)
-                          + 0.05 * cos(phiAzimuth * 18.0 - u_time * 3.2);
-
-    vec3 einsteinRing = vec3(causticR, causticG, causticB) * shearWave;
-    einsteinRing += vec3(outerHalo) * mix(u_color, vec3(1.0), 0.72);
-
-    // Cœur incandescent blanc-pur au pic de la caustique
-    float whiteHot = exp(-pow((u - 0.945) / 0.018, 2.0)) * 3.2;
-    einsteinRing += vec3(whiteHot);
-
-    // ── 3. CEINTURE RELATIVISTE ÉQUATORIALE (ACCENT KIP THORNE) ──
-    float eqPlane = abs(N.y);
-    float eqBelt = exp(-eqPlane * 36.0) * exp(-pow((u - 0.942) / 0.05, 2.0)) * 1.25;
-    vec3 eqColor = mix(u_color, vec3(1.0, 0.92, 0.75), 0.5) * eqBelt;
-
-    // ── 4. COMPOSITION & MÉLANGE OPTIQUE ──
+    // ── 2. COMPOSITION SANS CONTOUR BLANC ──
     vec3 finalColor;
     if (u < uThroat) {
-      // Intérieur de la gorge : ciel de destination + lueur interne de l'anneau d'Einstein
-      float ringBlend = smoothstep(0.86, uThroat, u);
-      finalColor = mix(throatColor, throatColor + einsteinRing * 0.82, ringBlend);
+      finalColor = throatColor;
     } else {
-      // Extérieur : caustique gravitationnelle de lumière galactique déviée
       float rimFalloff = smoothstep(1.0, 0.94, u);
-      finalColor = einsteinRing * rimFalloff;
+      finalColor = throatColor * rimFalloff;
     }
-
-    finalColor += eqColor;
 
     // Lissage anti-aliasing très propre en bordure
     float alpha = smoothstep(1.002, 0.985, u);
@@ -809,7 +778,7 @@ function createWormholes() {
     // ── NIVEAU 0 : Sphère 3D Isotrope Relativiste (Distance <= 80 000 AL) ──
     const level0 = new THREE.Group();
 
-    // Matériau Shader Relativiste Kip Thorne
+    // Matériau Shader Relativiste Kip Thorne (Rendu épuré Capture 2)
     const sphereMat = new THREE.ShaderMaterial({
       vertexShader: WORMHOLE_VERTEX_SHADER,
       fragmentShader: WORMHOLE_FRAGMENT_SHADER,
@@ -833,19 +802,6 @@ function createWormholes() {
     const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
     sphereMesh.renderOrder = 10;
     level0.add(sphereMesh);
-
-    // Halo subtil de lentille externe (glow doux diffus)
-    const haloMat = new THREE.SpriteMaterial({
-      map: ptex,
-      color: wh.color,
-      transparent: true,
-      opacity: 0.35,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const glowSprite = new THREE.Sprite(haloMat);
-    glowSprite.scale.set(3400, 3400, 1);
-    level0.add(glowSprite);
 
     lod.addLevel(level0, 0);
 
@@ -898,7 +854,7 @@ function createWormholes() {
       lod: lod,
       sphereMesh: sphereMesh,
       sphereMat: sphereMat,
-      glowSprite: glowSprite,
+      glowSprite: null,
       farSprite: farSprite,
       clickMesh: clickMesh,
       label: labelEl,
